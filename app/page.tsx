@@ -7,10 +7,16 @@ import AppShell, { type ViewMode } from "@/components/AppShell";
 import SpeechInput, { type AnalysisData } from "@/components/SpeechInput";
 import MindMap, { type MindMapTopic } from "@/components/MindMap";
 import GlossaryPanel, { type GlossaryTerm } from "@/components/GlossaryPanel";
+import SummaryPanel from "@/components/SummaryPanel";
+import KeywordsPanel from "@/components/KeywordsPanel";
+import FlashcardsPanel from "@/components/FlashcardsPanel";
+import ChatPanel from "@/components/ChatPanel";
 import ScrollToTop from "@/components/ScrollToTop";
 import { getFeature, type FeatureId } from "@/lib/features";
 import { useSpeechTranscription } from "@/hooks/useSpeechTranscription";
-
+import TranslationPanel from "@/components/TranslationPanel";
+import SoundsPanel from "@/components/SoundsPanel";
+import Breadcrumbs from "@/components/Breadcrumbs";
 interface Notification {
   id: number;
   action: string;
@@ -82,8 +88,20 @@ export default function Page() {
         return <MindMap topics={allTopics} />;
       case "glossary":
         return <GlossaryPanel terms={allTerms} onAction={handleAction} />;
+      case "summary":
+        return <SummaryPanel transcript={speech.currentTranscript} />;
+      case "keywords":
+        return <KeywordsPanel transcript={speech.currentTranscript} />;
+      case "flashcards":
+        return <FlashcardsPanel transcript={speech.currentTranscript} />;
+      case "qa":
+        return <ChatPanel transcript={speech.currentTranscript} />;
       default:
         return <ComingSoon featureId={activeFeature} />;
+      case "translation":
+        return <TranslationPanel transcript={speech.currentTranscript} />;
+      case "sounds":
+        return <SoundsPanel />;
     }
   };
 
@@ -98,9 +116,19 @@ export default function Page() {
       onToggleSidebar={() => setSidebarOpen((v) => !v)}
     >
       {view === "student" ? (
-        <div dir="rtl">{renderFeature()}</div>
+        <div dir="rtl" className="space-y-4">
+          <Breadcrumbs
+            items={[
+              {
+                label: getFeature(activeFeature).label,
+              },
+            ]}
+          />
+          {renderFeature()}
+        </div>
       ) : (
-        <div className="glass rounded-2xl border border-border p-6" dir="rtl">
+        
+        <div className="glass rounded-2xl border border-border p-6" dir="rtl" id="main-content">
           <h2 className="mb-6 text-xl font-bold">لوحة إشعارات الدكتور</h2>
           {notifications.length === 0 ? (
             <p className="py-10 text-center text-muted-foreground">

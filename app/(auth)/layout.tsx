@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { Cairo, Amiri } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import TopProgressBar from "@/components/TopProgressBar";
+import AuthSessionWatcher from "@/components/AuthSessionWatcher";
+import SkipToContent from "@/components/SkipToContent";
 import { Toaster } from "@/components/ui/sonner";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import { DEFAULT_THEME, THEME_STORAGE_KEY } from "@/lib/themes";
-
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
   variable: "--font-sans",
@@ -56,10 +58,13 @@ export default function RootLayout({
         className={`${cairo.className} min-h-screen bg-background text-foreground antialiased`}
       >
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <SkipToContent />
+        <TopProgressBar />
         <ThemeProvider>
           {children}
           <Toaster />
           <OfflineIndicator />
+          <AuthSessionWatcher />
         </ThemeProvider>
       </body>
     </html>

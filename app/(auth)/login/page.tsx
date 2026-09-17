@@ -3,7 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, Loader2, LogIn } from "lucide-react";
+import { Mail, Lock, Loader2, LogIn, ShieldAlert } from "lucide-react";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +16,7 @@ import {
   type ValidationState,
 } from "@/components/auth/AuthForm";
 import GoogleButton from "@/components/auth/GoogleButton";
+import { useLoginRateLimit } from "@/hooks/useLoginRateLimit";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -31,12 +33,12 @@ export default function LoginPage() {
   const [emailState, setEmailState] = React.useState<ValidationState>("idle");
   const [passwordState, setPasswordState] = React.useState<ValidationState>("idle");
 
-  // Auto-focus the email field on mount
+  const rateLimit = useLoginRateLimit();
+
   React.useEffect(() => {
     emailRef.current?.focus();
   }, []);
 
-  // Debounced email validation
   React.useEffect(() => {
     if (email.length === 0) {
       setEmailState("idle");
@@ -48,7 +50,6 @@ export default function LoginPage() {
     return () => clearTimeout(t);
   }, [email]);
 
-  // Debounced password validation
   React.useEffect(() => {
     if (password.length === 0) {
       setPasswordState("idle");
@@ -63,6 +64,11 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (rateLimit.isLocked) {
+      setError(`محاولات كثيرة. حاول تاني بعد ${rateLimit.secondsLeft} ثانية.`);
+      return;
+    }
 
     if (!EMAIL_REGEX.test(email.trim())) {
       setError("من فضلك اكتب إيميل صحيح.");
@@ -82,8 +88,17 @@ export default function LoginPage() {
       });
 
       if (signInError) {
+        rateLimit.registerFailure();
+        const remaining = rateLimit.attemptsLeft - 1;
+
         if (signInError.message.includes("Invalid login credentials")) {
-          setError("الإيميل أو كلمة المرور غير صحيحة.");
+          if (remaining > 0) {
+            setError(
+              `الإيميل أو كلمة المرور غير صحيحة. فاضل ${remaining} محاولة.`
+            );
+          } else {
+            setError("تم قفل الحساب مؤقتاً لمدة دقيقة.");
+          }
         } else if (signInError.message.includes("Email not confirmed")) {
           setError("من فضلك أكّد إيميلك الأول. اتفقد صندوق الوارد.");
         } else {
@@ -93,6 +108,8 @@ export default function LoginPage() {
         return;
       }
 
+      rateLimit.registerSuccess();
+      toast.success("تم تسجيل الدخول بنجاح");
       router.push("/");
       router.refresh();
     } catch {
@@ -100,6 +117,8 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  const locked = rateLimit.isLocked;
 
   return (
     <div>
@@ -113,6 +132,20 @@ export default function LoginPage() {
       <GoogleButton mode="login" />
 
       <AuthDivider label="أو بالإيميل" />
+
+      {locked && (
+        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div>
+            <p className="font-bold text-amber-700 dark:text-amber-400">
+              الحساب مقفول مؤقتاً
+            </p>
+            <p className="mt-0.5 text-xs text-amber-700/80 dark:text-amber-400/80">
+              حاول تاني بعد {rateLimit.secondsLeft} ثانية
+            </p>
+          </div>
+        </div>
+      )}
 
       <AuthForm onSubmit={handleSubmit}>
         <AuthError message={error} />
@@ -131,7 +164,7 @@ export default function LoginPage() {
           error={emailState === "invalid" ? "صيغة الإيميل غير صحيحة" : undefined}
           required
           autoComplete="email"
-          disabled={loading}
+          disabled={loading || locked}
         />
 
         <AuthPasswordInput
@@ -150,19 +183,24 @@ export default function LoginPage() {
           }
           required
           autoComplete="current-password"
-          disabled={loading}
+          disabled={loading || locked}
           minLength={6}
         />
 
         <Button
           type="submit"
-          disabled={loading}
-          className="h-11 w-full gap-2 bg-linear-to-l from-primary to-accent-1 text-sm font-bold text-primary-foreground shadow-lg transition-transform hover:scale-[1.02]"
+          disabled={loading || locked}
+          className="h-11 w-full gap-2 bg-linear-to-l from-primary to-accent-1 text-sm font-bold text-primary-foreground shadow-lg transition-transform hover:scale-[1.02] disabled:hover:scale-100"
         >
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
               جارٍ تسجيل الدخول...
+            </>
+          ) : locked ? (
+            <>
+              <ShieldAlert className="h-4 w-4" />
+              مقفول ({rateLimit.secondsLeft}s)
             </>
           ) : (
             <>
@@ -175,10 +213,15 @@ export default function LoginPage() {
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         معندكش حساب؟{" "}
+              <div className="mb-4 text-center">
         <Link
-          href="/signup"
-          className="font-bold text-primary hover:underline"
+          href="/login/magic-link"
+          className="text-xs font-medium text-primary hover:underline"
         >
+          ✨ أو سجّل دخول بدون باسورد (Magic Link)
+        </Link>
+      </div>
+        <Link href="/signup" className="font-bold text-primary hover:underline">
           أنشئ حساب جديد
         </Link>
       </p>

@@ -1,7 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cairo, Amiri } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { Toaster } from "@/components/ui/sonner";
+import OfflineIndicator from "@/components/OfflineIndicator";
+import TopProgressBar from "@/components/TopProgressBar";
+import AuthSessionWatcher from "@/components/AuthSessionWatcher";
 import { DEFAULT_THEME, THEME_STORAGE_KEY } from "@/lib/themes";
 
 const cairo = Cairo({
@@ -18,17 +22,80 @@ const amiri = Amiri({
   display: "swap",
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const SITE_NAME = "CaptionBridge";
+const SITE_DESCRIPTION =
+  "تطبيق ويب مساعد في الوقت الفعلي للطلاب الصم — ترجمة الكلام، خريطة ذهنية، ومعجم مصطلحات أكاديمية.";
+
 export const metadata: Metadata = {
-  title: "CaptionBridge | ترجمة فورية للطلاب الصم",
-  description:
-    "تطبيق ويب مساعد في الوقت الفعلي للطلاب الصم — ترجمة الكلام، خريطة ذهنية، ومعجم مصطلحات أكاديمية.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} | ترجمة فورية للطلاب الصم`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  authors: [{ name: "Khalid" }],
+  generator: "Next.js",
+  keywords: [
+    "CaptionBridge",
+    "ترجمة فورية",
+    "طلاب الصم",
+    "محاضرات جامعية",
+    "ذكاء اصطناعي",
+    "speech to text",
+    "accessibility",
+    "deaf students",
+    "real-time captions",
+  ],
+  creator: "Khalid",
+  publisher: "CaptionBridge",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "ar_EG",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} | جسر التواصل للطلاب الصم`,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} | ترجمة فورية للطلاب الصم`,
+    description: SITE_DESCRIPTION,
+    creator: "@khalid",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+  },
 };
 
-/**
- * Inline script that runs before React hydrates. It reads the persisted
- * theme from localStorage and applies `data-theme` to <html> immediately,
- * preventing a flash of the wrong theme on first paint.
- */
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#101826" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 const themeInitScript = `
 (function() {
   try {
@@ -55,13 +122,17 @@ export default function RootLayout({
       className={`${cairo.variable} ${amiri.variable}`}
       suppressHydrationWarning
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-      </head>
       <body
         className={`${cairo.className} min-h-screen bg-background text-foreground antialiased`}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <TopProgressBar />
+        <ThemeProvider>
+          {children}
+          <Toaster />
+          <OfflineIndicator />
+          <AuthSessionWatcher />
+        </ThemeProvider>
       </body>
     </html>
   );

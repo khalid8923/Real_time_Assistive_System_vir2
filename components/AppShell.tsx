@@ -13,6 +13,7 @@ import {
   TEACHER_FEATURES,
   type FeatureId,
 } from "@/lib/features";
+import { useEffect, useState } from "react";
 
 export type ViewMode = "student" | "teacher";
 
@@ -39,13 +40,33 @@ export default function AppShell({
 }: AppShellProps) {
   const mobileFeatures =
     view === "student" ? STUDENT_FEATURES : TEACHER_FEATURES;
+      const [headerHidden, setHeaderHidden] = useState(false);
+  const [lastY, setLastY] = useState(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      const goingDown = y > lastY;
+      if (goingDown && y > 120) {
+        setHeaderHidden(true);
+      } else {
+        setHeaderHidden(false);
+      }
+      setLastY(y);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [lastY]);
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
       <motion.header
         initial={{ y: -24, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
+        animate={{
+          y: headerHidden ? -80 : 0,
+          opacity: 1,
+        }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
         className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#101826]/95 backdrop-blur-xl"
       >
         <div className="mx-auto flex w-full max-w-350 items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
