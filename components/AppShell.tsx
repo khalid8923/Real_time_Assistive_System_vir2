@@ -2,18 +2,14 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { PanelLeft, User } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import AppSidebar from "@/components/AppSidebar";
-import {
-  STUDENT_FEATURES,
-  TEACHER_FEATURES,
-  type FeatureId,
-} from "@/lib/features";
-import { useEffect, useState } from "react";
+import { STUDENT_FEATURES, type FeatureId } from "@/lib/features";
+import { useSession } from "@/lib/auth-client";
 
 export type ViewMode = "student" | "teacher";
 
@@ -26,6 +22,7 @@ interface AppShellProps {
   isLive?: boolean;
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
+  onOpenLectures?: () => void;
 }
 
 export default function AppShell({
@@ -37,80 +34,87 @@ export default function AppShell({
   isLive = true,
   sidebarOpen,
   onToggleSidebar,
+  onOpenLectures,
 }: AppShellProps) {
-  const mobileFeatures =
-    view === "student" ? STUDENT_FEATURES : TEACHER_FEATURES;
-      const [headerHidden, setHeaderHidden] = useState(false);
-  const [lastY, setLastY] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  const [headerHidden, setHeaderHidden] = React.useState(false);
+  const [lastY, setLastY] = React.useState(0);
+  const { data: session } = useSession();
 
-  useEffect(() => {
+  const user = session?.user as { name?: string } | undefined;
+
+  React.useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
       const goingDown = y > lastY;
-      if (goingDown && y > 120) {
-        setHeaderHidden(true);
-      } else {
-        setHeaderHidden(false);
-      }
+      if (goingDown && y > 120) setHeaderHidden(true);
+      else setHeaderHidden(false);
       setLastY(y);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [lastY]);
 
+  const mobileFeatures = STUDENT_FEATURES.slice(0, 6);
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
+      {/* HEADER */}
       <motion.header
         initial={{ y: -24, opacity: 0 }}
-        animate={{
-          y: headerHidden ? -80 : 0,
-          opacity: 1,
-        }}
+        animate={{ y: headerHidden ? -100 : 0, opacity: 1 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#101826]/95 backdrop-blur-xl"
+        className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl"
       >
-        <div className="mx-auto flex w-full max-w-350 items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div
-              aria-hidden="true"
-              className="flex h-9 w-9 shrink-0 flex-col items-start justify-center gap-1 rounded-md border border-white/20 bg-white/5 px-2"
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              aria-label="القائمة"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
             >
-              <span className="h-0.75 w-full rounded-full bg-white" />
-              <span className="h-0.75 w-3/5 rounded-full bg-white" />
-            </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-base font-bold tracking-tight text-white sm:text-lg">
-                CaptionBridge
-              </span>
-              <span className="hidden text-[10px] font-medium text-white/50 sm:block">
-                جسر التواصل للطلاب الصم
-              </span>
+              <PanelLeft className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-primary to-accent-1 shadow-sm">
+                <span className="text-xs font-black text-white">CB</span>
+              </div>
+              <div className="hidden leading-tight sm:flex sm:flex-col">
+                <span className="text-sm font-bold tracking-tight">
+                  CaptionBridge
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  جسر التواصل للطلاب الصم
+                </span>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2">
             <Badge
               variant="outline"
               aria-live="polite"
               className={cn(
                 "hidden items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium sm:flex",
                 isLive
-                  ? "border-[#E1432C]/30 bg-[#E1432C]/15 text-[#FF8A75]"
-                  : "border-white/15 bg-white/5 text-white/60"
+                  ? "border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                  : "border-border bg-muted text-muted-foreground"
               )}
             >
               <span className="relative flex h-2 w-2">
                 {isLive && (
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#E1432C] opacity-75 motion-safe:animate-ping" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-75" />
                 )}
                 <span
                   className={cn(
                     "relative inline-flex h-2 w-2 rounded-full",
-                    isLive ? "bg-[#E1432C]" : "bg-white/50"
+                    isLive ? "bg-rose-500" : "bg-muted-foreground/50"
                   )}
                 />
               </span>
-              {isLive ? "مباشر" : "غير متصل"}
+              {isLive ? "مباشر" : "متوقف"}
             </Badge>
 
             <ThemeSwitcher />
@@ -118,68 +122,66 @@ export default function AppShell({
             <div
               role="group"
               aria-label="تبديل واجهة التطبيق"
-              className="flex items-center gap-1 rounded-full border border-white/15 bg-white/5 p-1"
+              className="flex items-center gap-0.5 rounded-full border border-border bg-muted/40 p-0.5"
             >
-              <Button
+              <button
                 type="button"
-                size="sm"
-                variant="ghost"
-                aria-pressed={view === "student"}
                 onClick={() => onViewChange("student")}
+                aria-pressed={view === "student"}
                 className={cn(
-                  "rounded-full px-3 text-xs font-medium transition-colors sm:px-4 sm:text-sm",
+                  "rounded-full px-3 py-1 text-xs font-medium transition-colors",
                   view === "student"
-                    ? "bg-white text-[#101826] hover:bg-white hover:text-[#101826]"
-                    : "bg-transparent text-white/70 hover:bg-white/10 hover:text-white"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <span className="hidden sm:inline">واجهة الطالب</span>
-                <span className="sm:hidden">طالب</span>
-              </Button>
-              <Button
+                طالب
+              </button>
+              <button
                 type="button"
-                size="sm"
-                variant="ghost"
-                aria-pressed={view === "teacher"}
                 onClick={() => onViewChange("teacher")}
+                aria-pressed={view === "teacher"}
                 className={cn(
-                  "rounded-full px-3 text-xs font-medium transition-colors sm:px-4 sm:text-sm",
+                  "rounded-full px-3 py-1 text-xs font-medium transition-colors",
                   view === "teacher"
-                    ? "bg-white text-[#101826] hover:bg-white hover:text-[#101826]"
-                    : "bg-transparent text-white/70 hover:bg-white/10 hover:text-white"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <span className="hidden sm:inline">واجهة الدكتور</span>
-                <span className="sm:hidden">دكتور</span>
-              </Button>
+                دكتور
+              </button>
             </div>
+
+            {/* ✅ زرار الحساب */}
+            {user && (
+              <Link
+                href="/account"
+                aria-label="حسابي"
+                title="حسابي"
+                className="group flex items-center gap-2 rounded-full border border-border bg-background p-0.5 pl-3 transition-colors hover:border-primary/40 hover:bg-muted"
+              >
+                <span className="hidden text-xs font-bold text-foreground sm:block">
+                  {user.name?.split(" ")[0] || "حسابي"}
+                </span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-primary to-accent-1 text-xs font-black text-white shadow-sm">
+                  {(user.name || "؟").charAt(0).toUpperCase()}
+                </span>
+              </Link>
+            )}
           </div>
         </div>
       </motion.header>
 
-      <div className="mx-auto flex w-full max-w-350 flex-1 gap-6 px-4 py-6 sm:px-6 lg:px-8">
+      {/* BODY */}
+      <div className="mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-4 py-6 sm:px-6 lg:px-8">
         {view === "student" && (
-          <>
-            <button
-              type="button"
-              onClick={onToggleSidebar}
-              aria-label={sidebarOpen ? "إخفاء القائمة" : "إظهار القائمة"}
-              className="sticky top-20 hidden h-9 w-9 shrink-0 items-center justify-center self-start rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:flex"
-            >
-              {sidebarOpen ? (
-                <PanelLeftClose className="h-4 w-4" />
-              ) : (
-                <PanelLeftOpen className="h-4 w-4" />
-              )}
-            </button>
-
-            {sidebarOpen && (
-              <AppSidebar
-                activeFeature={activeFeature}
-                onFeatureChange={onFeatureChange}
-              />
-            )}
-          </>
+          <AppSidebar
+            activeFeature={activeFeature}
+            onFeatureChange={onFeatureChange}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+            onOpenLectures={onOpenLectures}
+          />
         )}
 
         <main className="flex-1 min-w-0">
@@ -187,19 +189,20 @@ export default function AppShell({
             key={`${view}-${activeFeature}`}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
           >
             {children}
           </motion.div>
         </main>
       </div>
 
+      {/* MOBILE NAV */}
       {view === "student" && (
         <nav
           dir="rtl"
           className="sticky bottom-0 z-40 w-full border-t border-border bg-background/95 backdrop-blur-xl lg:hidden"
         >
-          <div className="flex items-center gap-1 overflow-x-auto px-2 py-2">
+          <div className="flex items-center gap-1 overflow-x-auto px-2 py-2 no-scrollbar">
             {mobileFeatures.map((feature) => {
               const Icon = feature.icon;
               const active = feature.id === activeFeature;

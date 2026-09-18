@@ -3,9 +3,16 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, Loader2, LogIn, ShieldAlert } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Loader2,
+  LogIn,
+  ShieldAlert,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
+import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import {
   AuthForm,
@@ -22,7 +29,6 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = React.useMemo(() => createClient(), []);
   const emailRef = React.useRef<HTMLInputElement>(null);
 
   const [email, setEmail] = React.useState("");
@@ -31,7 +37,8 @@ export default function LoginPage() {
   const [error, setError] = React.useState<string | null>(null);
 
   const [emailState, setEmailState] = React.useState<ValidationState>("idle");
-  const [passwordState, setPasswordState] = React.useState<ValidationState>("idle");
+  const [passwordState, setPasswordState] =
+    React.useState<ValidationState>("idle");
 
   const rateLimit = useLoginRateLimit();
 
@@ -82,7 +89,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await signIn.email({
         email: email.trim(),
         password,
       });
@@ -91,7 +98,8 @@ export default function LoginPage() {
         rateLimit.registerFailure();
         const remaining = rateLimit.attemptsLeft - 1;
 
-        if (signInError.message.includes("Invalid login credentials")) {
+        const msg = signInError.message?.toLowerCase() || "";
+        if (msg.includes("invalid") || msg.includes("credential")) {
           if (remaining > 0) {
             setError(
               `الإيميل أو كلمة المرور غير صحيحة. فاضل ${remaining} محاولة.`
@@ -99,20 +107,21 @@ export default function LoginPage() {
           } else {
             setError("تم قفل الحساب مؤقتاً لمدة دقيقة.");
           }
-        } else if (signInError.message.includes("Email not confirmed")) {
-          setError("من فضلك أكّد إيميلك الأول. اتفقد صندوق الوارد.");
         } else {
-          setError("حصل خطأ أثناء تسجيل الدخول. حاول تاني.");
+          setError(signInError.message || "حصل خطأ أثناء تسجيل الدخول.");
         }
         setLoading(false);
         return;
       }
 
       rateLimit.registerSuccess();
+      document.cookie =
+        "guest_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       toast.success("تم تسجيل الدخول بنجاح");
       router.push("/");
       router.refresh();
-    } catch {
+    } catch (err) {
+      console.error("[login] failed:", err);
       setError("تعذّر الاتصال بالسيرفر. حاول تاني.");
       setLoading(false);
     }
@@ -123,7 +132,12 @@ export default function LoginPage() {
   return (
     <div>
       <header className="mb-6 text-center">
-        <h2 className="text-xl font-bold text-foreground">أهلاً بيك تاني 👋</h2>
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-accent-1 shadow-lg shadow-primary/30">
+          <Sparkles className="h-6 w-6 text-white" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground">
+          أهلاً بيك تاني 👋
+        </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           سجّل دخولك عشان تكمل المحاضرة
         </p>
@@ -190,7 +204,7 @@ export default function LoginPage() {
         <Button
           type="submit"
           disabled={loading || locked}
-          className="h-11 w-full gap-2 bg-linear-to-l from-primary to-accent-1 text-sm font-bold text-primary-foreground shadow-lg transition-transform hover:scale-[1.02] disabled:hover:scale-100"
+          className="h-11 w-full gap-2 rounded-xl bg-linear-to-l from-primary to-accent-1 text-sm font-bold text-white shadow-lg transition-transform hover:scale-[1.02] disabled:hover:scale-100"
         >
           {loading ? (
             <>
@@ -211,9 +225,7 @@ export default function LoginPage() {
         </Button>
       </AuthForm>
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        معندكش حساب؟{" "}
-              <div className="mb-4 text-center">
+      <div className="mb-4 mt-6 text-center">
         <Link
           href="/login/magic-link"
           className="text-xs font-medium text-primary hover:underline"
@@ -221,12 +233,15 @@ export default function LoginPage() {
           ✨ أو سجّل دخول بدون باسورد (Magic Link)
         </Link>
       </div>
+
+      <p className="mt-4 text-center text-sm text-muted-foreground">
+        معندكش حساب؟{" "}
         <Link href="/signup" className="font-bold text-primary hover:underline">
           أنشئ حساب جديد
         </Link>
       </p>
 
-      <div className="mt-8 border-t border-border pt-5">
+      <div className="mt-6 border-t border-border pt-5">
         <button
           type="button"
           onClick={() => {

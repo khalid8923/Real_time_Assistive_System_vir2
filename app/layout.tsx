@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import TopProgressBar from "@/components/TopProgressBar";
 import AuthSessionWatcher from "@/components/AuthSessionWatcher";
+import SkipToContent from "@/components/SkipToContent";
 import { DEFAULT_THEME, THEME_STORAGE_KEY } from "@/lib/themes";
 
 const cairo = Cairo({
@@ -35,26 +36,7 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
-  authors: [{ name: "Khalid" }],
-  generator: "Next.js",
-  keywords: [
-    "CaptionBridge",
-    "ترجمة فورية",
-    "طلاب الصم",
-    "محاضرات جامعية",
-    "ذكاء اصطناعي",
-    "speech to text",
-    "accessibility",
-    "deaf students",
-    "real-time captions",
-  ],
-  creator: "Khalid",
-  publisher: "CaptionBridge",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
+  keywords: ["CaptionBridge", "ترجمة فورية", "طلاب الصم", "محاضرات جامعية", "ذكاء اصطناعي"],
   openGraph: {
     type: "website",
     locale: "ar_EG",
@@ -67,29 +49,14 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${SITE_NAME} | ترجمة فورية للطلاب الصم`,
     description: SITE_DESCRIPTION,
-    creator: "@khalid",
   },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-  },
+  icons: { icon: "/favicon.ico" },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#101826" },
+    { media: "(prefers-color-scheme: light)", color: "#f3f4f6" },
+    { media: "(prefers-color-scheme: dark)", color: "#111827" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -100,9 +67,17 @@ const themeInitScript = `
 (function() {
   try {
     var stored = localStorage.getItem('${THEME_STORAGE_KEY}');
-    var valid = ['classic', 'focus', 'immersive'];
+    var valid = ['light', 'dark', 'focus'];
+    var legacy = { 'classic': 'light', 'immersive': 'dark' };
+    if (legacy[stored]) stored = legacy[stored];
     var theme = valid.indexOf(stored) !== -1 ? stored : '${DEFAULT_THEME}';
     document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
+    } else {
+      document.documentElement.style.colorScheme = 'light';
+    }
   } catch (e) {
     document.documentElement.setAttribute('data-theme', '${DEFAULT_THEME}');
   }
@@ -111,21 +86,20 @@ const themeInitScript = `
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="ar"
       dir="rtl"
       data-theme={DEFAULT_THEME}
-      className={`${cairo.variable} ${amiri.variable}`}
+      className={`${cairo.variable} ${amiri.variable} dark`}
       suppressHydrationWarning
     >
       <body
         className={`${cairo.className} min-h-screen bg-background text-foreground antialiased`}
       >
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <SkipToContent />
         <TopProgressBar />
         <ThemeProvider>
           {children}

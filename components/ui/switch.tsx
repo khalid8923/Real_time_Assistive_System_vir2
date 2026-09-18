@@ -48,9 +48,14 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         disabled={disabled}
         onClick={handleClick}
         className={cn(
-          "peer group/switch relative inline-flex shrink-0 items-center rounded-full border border-transparent transition-all outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-[18.4px] data-[size=default]:w-8 data-[size=sm]:h-3.5 data-[size=sm]:w-6 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input dark:data-[state=unchecked]:bg-input/80",
+          "peer group/switch relative inline-flex shrink-0 items-center rounded-full border border-transparent transition-all outline-none focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50",
+          "data-[size=default]:h-[18.4px] data-[size=default]:w-8",
+          "data-[size=sm]:h-3.5 data-[size=sm]:w-6",
+          "data-[state=checked]:bg-primary",
+          "data-[state=unchecked]:bg-muted",
           className
         )}
+        {...props}
       >
         <span
           data-slot="switch-thumb"
@@ -59,12 +64,8 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
             size === "default" && "size-4",
             size === "sm" && "size-3",
             isChecked
-              ? size === "default"
-                ? "translate-x-[calc(100%-2px)]"
-                : "translate-x-[calc(100%-2px)]"
-              : "translate-x-0",
-            isChecked && "dark:bg-primary-foreground",
-            !isChecked && "dark:bg-foreground"
+              ? "translate-x-[calc(100%-2px)] dark:bg-white"
+              : "translate-x-0 dark:bg-foreground"
           )}
         />
       </button>

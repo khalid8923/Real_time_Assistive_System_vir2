@@ -4,14 +4,12 @@ import * as React from "react";
 import Link from "next/link";
 import { Mail, Loader2, Sparkles, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { AuthForm, AuthInput, AuthError } from "@/components/auth/AuthForm";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function MagicLinkPage() {
-  const supabase = React.useMemo(() => createClient(), []);
   const [email, setEmail] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [sent, setSent] = React.useState(false);
@@ -29,22 +27,10 @@ export default function MagicLinkPage() {
     setLoading(true);
 
     try {
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (otpError) {
-        setError("تعذّر إرسال الرابط. جرب تاني.");
-        return;
-      }
-
-      setSent(true);
-      toast.success("اتبعتلك لينك على الإيميل!");
-    } catch {
-      setError("تعذّر الاتصال بالسيرفر.");
+      // Magic Link مش مدعوم في Better Auth حالياً
+      // بنعمل رسالة توضيحية
+      toast.info("Magic Link قريباً — استخدم الإيميل والباسورد حالياً");
+      setError("Magic Link قريباً. استخدم الإيميل وكلمة المرور.");
     } finally {
       setLoading(false);
     }
@@ -61,9 +47,7 @@ export default function MagicLinkPage() {
 
         <h2 className="mb-2 text-xl font-bold">اتفضل اتفقد إيميلك ✉️</h2>
         <p className="mb-6 text-sm text-muted-foreground">
-          بعتنالك لينك على <strong>{email}</strong>
-          <br />
-          دوس عليه وهتدخل تلقائياً
+          بعتنالك لينك على <strong className="text-foreground">{email}</strong>
         </p>
 
         <Link
@@ -80,9 +64,14 @@ export default function MagicLinkPage() {
   return (
     <div>
       <header className="mb-6 text-center">
-        <h2 className="text-xl font-bold text-foreground">تسجيل دخول بدون باسورد</h2>
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-accent-1 shadow-lg shadow-primary/30">
+          <Sparkles className="h-6 w-6 text-white" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground">
+          تسجيل دخول بدون باسورد
+        </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          هنبعتلك لينك سحري على إيميلك
+          قريباً — استخدم الإيميل حالياً
         </p>
       </header>
 
@@ -106,7 +95,7 @@ export default function MagicLinkPage() {
         <Button
           type="submit"
           disabled={loading}
-          className="h-11 w-full gap-2 bg-linear-to-l from-primary to-accent-1 font-bold"
+          className="h-11 w-full gap-2 rounded-xl bg-linear-to-l from-primary to-accent-1 text-sm font-bold text-white shadow-lg transition-transform hover:scale-[1.02]"
         >
           {loading ? (
             <>

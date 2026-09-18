@@ -10,12 +10,6 @@ import {
   Lightbulb,
   CheckCircle2,
 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import CopyButton from "@/components/ui/CopyButton";
 import { Skeleton, SkeletonList } from "@/components/ui/Skeleton";
@@ -74,15 +68,21 @@ export default function SummaryPanel({ transcript }: SummaryPanelProps) {
     : "";
 
   return (
-    <Card
-      dir="rtl"
-      className="glass w-full border-border bg-transparent shadow-sm"
-    >
-      <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg font-bold">
-          <FileText className="h-5 w-5 text-primary" />
-          ملخص المحاضرة
-        </CardTitle>
+    <div className="rounded-2xl border border-border bg-card shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+            <FileText className="h-4.5 w-4.5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-foreground">
+              ملخص المحاضرة
+            </h2>
+            <p className="text-[10px] text-muted-foreground">
+              {summary ? "الملخص جاهز" : "اضغط للبدء"}
+            </p>
+          </div>
+        </div>
 
         <div className="flex items-center gap-2">
           {summary && <CopyButton text={fullText} size="sm" />}
@@ -106,16 +106,16 @@ export default function SummaryPanel({ transcript }: SummaryPanelProps) {
             )}
           </Button>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-4">
+      <div className="p-5">
         <AnimatePresence>
           {error && (
             <motion.p
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
+              className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
             >
               {error}
             </motion.p>
@@ -123,12 +123,12 @@ export default function SummaryPanel({ transcript }: SummaryPanelProps) {
         </AnimatePresence>
 
         {!summary && !loading && (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border bg-muted/20 py-16 text-center">
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 py-14 text-center">
             <Sparkles className="h-8 w-8 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">
               {canGenerate
-                ? "اضغط على (ابدأ التلخيص) عشان نجيبلك ملخص المحاضرة"
-                : "سجّل الشرح الأول من تاب (الكلام المباشر)..."}
+                ? "اضغط (ابدأ التلخيص) عشان نجيبلك ملخص المحاضرة"
+                : "سجّل الشرح الأول من تاب الكلام المباشر..."}
             </p>
           </div>
         )}
@@ -136,9 +136,9 @@ export default function SummaryPanel({ transcript }: SummaryPanelProps) {
         {loading && (
           <div className="space-y-4">
             <Skeleton className="h-6 w-1/3" />
-            <Skeleton className="h-24 w-full rounded-2xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
             <SkeletonList count={4} />
-            <Skeleton className="h-20 w-full rounded-2xl" />
+            <Skeleton className="h-20 w-full rounded-xl" />
           </div>
         )}
 
@@ -149,8 +149,9 @@ export default function SummaryPanel({ transcript }: SummaryPanelProps) {
             transition={{ duration: 0.4 }}
             className="space-y-5"
           >
-            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
-              <h3 className="mb-2 text-xl font-bold text-foreground">
+            {/* Title + Overview */}
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
+              <h3 className="mb-2 text-lg font-bold text-foreground">
                 {summary.title}
               </h3>
               <p className="text-sm leading-relaxed text-muted-foreground">
@@ -158,30 +159,34 @@ export default function SummaryPanel({ transcript }: SummaryPanelProps) {
               </p>
             </div>
 
-            <div>
-              <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground">
-                <Lightbulb className="h-4 w-4 text-amber-500" />
-                النقاط الرئيسية
-              </h4>
-              <ul className="space-y-2.5">
-                {summary.keyPoints.map((point, i) => (
-                  <motion.li
-                    key={i}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.08, duration: 0.3 }}
-                    className="flex items-start gap-3 rounded-xl border border-border bg-muted/20 p-3"
-                  >
-                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
-                      {i + 1}
-                    </span>
-                    <span className="text-sm leading-relaxed">{point}</span>
-                  </motion.li>
-                ))}
-              </ul>
-            </div>
+            {/* Key Points */}
+            {summary.keyPoints.length > 0 && (
+              <div>
+                <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground">
+                  <Lightbulb className="h-4 w-4 text-amber-500" />
+                  النقاط الرئيسية
+                </h4>
+                <ul className="space-y-2">
+                  {summary.keyPoints.map((point, i) => (
+                    <motion.li
+                      key={i}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.06, duration: 0.3 }}
+                      className="flex items-start gap-3 rounded-xl border border-border bg-muted/20 p-3"
+                    >
+                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
+                        {i + 1}
+                      </span>
+                      <span className="text-sm leading-relaxed">{point}</span>
+                    </motion.li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+            {/* Conclusion */}
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5">
               <h4 className="mb-2 flex items-center gap-2 text-sm font-bold text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="h-4 w-4" />
                 الخلاصة
@@ -190,7 +195,7 @@ export default function SummaryPanel({ transcript }: SummaryPanelProps) {
             </div>
           </motion.div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

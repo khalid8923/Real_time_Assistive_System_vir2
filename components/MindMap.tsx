@@ -16,10 +16,9 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { Brain, Sparkles } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 /* ------------------------------------------------------------------ */
-/*  Layout constants                                                   */
+/* Layout constants                                                    */
 /* ------------------------------------------------------------------ */
 const PARENT_WIDTH = 220;
 const PARENT_HEIGHT = 70;
@@ -53,28 +52,48 @@ interface NodeLabelData {
   [key: string]: unknown;
 }
 
-const ParentNode = memo(function ParentNode({ data }: NodeProps<NodeLabelData>) {
+const ParentNode = memo(function ParentNode({
+  data,
+}: NodeProps<NodeLabelData>) {
   return (
     <div style={{ width: PARENT_WIDTH }} className="relative">
       {ALL_SIDES.map((side) => (
-        <Handle key={side} id={side} type="source" position={HANDLE_POSITION[side]} className="h-2 w-2 border-0 bg-primary opacity-0" />
+        <Handle
+          key={side}
+          id={side}
+          type="source"
+          position={HANDLE_POSITION[side]}
+          className="h-2 w-2 border-0 bg-primary opacity-0"
+        />
       ))}
-      <div className="glow-primary flex min-h-16 items-center justify-center rounded-2xl border border-primary/40 bg-linear-to-br from-primary via-primary to-primary/70 px-5 py-4 text-center shadow-lg">
-        <p className="text-[15px] leading-snug font-semibold tracking-wide text-primary-foreground">{data.label}</p>
+      <div className="glow-primary flex min-h-16 items-center justify-center rounded-2xl border border-primary/40 bg-linear-to-br from-primary via-primary to-accent-1 px-5 py-4 text-center shadow-lg">
+        <p className="text-[15px] leading-snug font-bold tracking-wide text-white">
+          {data.label}
+        </p>
       </div>
     </div>
   );
 });
 ParentNode.displayName = "ParentNode";
 
-const ChildNode = memo(function ChildNode({ data }: NodeProps<NodeLabelData>) {
+const ChildNode = memo(function ChildNode({
+  data,
+}: NodeProps<NodeLabelData>) {
   return (
     <div style={{ width: CHILD_WIDTH }} className="relative">
       {ALL_SIDES.map((side) => (
-        <Handle key={side} id={side} type="target" position={HANDLE_POSITION[side]} className="h-1.5 w-1.5 border-0 bg-primary/40 opacity-0" />
+        <Handle
+          key={side}
+          id={side}
+          type="target"
+          position={HANDLE_POSITION[side]}
+          className="h-1.5 w-1.5 border-0 bg-primary/40 opacity-0"
+        />
       ))}
-      <div className="flex min-h-11 items-center justify-center rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-center shadow-sm transition-colors duration-150 hover:border-primary/50 hover:bg-muted/60 hover:shadow-md">
-        <p className="text-[13px] leading-snug text-foreground">{data.label}</p>
+      <div className="flex min-h-11 items-center justify-center rounded-lg border border-border bg-card px-3.5 py-2.5 text-center shadow-xs transition-colors hover:border-primary/50 hover:bg-muted/60">
+        <p className="text-[13px] leading-snug text-foreground">
+          {data.label}
+        </p>
       </div>
     </div>
   );
@@ -86,19 +105,23 @@ const nodeTypes: NodeTypes = {
   childNode: ChildNode,
 };
 
-// ✅ تصدير النوع عشان page.tsx يستخدمه
 export interface MindMapTopic {
   topic: string;
   children: string[];
 }
 
-function buildLayout(topics: MindMapTopic[]): { nodes: Node<NodeLabelData>[]; edges: Edge[] } {
+function buildLayout(topics: MindMapTopic[]): {
+  nodes: Node<NodeLabelData>[];
+  edges: Edge[];
+} {
   const nodes: Node<NodeLabelData>[] = [];
   const edges: Edge[] = [];
   const clusterCount = topics.length;
   if (clusterCount === 0) return { nodes, edges };
 
-  const radii = topics.map((t) => Math.max(MIN_RADIUS, 90 + t.children.length * RADIUS_PER_CHILD));
+  const radii = topics.map((t) =>
+    Math.max(MIN_RADIUS, 90 + t.children.length * RADIUS_PER_CHILD)
+  );
   const maxRadius = Math.max(...radii);
   const cellSize = maxRadius * 2 + CLUSTER_PADDING;
   const columns = Math.max(1, Math.ceil(Math.sqrt(clusterCount)));
@@ -114,13 +137,19 @@ function buildLayout(topics: MindMapTopic[]): { nodes: Node<NodeLabelData>[]; ed
     nodes.push({
       id: parentId,
       type: "parentNode",
-      position: { x: centerX - PARENT_WIDTH / 2, y: centerY - PARENT_HEIGHT / 2 },
+      position: {
+        x: centerX - PARENT_WIDTH / 2,
+        y: centerY - PARENT_HEIGHT / 2,
+      },
       data: { label: topicData.topic },
     });
 
     const childCount = topicData.children.length;
     topicData.children.forEach((childLabel, childIndex) => {
-      const angle = childCount > 0 ? (2 * Math.PI * childIndex) / childCount - Math.PI / 2 : 0;
+      const angle =
+        childCount > 0
+          ? (2 * Math.PI * childIndex) / childCount - Math.PI / 2
+          : 0;
       const childX = centerX + radius * Math.cos(angle);
       const childY = centerY + radius * Math.sin(angle);
       const childId = `topic-${clusterIndex}-child-${childIndex}`;
@@ -128,7 +157,10 @@ function buildLayout(topics: MindMapTopic[]): { nodes: Node<NodeLabelData>[]; ed
       nodes.push({
         id: childId,
         type: "childNode",
-        position: { x: childX - CHILD_WIDTH / 2, y: childY - CHILD_HEIGHT / 2 },
+        position: {
+          x: childX - CHILD_WIDTH / 2,
+          y: childY - CHILD_HEIGHT / 2,
+        },
         data: { label: childLabel },
       });
 
@@ -142,7 +174,7 @@ function buildLayout(topics: MindMapTopic[]): { nodes: Node<NodeLabelData>[]; ed
         sourceHandle: sourceSide,
         targetHandle: targetSide,
         type: "smoothstep",
-        style: { stroke: "var(--accent-1)", strokeWidth: 1.75, opacity: 0.7 },
+        style: { stroke: "var(--color-violet-500)", strokeWidth: 1.75, opacity: 0.6 },
       });
     });
   });
@@ -150,7 +182,6 @@ function buildLayout(topics: MindMapTopic[]): { nodes: Node<NodeLabelData>[]; ed
   return { nodes, edges };
 }
 
-// ✅ Props الجديدة
 interface MindMapProps {
   topics: MindMapTopic[];
 }
@@ -160,24 +191,33 @@ export default function MindMap({ topics }: MindMapProps) {
   const isEmpty = topics.length === 0;
 
   return (
-    <Card dir="rtl" className="glass w-full border-border bg-transparent shadow-sm">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg font-bold">
-          <Brain className="h-5 w-5 text-primary" />
-          الخريطة الذهنية
-        </CardTitle>
-      </CardHeader>
+    <div className="rounded-2xl border border-border bg-card shadow-xs">
+      <div className="flex items-center justify-between border-b border-border/60 px-5 py-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+            <Brain className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-foreground">
+              الخريطة الذهنية
+            </h2>
+            <p className="text-[10px] text-muted-foreground">
+              {isEmpty ? "في انتظار المحتوى" : `${topics.length} موضوع`}
+            </p>
+          </div>
+        </div>
+      </div>
 
-      <CardContent>
+      <div className="p-4">
         {isEmpty ? (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border bg-muted/20 py-16 text-center">
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 py-16 text-center">
             <Sparkles className="h-8 w-8 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">
               في انتظار بدء الشرح لرسم الخريطة الذهنية...
             </p>
           </div>
         ) : (
-          <div className="h-150 w-full overflow-hidden rounded-xl border border-border bg-muted/10">
+          <div className="h-150 w-full overflow-hidden rounded-xl border border-border bg-muted/20">
             <ReactFlow
               nodes={nodes}
               edges={edges}
@@ -189,17 +229,26 @@ export default function MindMap({ topics }: MindMapProps) {
               minZoom={0.1}
               maxZoom={1.5}
             >
-              <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--border)" />
+              <Background
+                variant={BackgroundVariant.Dots}
+                gap={20}
+                size={1}
+                color="var(--color-gray-300)"
+              />
               <Controls className="rounded-lg! border! border-border! shadow-md!" />
               <MiniMap
-                nodeColor={(node) => (node.type === "parentNode" ? "var(--accent-1)" : "var(--accent-2)")}
-                maskColor="color-mix(in oklch, var(--background) 80%, transparent)"
+                nodeColor={(node) =>
+                  node.type === "parentNode"
+                    ? "var(--color-violet-500)"
+                    : "var(--color-sky-500)"
+                }
+                maskColor="rgba(0,0,0,0.4)"
                 className="rounded-lg! border! border-border!"
               />
             </ReactFlow>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

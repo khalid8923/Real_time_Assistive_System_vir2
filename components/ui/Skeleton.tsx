@@ -10,7 +10,7 @@ function Skeleton({
       role="status"
       aria-label="جاري التحميل"
       className={cn(
-        "animate-pulse rounded-md bg-muted-foreground/15",
+        "animate-pulse rounded-xl bg-muted-foreground/15",
         className
       )}
       {...props}

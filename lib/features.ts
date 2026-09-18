@@ -1,13 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
-  Bell,
   BookOpen,
   Brain,
   FileText,
   Languages,
   Layers,
-  MessageSquare,
   Mic,
   Users,
 } from "lucide-react";
@@ -16,15 +14,15 @@ export type FeatureId =
   | "captions"
   | "mindmap"
   | "glossary"
-  | "qa"
+  | "keywords"
   | "translation"
   | "summary"
   | "flashcards"
-  | "keywords"
+  | "qa"
   | "sounds"
   | "teacher";
 
-export type FeatureCategory = "core" | "ai" | "accessibility" | "teacher";
+export type FeatureCategory = "core" | "accessibility" | "ai" | "teacher";
 
 export interface Feature {
   id: FeatureId;
@@ -49,7 +47,7 @@ export const STUDENT_FEATURES: Feature[] = [
     id: "mindmap",
     label: "الخريطة الذهنية",
     shortLabel: "الخريطة",
-    description: "رسم تلقائي لشجرة الموضوعات والفروع المرتبطة",
+    description: "رسم تلقائي لشجرة الموضوعات والفروع",
     icon: Brain,
     category: "core",
   },
@@ -57,7 +55,7 @@ export const STUDENT_FEATURES: Feature[] = [
     id: "glossary",
     label: "المعجم الأكاديمي",
     shortLabel: "المعجم",
-    description: "شرح مبسط لكل مصطلح أكاديمي ذُكر في المحاضرة",
+    description: "شرح مبسط لكل مصطلح أكاديمي",
     icon: BookOpen,
     category: "core",
   },
@@ -65,37 +63,17 @@ export const STUDENT_FEATURES: Feature[] = [
     id: "keywords",
     label: "الكلمات المهمة",
     shortLabel: "الكلمات",
-    description: "تنبيه فوري عند ذكر كلمات مفتاحية مثل (امتحان، واجب)",
+    description: "تنبيه فوري عند ذكر كلمات مفتاحية مهمة",
     icon: AlertTriangle,
     category: "accessibility",
-    badge: "جديد",
-  },
-  {
-    id: "sounds",
-    label: "التنبيهات الصوتية",
-    shortLabel: "الأصوات",
-    description: "كشف الأصوات المهمة (باب، تليفون، جرس) وتنبيهك بصرياً",
-    icon: Bell,
-    category: "accessibility",
-    badge: "جديد",
-  },
-  {
-    id: "qa",
-    label: "أسئلة AI",
-    shortLabel: "أسئلة",
-    description: "اسأل عن أي جزء من الشرح واحصل على إجابة فورية",
-    icon: MessageSquare,
-    category: "ai",
-    badge: "جديد",
   },
   {
     id: "translation",
     label: "الترجمة الفورية",
     shortLabel: "ترجمة",
-    description: "ترجمة المصطلحات الإنجليزية إلى العربية فوراً",
+    description: "ترجمة المصطلحات الإنجليزية إلى العربية",
     icon: Languages,
     category: "ai",
-    badge: "جديد",
   },
   {
     id: "summary",
@@ -104,7 +82,6 @@ export const STUDENT_FEATURES: Feature[] = [
     description: "ملخص ذكي لأهم النقاط في نهاية كل محاضرة",
     icon: FileText,
     category: "ai",
-    badge: "جديد",
   },
   {
     id: "flashcards",
@@ -113,7 +90,22 @@ export const STUDENT_FEATURES: Feature[] = [
     description: "توليد كروت مراجعة وأسئلة من محتوى المحاضرة",
     icon: Layers,
     category: "ai",
-    badge: "جديد",
+  },
+  {
+    id: "qa",
+    label: "أسئلة AI",
+    shortLabel: "أسئلة",
+    description: "شات بوت ذكي",
+    icon: Mic,
+    category: "ai",
+  },
+  {
+    id: "sounds",
+    label: "التنبيهات الصوتية",
+    shortLabel: "الأصوات",
+    description: "كشف الأصوات المهمة",
+    icon: AlertTriangle,
+    category: "accessibility",
   },
 ];
 
@@ -122,7 +114,7 @@ export const TEACHER_FEATURES: Feature[] = [
     id: "teacher",
     label: "لوحة الدكتور",
     shortLabel: "الدكتور",
-    description: "استقبال أسئلة واستفسارات الطلاب أثناء المحاضرة",
+    description: "استقبال أسئلة واستفسارات الطلاب",
     icon: Users,
     category: "teacher",
   },
@@ -131,6 +123,13 @@ export const TEACHER_FEATURES: Feature[] = [
 export const ALL_FEATURES: Feature[] = [
   ...STUDENT_FEATURES,
   ...TEACHER_FEATURES,
+];
+
+// ✅ الـ Features اللي مش بتظهر في الـ Sidebar
+export const HIDDEN_FROM_SIDEBAR: FeatureId[] = [
+  "qa",
+  "sounds",
+  "translation", // ← جديد
 ];
 
 export function getFeature(id: FeatureId): Feature {

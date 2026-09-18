@@ -1,4 +1,4 @@
-export type Theme = "classic" | "focus" | "immersive";
+export type Theme = "light" | "dark" | "focus";
 
 export interface ThemeMeta {
   id: Theme;
@@ -10,49 +10,50 @@ export interface ThemeMeta {
   accentColor: string;
 }
 
-export const DEFAULT_THEME: Theme = "classic";
+export const DEFAULT_THEME: Theme = "dark";
 export const THEME_STORAGE_KEY = "cb-theme";
 
 export const THEMES: ThemeMeta[] = [
   {
-    id: "classic",
-    label: "الكلاسيكي",
-    tagline: "تجربة نظيفة ومألوفة",
-    description:
-      "تصميم فاتح وهادئ، مناسب للاستخدام اليومي والقراءة الطويلة.",
-    emoji: "🎯",
-    previewGradient: "from-slate-100 via-slate-50 to-white",
-    accentColor: "#6366f1",
+    id: "light",
+    label: "فاتح",
+    tagline: "نظيف ومشرق",
+    description: "تصميم فاتح بألوان بنفسجية هادئة، مثالي للاستخدام النهاري والقراءة الطويلة.",
+    emoji: "☀️",
+    previewGradient: "from-gray-100 via-white to-violet-50",
+    accentColor: "#8470ff",
+  },
+  {
+    id: "dark",
+    label: "داكن",
+    tagline: "مريح للعين",
+    description: "تصميم داكن بألوان بنفسجية — تجربة عصرية ومريحة للعين في أي وقت.",
+    emoji: "🌙",
+    previewGradient: "from-gray-900 via-gray-800 to-violet-900",
+    accentColor: "#8470ff",
   },
   {
     id: "focus",
     label: "التركيز",
-    tagline: "مينيمال وتباين عالي",
-    description:
-      "بدون زخرفة ولا ألوان صارخة — مصمم للطلاب اللي عايزين يركزوا 100%.",
+    tagline: "تباين عالي",
+    description: "بدون ألوان صارخة — مصمم للطلاب اللي عايزين يركزوا 100%.",
     emoji: "📚",
     previewGradient: "from-zinc-100 via-white to-zinc-50",
     accentColor: "#0a0a0a",
   },
-  {
-    id: "immersive",
-    label: "الغامر",
-    tagline: "داكن وتجربة سينمائية",
-    description:
-      "زجاج شفاف، تدرجات بنفسجية، وتأثيرات ضوئية — تجربة عصرية بالكامل.",
-    emoji: "🌌",
-    previewGradient: "from-[#1a1a2e] via-[#2b2344] to-[#0f0f1a]",
-    accentColor: "#a855f7",
-  },
 ];
 
 export function isTheme(value: unknown): value is Theme {
-  return (
-    typeof value === "string" &&
-    THEMES.some((t) => t.id === value)
-  );
+  return typeof value === "string" && THEMES.some((t) => t.id === value);
 }
 
 export function getThemeMeta(id: Theme): ThemeMeta {
   return THEMES.find((t) => t.id === id) ?? THEMES[0];
+}
+
+// Legacy support — all old "classic" maps to "light", old "immersive" to "dark"
+export function normalizeTheme(value: unknown): Theme {
+  if (value === "classic") return "light";
+  if (value === "immersive") return "dark";
+  return isTheme(value) ? value : DEFAULT_THEME;
 }

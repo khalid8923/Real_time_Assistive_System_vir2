@@ -2,12 +2,21 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+export interface RefinedChunk {
+  id: string;
+  text: string;
+  topic: string;
+  children: string[];
+  terms: { term: string; definition: string }[];
+  timestamp: number;
+}
+
 export interface UseSpeechTranscriptionReturn {
   isListening: boolean;
   startListening: () => void;
   stopListening: () => void;
   currentTranscript: string;
-  finalChunks: string[];
+  refinedChunks: RefinedChunk[];
   error: string | null;
   isSupported: boolean;
 }
@@ -18,7 +27,7 @@ const MIN_BLOB_SIZE = 5000;
 export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
   const [isListening, setIsListening] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState("");
-  const [finalChunks, setFinalChunks] = useState<string[]>([]);
+  const [refinedChunks, setRefinedChunks] = useState<RefinedChunk[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSupported, setIsSupported] = useState(true);
 
@@ -42,26 +51,45 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
         const formData = new FormData();
         formData.append("audio", blob, "chunk.webm");
 
-        const response = await fetch("/api/transcribe", {
+        const response = await fetch("/api/smart", {
           method: "POST",
           body: formData,
         });
 
-        const data: { text?: string; error?: string } = await response.json();
+        const data: {
+          text?: string;
+          topic?: string;
+          children?: string[];
+          terms?: { term: string; definition: string }[];
+          error?: string;
+        } = await response.json();
 
         if (!response.ok) {
-          setError(data.error || "فشل تحويل الصوت.");
+          setError(data.error || "فشل معالجة الصوت.");
           continue;
         }
 
-        const text = (data.text ?? "").trim();
-        if (text.length === 0) continue;
+        const cleanText = (data.text ?? "").trim();
+        if (cleanText.length === 0) continue;
 
         setError(null);
-        setCurrentTranscript((prev) => (prev ? `${prev}\n${text}` : text));
-        setFinalChunks((prev) => [...prev, text]);
-      } catch {
-        setError("تعذّر الاتصال بخدمة التحويل.");
+
+        const refined: RefinedChunk = {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+          text: cleanText,
+          topic: (data.topic ?? "").trim(),
+          children: Array.isArray(data.children) ? data.children : [],
+          terms: Array.isArray(data.terms) ? data.terms : [],
+          timestamp: Date.now(),
+        };
+
+        setCurrentTranscript((prev) =>
+          prev ? `${prev}\n${cleanText}` : cleanText
+        );
+        setRefinedChunks((prev) => [...prev, refined]);
+      } catch (err) {
+        console.error("[smart] Request failed:", err);
+        setError("تعذّر الاتصال بخدمة المعالجة.");
       }
     }
 
@@ -181,7 +209,7 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
     startListening,
     stopListening,
     currentTranscript,
-    finalChunks,
+    refinedChunks,
     error,
     isSupported,
   };

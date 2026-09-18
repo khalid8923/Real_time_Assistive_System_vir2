@@ -4,10 +4,6 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 
-/* ---------------------------------------------------------------- */
-/* Global event bus for manual triggers                             */
-/* ---------------------------------------------------------------- */
-
 type Listener = (active: boolean) => void;
 const listeners = new Set<Listener>();
 let pendingCount = 0;
@@ -39,24 +35,41 @@ export const progress = {
   },
 };
 
-/* ---------------------------------------------------------------- */
-/* Component                                                         */
-/* ---------------------------------------------------------------- */
-
 export default function TopProgressBar() {
   const pathname = usePathname();
   const [visible, setVisible] = React.useState(false);
   const [progressValue, setProgressValue] = React.useState(0);
-  const [routeChanging, setRouteChanging] = React.useState(false);
   const timersRef = React.useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  /* Clear all timers helper */
   const clearTimers = () => {
     timersRef.current.forEach((t) => clearTimeout(t));
     timersRef.current = [];
   };
 
-  /* Trigger progress for manual events */
+  const startProgress = React.useCallback(() => {
+    clearTimers();
+    setVisible(true);
+    setProgressValue(8);
+
+    const steps = [22, 42, 62, 78, 88];
+    steps.forEach((value, index) => {
+      const t = setTimeout(() => {
+        setProgressValue((prev) => (prev < value ? value : prev));
+      }, 150 * (index + 1));
+      timersRef.current.push(t);
+    });
+  }, []);
+
+  const finishProgress = React.useCallback(() => {
+    clearTimers();
+    setProgressValue(100);
+    const t = setTimeout(() => {
+      setVisible(false);
+      setTimeout(() => setProgressValue(0), 250);
+    }, 220);
+    timersRef.current.push(t);
+  }, []);
+
   React.useEffect(() => {
     const listener: Listener = (active) => {
       if (active) startProgress();
@@ -66,45 +79,13 @@ export default function TopProgressBar() {
     return () => {
       listeners.delete(listener);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [startProgress, finishProgress]);
 
-  /* Trigger progress on route change */
   React.useEffect(() => {
-    setRouteChanging(true);
     startProgress();
-    const t = setTimeout(() => {
-      setRouteChanging(false);
-      finishProgress();
-    }, 400);
+    const t = setTimeout(() => finishProgress(), 400);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
-
-  const startProgress = () => {
-    clearTimers();
-    setVisible(true);
-    setProgressValue(8);
-
-    // Simulate natural progression
-    const steps = [22, 42, 62, 78, 88];
-    steps.forEach((value, index) => {
-      const t = setTimeout(() => {
-        setProgressValue((prev) => (prev < value ? value : prev));
-      }, 150 * (index + 1));
-      timersRef.current.push(t);
-    });
-  };
-
-  const finishProgress = () => {
-    clearTimers();
-    setProgressValue(100);
-    const t = setTimeout(() => {
-      setVisible(false);
-      setTimeout(() => setProgressValue(0), 250);
-    }, 220);
-    timersRef.current.push(t);
-  };
+  }, [pathname, startProgress, finishProgress]);
 
   return (
     <AnimatePresence>
@@ -123,7 +104,7 @@ export default function TopProgressBar() {
           transition={{ duration: 0.15 }}
         >
           <motion.div
-            className="h-full bg-linear-to-l from-primary via-accent-1 to-primary shadow-[0_0_10px_var(--glow-primary)]"
+            className="h-full bg-linear-to-l from-primary via-accent-1 to-accent-2 shadow-[0_0_10px_rgba(132,112,255,0.6)]"
             animate={{ width: `${progressValue}%` }}
             transition={{ duration: 0.25, ease: "easeOut" }}
           />

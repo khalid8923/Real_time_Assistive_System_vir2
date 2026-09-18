@@ -1,52 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
+import { signOut, useSession } from "@/lib/auth-client";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import InactivityWarning from "@/components/InactivityWarning";
 
-const TIMEOUT_MS = 30 * 60 * 1000;
-const WARNING_MS = 60 * 1000;
+const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const WARNING_MS = 60 * 1000; // 1 minute warning
 
 export default function AuthSessionWatcher() {
   const router = useRouter();
-  const supabase = createClient();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isGuest, setIsGuest] = useState(false);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      const guestCookie = document.cookie
-        .split("; ")
-        .find((c) => c.startsWith("guest_mode="));
-      const guest = guestCookie?.split("=")[1] === "true";
-
-      setIsAuthenticated(!!user);
-      setIsGuest(guest);
-    };
-
-    checkAuth();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session?.user);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
+  const { data: session } = useSession();
+  const [isGuest] = useState(() => {
+    if (typeof document === "undefined") return false;
+    return document.cookie.includes("guest_mode=true");
+  });
 
   const handleLogout = useCallback(async () => {
     try {
-      await supabase.auth.signOut();
+      await signOut();
       document.cookie =
         "guest_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       toast.info("تم تسجيل خروجك تلقائياً");
@@ -55,14 +29,14 @@ export default function AuthSessionWatcher() {
     } catch (err) {
       console.error("[logout] failed:", err);
     }
-  }, [supabase, router]);
+  }, [router]);
 
   const { showWarning, secondsLeft, resetTimer, forceLogout } =
     useInactivityLogout({
       timeoutMs: TIMEOUT_MS,
       warningMs: WARNING_MS,
       onLogout: handleLogout,
-      enabled: isAuthenticated && !isGuest,
+      enabled: !!session?.user && !isGuest,
     });
 
   return (

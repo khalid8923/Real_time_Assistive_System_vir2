@@ -4,9 +4,7 @@ import * as React from "react";
 import { Check, Eye, EyeOff, AlertTriangle, X, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/* ------------------------------------------------------------------ */
-/* Form wrapper                                                        */
-/* ------------------------------------------------------------------ */
+export type ValidationState = "idle" | "valid" | "invalid";
 
 interface AuthFormProps extends React.FormHTMLAttributes<HTMLFormElement> {
   children: React.ReactNode;
@@ -21,13 +19,7 @@ export function AuthForm({ children, className, ...props }: AuthFormProps) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Validation state helpers                                            */
-/* ------------------------------------------------------------------ */
-
-export type ValidationState = "idle" | "valid" | "invalid";
-
-/* ------------------------------------------------------------------ */
-/* AuthInput — text/email input with inline validation                 */
+/* AuthInput                                                           */
 /* ------------------------------------------------------------------ */
 
 interface AuthInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -40,7 +32,16 @@ interface AuthInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
   (
-    { label, error, icon, className, id, validationState = "idle", successMessage, ...props },
+    {
+      label,
+      error,
+      icon,
+      className,
+      id,
+      validationState = "idle",
+      successMessage,
+      ...props
+    },
     ref
   ) => {
     const inputId = id || props.name;
@@ -108,7 +109,7 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
 AuthInput.displayName = "AuthInput";
 
 /* ------------------------------------------------------------------ */
-/* AuthPasswordInput — password input with visibility toggle + caps    */
+/* AuthPasswordInput                                                   */
 /* ------------------------------------------------------------------ */
 
 interface AuthPasswordInputProps
@@ -125,7 +126,17 @@ export const AuthPasswordInput = React.forwardRef<
   AuthPasswordInputProps
 >(
   (
-    { label, error, icon, className, id, validationState = "idle", successMessage, onKeyUp, ...props },
+    {
+      label,
+      error,
+      icon,
+      className,
+      id,
+      validationState = "idle",
+      successMessage,
+      onKeyUp,
+      ...props
+    },
     ref
   ) => {
     const inputId = id || props.name;
@@ -189,7 +200,11 @@ export const AuthPasswordInput = React.forwardRef<
               aria-label={show ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
               className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {show ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
             </button>
             {showSuccess && (
               <span className="pointer-events-none text-emerald-500">
@@ -227,7 +242,7 @@ export const AuthPasswordInput = React.forwardRef<
 AuthPasswordInput.displayName = "AuthPasswordInput";
 
 /* ------------------------------------------------------------------ */
-/* AuthError — server-side error banner                                */
+/* AuthError                                                           */
 /* ------------------------------------------------------------------ */
 
 interface AuthErrorProps {
@@ -244,7 +259,7 @@ export function AuthError({ message }: AuthErrorProps) {
 }
 
 /* ------------------------------------------------------------------ */
-/* AuthDivider — "or" separator                                        */
+/* AuthDivider                                                         */
 /* ------------------------------------------------------------------ */
 
 interface AuthDividerProps {

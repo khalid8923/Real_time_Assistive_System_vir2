@@ -1,72 +1,54 @@
-import type { Metadata } from "next";
-import { Cairo, Amiri } from "next/font/google";
-import "./globals.css";
-import { ThemeProvider } from "@/components/ThemeProvider";
-import TopProgressBar from "@/components/TopProgressBar";
-import AuthSessionWatcher from "@/components/AuthSessionWatcher";
-import SkipToContent from "@/components/SkipToContent";
-import { Toaster } from "@/components/ui/sonner";
-import OfflineIndicator from "@/components/OfflineIndicator";
-import { DEFAULT_THEME, THEME_STORAGE_KEY } from "@/lib/themes";
-const cairo = Cairo({
-  subsets: ["arabic", "latin"],
-  variable: "--font-sans",
-  display: "swap",
-});
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
 
-const amiri = Amiri({
-  subsets: ["arabic", "latin"],
-  weight: ["400", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-serif",
-  display: "swap",
-});
-
-export const metadata: Metadata = {
-  title: "CaptionBridge | ترجمة فورية للطلاب الصم",
-  description:
-    "تطبيق ويب مساعد في الوقت الفعلي للطلاب الصم — ترجمة الكلام، خريطة ذهنية، ومعجم مصطلحات أكاديمية.",
-};
-
-const themeInitScript = `
-(function() {
-  try {
-    var stored = localStorage.getItem('${THEME_STORAGE_KEY}');
-    var valid = ['classic', 'focus', 'immersive'];
-    var theme = valid.indexOf(stored) !== -1 ? stored : '${DEFAULT_THEME}';
-    document.documentElement.setAttribute('data-theme', theme);
-  } catch (e) {
-    document.documentElement.setAttribute('data-theme', '${DEFAULT_THEME}');
-  }
-})();
-`;
-
-export default function RootLayout({
+export default function AuthLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html
-      lang="ar"
+    <div
       dir="rtl"
-      data-theme={DEFAULT_THEME}
-      className={`${cairo.variable} ${amiri.variable}`}
-      suppressHydrationWarning
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-12"
     >
-      <body
-        className={`${cairo.className} min-h-screen bg-background text-foreground antialiased`}
+      {/* Background decorations */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
       >
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-        <SkipToContent />
-        <TopProgressBar />
-        <ThemeProvider>
+        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-primary/15 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-accent-2/15 blur-3xl" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md">
+        {/* Brand */}
+        <Link
+          href="/"
+          className="mb-8 flex flex-col items-center gap-3 transition-opacity hover:opacity-80"
+        >
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-accent-1 shadow-xl shadow-primary/30">
+            <Sparkles className="h-8 w-8 text-white" />
+          </div>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              CaptionBridge
+            </h1>
+            <p className="mt-1 text-xs text-muted-foreground">
+              جسر التواصل للطلاب الصم
+            </p>
+          </div>
+        </Link>
+
+        {/* Content */}
+        <div className="rounded-3xl border border-border bg-card p-6 shadow-xl sm:p-8">
           {children}
-          <Toaster />
-          <OfflineIndicator />
-          <AuthSessionWatcher />
-        </ThemeProvider>
-      </body>
-    </html>
+        </div>
+
+        {/* Footer */}
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} CaptionBridge — صُنع بـ ❤️ للطلاب
+        </p>
+      </div>
+    </div>
   );
 }

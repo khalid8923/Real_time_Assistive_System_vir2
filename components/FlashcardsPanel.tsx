@@ -11,8 +11,8 @@ import {
   RotateCcw,
   Sparkles,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type {
   Flashcard,
   FlashcardDifficulty,
@@ -43,7 +43,9 @@ const DIFFICULTY_META: Record<
   },
 };
 
-export default function FlashcardsPanel({ transcript }: FlashcardsPanelProps) {
+export default function FlashcardsPanel({
+  transcript,
+}: FlashcardsPanelProps) {
   const [cards, setCards] = React.useState<Flashcard[]>([]);
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [flipped, setFlipped] = React.useState(false);
@@ -103,15 +105,21 @@ export default function FlashcardsPanel({ transcript }: FlashcardsPanelProps) {
   };
 
   return (
-    <Card
-      dir="rtl"
-      className="glass w-full border-border bg-transparent shadow-sm"
-    >
-      <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg font-bold">
-          <Layers className="h-5 w-5 text-primary" />
-          كروت المراجعة
-        </CardTitle>
+    <div className="rounded-2xl border border-border bg-card shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+            <Layers className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-foreground">
+              كروت المراجعة
+            </h2>
+            <p className="text-[10px] text-muted-foreground">
+              {total > 0 ? `${total} كرت` : "اضغط للتوليد"}
+            </p>
+          </div>
+        </div>
 
         <div className="flex items-center gap-2">
           {total > 0 && (
@@ -146,16 +154,16 @@ export default function FlashcardsPanel({ transcript }: FlashcardsPanelProps) {
             )}
           </Button>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-4">
+      <div className="p-5">
         <AnimatePresence>
           {error && (
             <motion.p
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
+              className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
             >
               {error}
             </motion.p>
@@ -163,18 +171,18 @@ export default function FlashcardsPanel({ transcript }: FlashcardsPanelProps) {
         </AnimatePresence>
 
         {total === 0 && !loading && (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border bg-muted/20 py-16 text-center">
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 py-14 text-center">
             <Sparkles className="h-8 w-8 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">
               {canGenerate
-                ? "اضغط على (ولّد الكروت) عشان نطلعلك كروت مراجعة"
-                : "سجّل الشرح الأول من تاب (الكلام المباشر)..."}
+                ? "اضغط (ولّد الكروت) عشان نطلعلك كروت مراجعة"
+                : "سجّل الشرح الأول من تاب الكلام المباشر..."}
             </p>
           </div>
         )}
 
         {loading && (
-          <div className="flex flex-col items-center justify-center gap-3 py-16">
+          <div className="flex flex-col items-center justify-center gap-3 py-14">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">
               جارٍ توليد الكروت من المحاضرة...
@@ -189,7 +197,11 @@ export default function FlashcardsPanel({ transcript }: FlashcardsPanelProps) {
                 كرت {currentIndex + 1} من {total}
               </span>
               <span
-                className={`rounded-full border px-2.5 py-0.5 font-bold ${DIFFICULTY_META[currentCard.difficulty].bg} ${DIFFICULTY_META[currentCard.difficulty].color}`}
+                className={cn(
+                  "rounded-full border px-2.5 py-0.5 font-bold",
+                  DIFFICULTY_META[currentCard.difficulty].bg,
+                  DIFFICULTY_META[currentCard.difficulty].color
+                )}
               >
                 {DIFFICULTY_META[currentCard.difficulty].label}
               </span>
@@ -212,7 +224,12 @@ export default function FlashcardsPanel({ transcript }: FlashcardsPanelProps) {
                 initial={{ opacity: 0, rotateY: -8 }}
                 animate={{ opacity: 1, rotateY: 0 }}
                 transition={{ duration: 0.35 }}
-                className="flex min-h-64 flex-col items-center justify-center rounded-2xl border-2 border-border bg-muted/20 p-8 text-center transition-colors hover:border-primary/40"
+                className={cn(
+                  "flex min-h-64 flex-col items-center justify-center rounded-2xl border-2 p-8 text-center transition-colors",
+                  flipped
+                    ? "border-emerald-500/40 bg-emerald-500/5"
+                    : "border-border bg-muted/20 hover:border-primary/40"
+                )}
               >
                 {!flipped ? (
                   <>
@@ -264,11 +281,12 @@ export default function FlashcardsPanel({ transcript }: FlashcardsPanelProps) {
                       setFlipped(false);
                     }}
                     aria-label={`كرت ${i + 1}`}
-                    className={`h-1.5 rounded-full transition-all ${
+                    className={cn(
+                      "h-1.5 rounded-full transition-all",
                       i === currentIndex
                         ? "w-6 bg-primary"
                         : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                    }`}
+                    )}
                   />
                 ))}
               </div>
@@ -286,7 +304,7 @@ export default function FlashcardsPanel({ transcript }: FlashcardsPanelProps) {
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

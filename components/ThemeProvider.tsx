@@ -4,7 +4,7 @@ import * as React from "react";
 import {
   DEFAULT_THEME,
   THEME_STORAGE_KEY as STORAGE_KEY,
-  isTheme,
+  normalizeTheme,
   type Theme,
 } from "@/lib/themes";
 
@@ -13,6 +13,7 @@ export type { Theme };
 interface ThemeContextValue {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  isDark: boolean;
 }
 
 const ThemeContext = React.createContext<ThemeContextValue | null>(null);
@@ -20,12 +21,12 @@ const ThemeContext = React.createContext<ThemeContextValue | null>(null);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = React.useState<Theme>(DEFAULT_THEME);
 
-  // On mount, read the persisted theme from localStorage and sync state.
   React.useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (isTheme(stored) && stored !== theme) {
-      setThemeState(stored);
-      document.documentElement.setAttribute("data-theme", stored);
+    const normalized = normalizeTheme(stored);
+    if (normalized !== theme) {
+      setThemeState(normalized);
+      applyTheme(normalized);
     }
   }, [theme]);
 
@@ -34,19 +35,37 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem(STORAGE_KEY, next);
     } catch {
-      // localStorage may be unavailable (private browsing); ignore.
+      // ignore
     }
-    document.documentElement.setAttribute("data-theme", next);
+    applyTheme(next);
   }, []);
 
+  const isDark = theme === "dark";
+
   const value = React.useMemo<ThemeContextValue>(
-    () => ({ theme, setTheme }),
-    [theme, setTheme]
+    () => ({ theme, setTheme, isDark }),
+    [theme, setTheme, isDark]
   );
 
   return (
     <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
+}
+
+function applyTheme(theme: Theme) {
+  if (typeof document === "undefined") return;
+
+  const root = document.documentElement;
+  root.setAttribute("data-theme", theme);
+
+  // Toggle .dark class for Tailwind v4 dark: variants
+  if (theme === "dark") {
+    root.classList.add("dark");
+    root.style.colorScheme = "dark";
+  } else {
+    root.classList.remove("dark");
+    root.style.colorScheme = theme === "focus" ? "light" : "light";
+  }
 }
 
 export function useTheme(): ThemeContextValue {

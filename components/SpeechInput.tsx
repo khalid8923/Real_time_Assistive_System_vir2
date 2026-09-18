@@ -1,16 +1,27 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Mic, MicOff, Sparkles, BookOpen, Brain, Loader2, PlayCircle } from "lucide-react";
 import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Mic,
+  MicOff,
+  Sparkles,
+  BookOpen,
+  Brain,
+  PlayCircle,
+  Waves,
+  Loader2,
+  Eye,
+  EyeOff,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { progress } from "@/components/TopProgressBar";
+import type { RefinedChunk } from "@/hooks/useSpeechTranscription";
+import SearchInTranscript from "@/components/SearchInTranscript";
+import ExportButton from "@/components/ExportButton";
+import HighlightedText from "@/components/HighlightedText";
 
 export interface AnalysisData {
   topic: string;
@@ -20,6 +31,7 @@ export interface AnalysisData {
 
 interface SpeechInputProps {
   currentTranscript: string;
+  refinedChunks: RefinedChunk[];
   isListening: boolean;
   onToggleMic: () => void;
   onAnalyze: (data: AnalysisData) => void;
@@ -28,16 +40,37 @@ interface SpeechInputProps {
 
 export default function SpeechInput({
   currentTranscript,
+  refinedChunks,
   isListening,
   onToggleMic,
   onAnalyze,
   error,
 }: SpeechInputProps) {
+  const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [latestAnalysis, setLatestAnalysis] = useState<AnalysisData | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [showHighlight, setShowHighlight] = useState(true);
 
-  const handleAnalyze = useCallback(async () => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const latest: RefinedChunk | undefined =
+    refinedChunks[refinedChunks.length - 1];
+
+  const displayTopic = analysis?.topic || latest?.topic;
+  const displayChildren = analysis?.children || latest?.children || [];
+  const displayTerms = analysis?.terms || latest?.terms || [];
+
+  const wordCount = currentTranscript.split(/\s+/).filter(Boolean).length;
+  const canAnalyze = currentTranscript.trim().length > 0 && !isAnalyzing;
+  const hasContent = !!displayTopic;
+
+  useEffect(() => {
+    if (currentTranscript.length === 0) {
+      setAnalysis(null);
+    }
+  }, [currentTranscript]);
+
+  const handleAnalyze = async () => {
     const text = currentTranscript.trim();
     if (text.length === 0) return;
 
@@ -45,11 +78,13 @@ export default function SpeechInput({
     setAnalysisError(null);
 
     try {
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
+      const response = await progress.track(
+        fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        })
+      );
 
       const data: AnalysisData & { error?: string } = await response.json();
 
@@ -58,73 +93,156 @@ export default function SpeechInput({
         return;
       }
 
-      setLatestAnalysis(data);
-      onAnalyze(data);
+      setAnalysis(data);
+      if (data.topic && data.topic.trim() !== "") {
+        onAnalyze(data);
+      }
     } catch {
       setAnalysisError("تعذّر الاتصال بخدمة التحليل.");
     } finally {
       setIsAnalyzing(false);
     }
-  }, [currentTranscript, onAnalyze]);
+  };
 
-  const combinedError = error || analysisError;
-  const canAnalyze = currentTranscript.trim().length > 0 && !isAnalyzing;
+  const handleClearAnalysis = () => {
+    setAnalysis(null);
+    setAnalysisError(null);
+  };
 
   return (
-    <Card
-      dir="rtl"
-      className="glass w-full border-border bg-transparent shadow-sm"
-    >
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg font-bold">
-          <Sparkles className="h-5 w-5 text-primary" />
-          إدخال الشرح الصوتي
-        </CardTitle>
-      </CardHeader>
+    <div className="space-y-4">
+      {/* ==================== LIVE TRANSCRIPT ==================== */}
+      <div className="rounded-2xl border border-border bg-card shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+              <Waves className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-foreground">
+                النص المباشر
+              </h2>
+              <p className="text-[10px] text-muted-foreground">
+                {isListening
+                  ? "بيستمع الآن..."
+                  : wordCount > 0
+                  ? `${wordCount} كلمة`
+                  : "في انتظار التشغيل"}
+              </p>
+            </div>
+          </div>
 
-      <CardContent className="space-y-5">
-        <div className="space-y-2">
-          <h3 className="text-sm font-bold text-foreground">النص المباشر</h3>
-          <div className="relative">
-            <textarea
-              value={currentTranscript}
-              readOnly
-              placeholder="استمع لشرح الدكتور هنا..."
-              rows={8}
-              dir="rtl"
-              className="w-full resize-none overflow-y-auto rounded-xl border border-border bg-muted/30 p-4 text-right text-sm leading-relaxed placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              style={{ maxHeight: "300px" }}
-            />
+          <div className="flex items-center gap-2">
             {isListening && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-[#E1432C]/10 px-2.5 py-1"
-              >
+              <div className="flex items-center gap-1.5 rounded-full bg-rose-500/10 px-2.5 py-1">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E1432C] opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[#E1432C]" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
                 </span>
-                <span className="text-[10px] font-bold text-[#E1432C]">
+                <span className="text-[10px] font-bold text-rose-500">
                   يسجّل
                 </span>
-              </motion.div>
+              </div>
             )}
+
+            <button
+              type="button"
+              onClick={() => setShowHighlight((v) => !v)}
+              aria-label={showHighlight ? "إخفاء التمييز" : "إظهار التمييز"}
+              className={cn(
+                "flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-bold transition-colors",
+                showHighlight
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:bg-muted hover:text-primary"
+              )}
+            >
+              {showHighlight ? (
+                <Eye className="h-3.5 w-3.5" />
+              ) : (
+                <EyeOff className="h-3.5 w-3.5" />
+              )}
+              تمييز
+            </button>
+
+            <SearchInTranscript
+              text={currentTranscript}
+              containerRef={textareaRef}
+            />
+
+            <ExportButton
+              transcript={currentTranscript}
+              topic={displayTopic}
+              terms={displayTerms}
+            />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
+        <div className="p-4">
+          {showHighlight ? (
+            <div
+              className="min-h-44 w-full overflow-y-auto rounded-xl border border-border bg-muted/30 p-4"
+              style={{ maxHeight: "280px" }}
+            >
+              {currentTranscript ? (
+                <HighlightedText text={currentTranscript} />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  استمع لشرح الدكتور هنا...
+                </p>
+              )}
+            </div>
+          ) : (
+            <textarea
+              ref={textareaRef}
+              value={currentTranscript}
+              readOnly
+              placeholder="استمع لشرح الدكتور هنا..."
+              rows={7}
+              dir="rtl"
+              className="w-full resize-none rounded-xl border border-border bg-muted/30 p-4 text-right text-sm leading-relaxed placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              style={{ maxHeight: "280px" }}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* ==================== EXPLANATION (AI) ==================== */}
+      <div className="rounded-2xl border border-border bg-card shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/20">
               <Brain className="h-4 w-4 text-primary" />
-              الشرح
-            </h3>
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-foreground">
+                الشرح الذكي
+              </h2>
+              <p className="text-[10px] text-muted-foreground">
+                {hasContent ? "التحليل جاهز" : "في انتظار التحليل"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* ✅ زرار الحذف */}
+            {hasContent && (
+              <button
+                type="button"
+                onClick={handleClearAnalysis}
+                aria-label="حذف الشرح"
+                title="حذف الشرح الحالي"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 text-destructive transition-colors hover:bg-destructive/15"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+
             <Button
               type="button"
               size="sm"
               onClick={handleAnalyze}
               disabled={!canAnalyze}
-              className="gap-2 bg-linear-to-l from-primary to-accent-1 text-xs font-bold"
+              className="gap-2 rounded-xl bg-linear-to-l from-primary to-accent-1 text-xs font-bold text-white shadow-md"
             >
               {isAnalyzing ? (
                 <>
@@ -139,81 +257,154 @@ export default function SpeechInput({
               )}
             </Button>
           </div>
-          <div
-            className="overflow-y-auto rounded-xl border border-border bg-muted/20 p-4 text-sm leading-relaxed"
-            style={{ maxHeight: "300px", minHeight: "140px" }}
-          >
-            {!latestAnalysis || !latestAnalysis.topic ? (
-              <p className="text-center text-muted-foreground">
-                {isAnalyzing
-                  ? "جارٍ تحليل المحاضرة..."
-                  : "اضغط على زر (ابدأ الشرح) لما يكون فيه نص مسجل..."}
-              </p>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <h4 className="mb-1 text-xs font-bold uppercase tracking-wider text-primary">
-                    الموضوع
-                  </h4>
-                  <p className="font-semibold">{latestAnalysis.topic}</p>
-                </div>
-
-                {latestAnalysis.children.length > 0 && (
-                  <div>
-                    <h4 className="mb-1 text-xs font-bold uppercase tracking-wider text-primary">
-                      الفروع
-                    </h4>
-                    <ul className="list-inside list-disc space-y-1 text-muted-foreground">
-                      {latestAnalysis.children.map((child, i) => (
-                        <li key={i}>{child}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {latestAnalysis.terms.length > 0 && (
-                  <div>
-                    <h4 className="mb-1 flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-primary">
-                      <BookOpen className="h-3 w-3" />
-                      المصطلحات
-                    </h4>
-                    <ul className="space-y-2">
-                      {latestAnalysis.terms.map((t, i) => (
-                        <li key={i} className="text-muted-foreground">
-                          <span className="font-semibold text-foreground">
-                            {t.term}:
-                          </span>{" "}
-                          {t.definition}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
         </div>
 
-        <AnimatePresence>
-          {combinedError && (
-            <motion.p
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
-            >
-              {combinedError}
-            </motion.p>
-          )}
-        </AnimatePresence>
-      </CardContent>
+        <div className="p-4">
+          <AnimatePresence>
+            {analysisError && (
+              <motion.p
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
+              >
+                {analysisError}
+              </motion.p>
+            )}
+          </AnimatePresence>
 
-      <CardFooter className="flex flex-col gap-3 border-t border-border bg-muted/20 sm:flex-row-reverse sm:justify-between">
+          {!hasContent && !isAnalyzing && (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 py-14 text-center">
+              <Sparkles className="h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">
+                {currentTranscript.trim().length > 0
+                  ? "اضغط (ابدأ الشرح) عشان نحلل النص"
+                  : "سجّل الشرح الأول من الميكروفون"}
+              </p>
+            </div>
+          )}
+
+          {isAnalyzing && (
+            <div className="space-y-4">
+              <div className="h-20 animate-pulse rounded-xl bg-muted/40" />
+              <div className="h-16 animate-pulse rounded-xl bg-muted/40" />
+              <div className="h-16 animate-pulse rounded-xl bg-muted/40" />
+            </div>
+          )}
+
+          {hasContent && !isAnalyzing && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
+            >
+              {/* Topic */}
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                <div className="mb-1 flex items-center gap-1.5">
+                  <PlayCircle className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                    الموضوع
+                  </span>
+                </div>
+                <p className="text-base font-bold text-foreground">
+                  {displayTopic}
+                </p>
+              </div>
+
+              {/* Children */}
+              {displayChildren.length > 0 && (
+                <div>
+                  <div className="mb-2 flex items-center gap-1.5">
+                    <Brain className="h-3.5 w-3.5 text-accent-2" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-accent-2">
+                      الفروع
+                    </span>
+                  </div>
+                  <ul className="grid gap-1.5 sm:grid-cols-2">
+                    {displayChildren.map((child: string, i: number) => (
+                      <motion.li
+                        key={i}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2"
+                      >
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent-2/15 text-[10px] font-bold text-accent-2">
+                          {i + 1}
+                        </span>
+                        <span className="text-xs">{child}</span>
+                      </motion.li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Terms */}
+              {displayTerms.length > 0 && (
+                <div>
+                  <div className="mb-2 flex items-center gap-1.5">
+                    <BookOpen className="h-3.5 w-3.5 text-emerald-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">
+                      المصطلحات
+                    </span>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {displayTerms.map(
+                      (
+                        t: { term: string; definition: string },
+                        i: number
+                      ) => (
+                        <motion.li
+                          key={i}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="rounded-lg border border-border bg-muted/20 px-3 py-2"
+                        >
+                          <p className="text-xs leading-relaxed">
+                            <span className="font-bold text-foreground">
+                              {t.term}:
+                            </span>{" "}
+                            <span className="text-muted-foreground">
+                              {t.definition}
+                            </span>
+                          </p>
+                        </motion.li>
+                      )
+                    )}
+                  </ul>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </div>
+      </div>
+
+      {/* ==================== ERROR ==================== */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-2.5 text-xs font-medium text-destructive"
+          >
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ==================== CONTROLS ==================== */}
+      <div className="sticky bottom-4 z-30 flex items-center gap-3 rounded-2xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur-xl sm:flex-row-reverse sm:justify-between">
         <Button
           type="button"
-          variant={isListening ? "destructive" : "outline"}
+          variant={isListening ? "destructive" : "default"}
           onClick={onToggleMic}
-          className="relative w-full gap-2 overflow-hidden sm:w-auto"
+          className={cn(
+            "relative h-12 w-full gap-2 overflow-hidden text-sm font-bold sm:w-auto sm:px-6",
+            !isListening &&
+              "bg-linear-to-l from-primary to-accent-1 text-white shadow-md hover:shadow-lg"
+          )}
         >
           {isListening ? (
             <>
@@ -231,12 +422,12 @@ export default function SpeechInput({
           )}
         </Button>
 
-        <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
+        <div className="flex items-center gap-2">
           <span className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-semibold">
-            {currentTranscript.split(/\s+/).filter(Boolean).length} كلمة
+            {refinedChunks.length} مقطع
           </span>
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }
