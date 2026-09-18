@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ActionItem } from "@/lib/db/ai-types";
+import type { ActionItem } from "@/lib/ai-types";
 
 interface ActionItemsPanelProps {
   transcript: string;

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Keyword, KeywordCategory } from "@/lib/db/ai-types";
+import type { Keyword, KeywordCategory } from "@/lib/ai-types";
 
 interface KeywordsPanelProps {
   transcript: string;

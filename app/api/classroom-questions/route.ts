@@ -30,7 +30,7 @@ Rules:
   ]
 }`;
 
-import type { ClassroomQuestion } from "@/lib/db/ai-types";
+import type { ClassroomQuestion } from "@/lib/ai-types";
 
 interface ErrorResponse {
   error: string;

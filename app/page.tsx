@@ -22,7 +22,7 @@ import LecturesDrawer from "@/components/LecturesDrawer";
 import { getFeature, type FeatureId } from "@/lib/features";
 import { useSpeechTranscription } from "@/hooks/useSpeechTranscription";
 import type { SavedLecture } from "@/lib/db";
-import type { ActionItem, ClassroomQuestion } from "@/lib/db/ai-types";
+import type { ActionItem, ClassroomQuestion } from "@/lib/ai-types";
 
 interface Notification {
   id: number;

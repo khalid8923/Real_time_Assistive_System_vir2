@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import CopyButton from "@/components/ui/CopyButton";
 import { cn } from "@/lib/utils";
-import type { Translation, TranslationType } from "@/lib/db/ai-types";
+import type { Translation, TranslationType } from "@/lib/ai-types";
 
 interface TranslationPanelProps {
   transcript: string;

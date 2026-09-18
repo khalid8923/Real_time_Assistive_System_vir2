@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ClassroomQuestion } from "@/lib/db/ai-types";
+import type { ClassroomQuestion } from "@/lib/ai-types";
 
 interface ClassroomQuestionsPanelProps {
   transcript: string;

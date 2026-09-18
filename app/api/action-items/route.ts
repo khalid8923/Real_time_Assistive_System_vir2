@@ -29,7 +29,7 @@ Rules:
   ]
 }`;
 
-import type { ActionItem } from "@/lib/db/ai-types";
+import type { ActionItem } from "@/lib/ai-types";
 
 interface ErrorResponse {
   error: string;

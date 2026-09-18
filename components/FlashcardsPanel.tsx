@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Flashcard, FlashcardDifficulty } from "@/lib/db/ai-types";
+import type { Flashcard, FlashcardDifficulty } from "@/lib/ai-types";
 
 interface FlashcardsPanelProps {
   transcript: string;

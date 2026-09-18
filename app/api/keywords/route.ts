@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { generateText, parseJsonResponse } from "@/lib/ai/provider";
-import type { ClassroomQuestion } from "@/lib/db/ai-types";
+import type { ClassroomQuestion } from "@/lib/ai-types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
