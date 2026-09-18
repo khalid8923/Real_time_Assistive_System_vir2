@@ -6,7 +6,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
 
-// ✅ نماذج Groq الحالية (2024-2026)
+// Groq model fallbacks (tries in order)
 const GROQ_MODELS = [
   "llama-3.3-70b-versatile",
   "llama-3.1-70b-versatile",
@@ -14,6 +14,7 @@ const GROQ_MODELS = [
   "mixtral-8x7b-32768",
 ];
 
+// Gemini model fallbacks
 const GEMINI_MODELS = [
   "gemini-3.6-flash",
   "gemini-flash-latest",
@@ -48,16 +49,28 @@ export interface GenerateResult {
 }
 
 /* ------------------------------------------------------------------ */
-/* Gemini                                                             */
+/* Gemini (with multi-key rotation)                                   */
 /* ------------------------------------------------------------------ */
+
+function getGeminiApiKeys(): string[] {
+  const keys = [
+    process.env.GEMINI_API_KEY?.trim(),
+    process.env.GEMINI_API_KEY_2?.trim(),
+    process.env.GEMINI_API_KEY_3?.trim(),
+  ].filter((k): k is string => !!k && k.length > 0);
+
+  // Remove duplicates
+  return Array.from(new Set(keys));
+}
 
 async function tryGemini(
   options: GenerateOptions
 ): Promise<GenerateResult> {
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey) return { ok: false, error: "GEMINI_API_KEY missing" };
+  const apiKeys = getGeminiApiKeys();
 
-  const ai = new GoogleGenAI({ apiKey });
+  if (apiKeys.length === 0) {
+    return { ok: false, error: "No GEMINI_API_KEY set" };
+  }
 
   const contents = options.messages.map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
@@ -66,42 +79,82 @@ async function tryGemini(
 
   let lastError = "";
 
-  for (const model of GEMINI_MODELS) {
-    try {
-      const response = await ai.models.generateContent({
-        model,
-        contents,
-        config: {
-          systemInstruction: options.systemPrompt,
-          temperature: options.temperature ?? 0.5,
-          maxOutputTokens: options.maxTokens ?? 2048,
-        },
-      });
+  // Loop through all keys
+  for (let keyIndex = 0; keyIndex < apiKeys.length; keyIndex++) {
+    const apiKey = apiKeys[keyIndex];
+    const ai = new GoogleGenAI({ apiKey });
+    let keyQuotaExhausted = false;
 
-      const text = response.text ?? "";
-      if (text.trim()) {
-        return { ok: true, text, provider: "gemini", model };
+    // Loop through all models
+    for (const model of GEMINI_MODELS) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents,
+          config: {
+            systemInstruction: options.systemPrompt,
+            temperature: options.temperature ?? 0.5,
+            maxOutputTokens: options.maxTokens ?? 2048,
+          },
+        });
+
+        const text = response.text ?? "";
+        if (text.trim()) {
+          console.log(
+            `[ai] Gemini OK | key #${keyIndex + 1} | model "${model}"`
+          );
+          return {
+            ok: true,
+            text,
+            provider: "gemini",
+            model: `${model} (key #${keyIndex + 1})`,
+          };
+        }
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        lastError = errMsg;
+
+        const isQuota =
+          errMsg.includes("429") ||
+          errMsg.toLowerCase().includes("quota") ||
+          errMsg.toLowerCase().includes("resource_exhausted");
+        const isHighDemand = errMsg.includes("503");
+        const isNotFound =
+          errMsg.includes("404") || errMsg.toLowerCase().includes("not_found");
+
+        if (isQuota) {
+          console.warn(
+            `[ai] Gemini key #${keyIndex + 1} quota exhausted — trying next key`
+          );
+          keyQuotaExhausted = true;
+          break; // break model loop, move to next key
+        }
+
+        if (isHighDemand) {
+          console.warn(
+            `[ai] Gemini model "${model}" high demand — trying next model`
+          );
+          continue; // try next model with same key
+        }
+
+        if (isNotFound) {
+          continue; // try next model
+        }
+
+        // Hard error — bail out
+        return { ok: false, error: errMsg };
       }
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      lastError = errMsg;
-
-      const isQuota =
-        errMsg.includes("429") ||
-        errMsg.toLowerCase().includes("quota") ||
-        errMsg.toLowerCase().includes("resource_exhausted");
-      const isHighDemand = errMsg.includes("503");
-
-      if (isQuota || isHighDemand) continue;
-      return { ok: false, error: errMsg };
     }
+
+    // If this key's quota was exhausted, continue to next key
+    if (keyQuotaExhausted) continue;
   }
 
-  return { ok: false, error: lastError || "All Gemini models failed" };
+  return { ok: false, error: lastError || "All Gemini keys/models failed" };
 }
 
 /* ------------------------------------------------------------------ */
-/* Groq                                                               */
+/* Groq (with model fallbacks)                                        */
 /* ------------------------------------------------------------------ */
 
 async function tryGroq(
@@ -120,7 +173,6 @@ async function tryGroq(
 
   let lastError = "";
 
-  // ✅ جرب كل الموديلات لحد ما واحد يشتغل
   for (const model of GROQ_MODELS) {
     try {
       const res = await fetch(GROQ_ENDPOINT, {
@@ -140,10 +192,19 @@ async function tryGroq(
 
       if (!res.ok) {
         const errText = await res.text();
-        lastError = `Groq ${res.status}: ${errText.slice(0, 200)}`;
+        lastError = `Groq ${res.status} (${model}): ${errText.slice(0, 150)}`;
 
-        // لو الموديل مش موجود، جرب الموديل اللي بعده
-        if (res.status === 404 || res.status === 400) continue;
+        // If model not found or bad request, try next model
+        if (res.status === 404 || res.status === 400) {
+          console.warn(`[ai] Groq model "${model}" unavailable — trying next`);
+          continue;
+        }
+
+        // Quota/rate limit — bail out (no point trying other models with same key)
+        if (res.status === 429) {
+          console.warn(`[ai] Groq rate limit hit`);
+          return { ok: false, error: lastError };
+        }
 
         return { ok: false, error: lastError };
       }
@@ -154,11 +215,13 @@ async function tryGroq(
 
       const text = data.choices?.[0]?.message?.content ?? "";
       if (text.trim()) {
+        console.log(`[ai] Groq OK | model "${model}"`);
         return { ok: true, text, provider: "groq", model };
       }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       lastError = errMsg;
+      console.warn(`[ai] Groq model "${model}" threw — trying next`);
       continue;
     }
   }
@@ -170,6 +233,11 @@ async function tryGroq(
 /* Public API                                                         */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Generate text using Gemini or Groq.
+ * Default order: Gemini → Groq.
+ * Set `prefer: "groq"` to try Groq first.
+ */
 export async function generateText(
   options: GenerateOptions
 ): Promise<GenerateResult> {
@@ -187,7 +255,10 @@ export async function generateText(
     if (result.ok) return result;
 
     lastError = result.error ?? "Unknown error";
-    console.warn(`[ai] ${provider} failed:`, lastError.slice(0, 150));
+    console.warn(
+      `[ai] ${provider} failed:`,
+      lastError.slice(0, 150)
+    );
   }
 
   return {
@@ -196,6 +267,9 @@ export async function generateText(
   };
 }
 
+/**
+ * Parse JSON from AI response (strips markdown fences if present).
+ */
 export function parseJsonResponse<T = unknown>(raw: string): T | null {
   try {
     const cleaned = raw
