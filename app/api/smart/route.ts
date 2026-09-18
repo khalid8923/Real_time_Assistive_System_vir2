@@ -44,7 +44,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Audio too large." }, { status: 413 });
   }
 
-  // ✅ Whisper فقط — 5-10 ثواني
   const whisperForm = new FormData();
   whisperForm.append("file", audio, "chunk.webm");
   whisperForm.append("model", GROQ_MODEL);
@@ -60,7 +59,10 @@ export async function POST(request: NextRequest) {
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error(`[smart] Whisper error ${res.status}:`, errText.slice(0, 200));
+      console.error(
+        `[smart] Whisper error ${res.status}:`,
+        errText.slice(0, 200)
+      );
       return NextResponse.json(
         { text: "", topic: "", children: [], terms: [] },
         { status: 200 }
@@ -77,7 +79,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Filter
     const hasArabic = /[\u0600-\u06FF]/.test(rawText);
     const hasLatin = /[a-zA-Z]{3,}/.test(rawText);
     if (!hasArabic && !hasLatin) {
@@ -89,7 +90,6 @@ export async function POST(request: NextRequest) {
 
     console.log(`[smart] OK | text=${rawText.length}c`);
 
-    // ✅ بنرجع النص الخام — التحليل هيتم عبر /api/analyze
     return NextResponse.json(
       {
         text: rawText,
