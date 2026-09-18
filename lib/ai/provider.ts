@@ -5,7 +5,14 @@ import { GoogleGenAI } from "@google/genai";
 /* ------------------------------------------------------------------ */
 
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+
+// ✅ نماذج Groq الحالية (2024-2026)
+const GROQ_MODELS = [
+  "llama-3.3-70b-versatile",
+  "llama-3.1-70b-versatile",
+  "llama3-70b-8192",
+  "mixtral-8x7b-32768",
+];
 
 const GEMINI_MODELS = [
   "gemini-3.6-flash",
@@ -29,7 +36,6 @@ export interface GenerateOptions {
   messages: ChatMessage[];
   temperature?: number;
   maxTokens?: number;
-  /** Preferred provider — will still fallback if fails */
   prefer?: AIProvider;
 }
 
@@ -86,10 +92,7 @@ async function tryGemini(
         errMsg.toLowerCase().includes("resource_exhausted");
       const isHighDemand = errMsg.includes("503");
 
-      // If quota or high-demand, try next model
       if (isQuota || isHighDemand) continue;
-
-      // Hard error — bail out
       return { ok: false, error: errMsg };
     }
   }
@@ -115,55 +118,58 @@ async function tryGroq(
     })),
   ];
 
-  try {
-    const res = await fetch(GROQ_ENDPOINT, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages,
-        temperature: options.temperature ?? 0.5,
-        max_tokens: options.maxTokens ?? 2048,
-        response_format: { type: "json_object" },
-      }),
-    });
+  let lastError = "";
 
-    if (!res.ok) {
-      const errText = await res.text();
-      return {
-        ok: false,
-        error: `Groq ${res.status}: ${errText.slice(0, 200)}`,
-      };
+  // ✅ جرب كل الموديلات لحد ما واحد يشتغل
+  for (const model of GROQ_MODELS) {
+    try {
+      const res = await fetch(GROQ_ENDPOINT, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: options.temperature ?? 0.5,
+          max_tokens: options.maxTokens ?? 2048,
+          response_format: { type: "json_object" },
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        lastError = `Groq ${res.status}: ${errText.slice(0, 200)}`;
+
+        // لو الموديل مش موجود، جرب الموديل اللي بعده
+        if (res.status === 404 || res.status === 400) continue;
+
+        return { ok: false, error: lastError };
+      }
+
+      const data: {
+        choices?: Array<{ message?: { content?: string } }>;
+      } = await res.json();
+
+      const text = data.choices?.[0]?.message?.content ?? "";
+      if (text.trim()) {
+        return { ok: true, text, provider: "groq", model };
+      }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      lastError = errMsg;
+      continue;
     }
-
-    const data: {
-      choices?: Array<{ message?: { content?: string } }>;
-    } = await res.json();
-
-    const text = data.choices?.[0]?.message?.content ?? "";
-    if (text.trim()) {
-      return { ok: true, text, provider: "groq", model: GROQ_MODEL };
-    }
-
-    return { ok: false, error: "Groq empty response" };
-  } catch (err) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    return { ok: false, error: errMsg };
   }
+
+  return { ok: false, error: lastError || "All Groq models failed" };
 }
 
 /* ------------------------------------------------------------------ */
 /* Public API                                                         */
 /* ------------------------------------------------------------------ */
 
-/**
- * Generate text using Gemini or Groq.
- * Default order: Gemini → Groq (best quality first).
- * Set `prefer: "groq"` to try Groq first (faster + higher quota).
- */
 export async function generateText(
   options: GenerateOptions
 ): Promise<GenerateResult> {
@@ -190,9 +196,6 @@ export async function generateText(
   };
 }
 
-/**
- * Parse JSON from an AI response (strips markdown fences if present).
- */
 export function parseJsonResponse<T = unknown>(raw: string): T | null {
   try {
     const cleaned = raw
