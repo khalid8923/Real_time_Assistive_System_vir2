@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+# 🌉 CaptionBridge
 
-First, run the development server:
+### جسر التواصل للطلاب الصم
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+**Real-time AI-powered lecture transcription & analysis for deaf and hard-of-hearing university students**
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+[![Next.js](https://img.shields.io/badge/Next.js-16.3-black?logo=next.js)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org)
+[![Tailwind](https://img.shields.io/badge/Tailwind-v4-06B6D4?logo=tailwindcss)](https://tailwindcss.com)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](#-license)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**🌍 [Live Demo](#)** · **📸 [Screenshots](#-screenshots)** · **🏗️ [Architecture](#️-architecture)**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+</div>
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🎯 المشكلة
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+في مصر والوطن العربي، أكثر من **2 مليون طالب أصم** يدرسون في جامعات نظامية. المشكلة:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> **الدكتور يشرح لمدة ساعتين، الطالب الأصم يخرج من المحاضرة بدون أي فكرة عما تم شرحه.**
 
-## Deploy on Vercel
+الوسائل الحالية (مترجم إشارة، تدوين يدوي) **غير كافية**:
+- ❌ المترجم متاح لطالب واحد فقط في الصف
+- ❌ التدوين اليدوي بطيء وضائع
+- ❌ التطبيقات الأجنبية (Otter.ai, Live Transcribe) **لا تفهم العربي جيداً**
+- ❌ غالية جداً (اشتراكات شهرية)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🎨 الحل
+
+**CaptionBridge** — جسر ذكي بين الطالب الأصم والمحاضرة.
+
+يعمل كـ **"أذن ذكية"** تحول كلام الدكتور إلى:
+- 📝 **نص مكتوب** في الوقت الفعلي
+- 🗺️ **خريطة ذهنية** تفاعلية
+- 📚 **معجم مصطلحات** مع شرح
+- 📄 **ملخص ذكي** للمراجعة
+- 🎴 **كروت مراجعة** تفاعلية
+- 🎯 **رادار مهام** يلتقط تلميحات الامتحانات
+- ❓ **أسئلة القاعة** المستنتجة من ردود الدكتور
+
+---
+
+## ✨ الفيتشرات (12 فيتشر)
+
+### 🎙️ التسجيل الحي (Core)
+
+| الفيتشر | الوصف |
+|---------|-------|
+| 🎤 **الكلام المباشر** | تحويل صوت الدكتور لنص فوري عبر Whisper |
+| 🧠 **الشرح الذكي** | استخراج الموضوع + الفروع + المصطلحات |
+| 🗺️ **الخريطة الذهنية** | رسم تفاعلي شجري للموضوعات |
+| 📚 **المعجم الأكاديمي** | كروت ملونة بكل مصطلح وتعريفه |
+
+### 🚀 الفيتشرات الذكية (AI)
+
+| الفيتشر | الوصف |
+|---------|-------|
+| 📝 **ملخص المحاضرة** | ملخص منظم (عنوان + نظرة + نقاط + خلاصة) |
+| 🔑 **الكلمات المهمة** | استخراج الكلمات + تصنيف + أهمية |
+| 🎴 **كروت المراجعة** | أسئلة وأجوبة تفاعلية مع صعوبة |
+| 🎯 **رادار المهام** | التقاط تلميحات الامتحانات والتكليفات مع تنبيه فوري |
+| ❓ **أسئلة القاعة** | استنتاج أسئلة الطلاب البعيدين من ردود الدكتور |
+| 💬 **المساعد العائم** | شات ذكي قابل للسحب يجاوب من محتوى المحاضرة |
+
+### 🔊 إمكانية الوصول
+
+| الفيتشر | الوصف |
+|---------|-------|
+| 🔔 **التنبيهات الصوتية** | كشف الأصوات المفاجئة (باب، جرس) مع مؤشر عمودي |
+| ✨ **تمييز ذكي** | تلوين تلقائي للإنجليزي والأرقام والكلمات المفتاحية |
+
+### 👤 إدارة الحساب
+
+| الفيتشر | الوصف |
+|---------|-------|
+| 👤 **صفحة الحساب** | بروفايل + إحصائيات + 4 تابات |
+| 📚 **المحاضرات المحفوظة** | حفظ وفتح وحذف المحاضرات في DB |
+| ⚙️ **الإعدادات** | ثيم + حجم خط + حساسية صوت |
+| 🛡️ **لوحة الأدمن** | إدارة المستخدمين + تغيير الباسورد |
+
+---
+
+## 🏗️ Architecture
