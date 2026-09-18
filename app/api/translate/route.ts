@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { generateText, parseJsonResponse } from "@/lib/ai/provider";
-import type { Translation } from "@/lib/ai-types";
+import type { Translation } from "@/lib/db/ai-types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -36,7 +36,7 @@ interface ErrorResponse {
 
 function jsonError(
   message: string,
-  status: number
+  status: number,
 ): NextResponse<ErrorResponse> {
   return NextResponse.json({ error: message }, { status });
 }
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
   if (!rateLimit(ip, 15, 60_000).ok) {
     return NextResponse.json(
       { error: "Too many requests. Try again in a minute." },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -79,17 +79,17 @@ export async function POST(request: NextRequest) {
   }
 
   const parsed = parseJsonResponse<{ translations?: Translation[] }>(
-    result.text
+    result.text,
   );
   if (!parsed) {
     return jsonError("Response does not match schema.", 502);
   }
 
   console.log(
-    `[translate] OK via "${result.provider}" | count=${(parsed.translations ?? []).length}`
+    `[translate] OK via "${result.provider}" | count=${(parsed.translations ?? []).length}`,
   );
   return NextResponse.json(
     { translations: parsed.translations ?? [] },
-    { status: 200 }
+    { status: 200 },
   );
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { generateText, parseJsonResponse } from "@/lib/ai/provider";
-import type { ClassroomQuestion } from "@/lib/ai-types";
+import type { ClassroomQuestion } from "@/lib/db/ai-types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -37,7 +37,7 @@ interface ErrorResponse {
 
 function jsonError(
   message: string,
-  status: number
+  status: number,
 ): NextResponse<ErrorResponse> {
   return NextResponse.json({ error: message }, { status });
 }
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
   if (!rateLimit(ip, 10, 60_000).ok) {
     return NextResponse.json(
       { error: "Too many requests. Try again in a minute." },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
   }));
 
   console.log(
-    `[classroom-questions] OK via "${result.provider}" | found=${questions.length}`
+    `[classroom-questions] OK via "${result.provider}" | found=${questions.length}`,
   );
   return NextResponse.json({ questions }, { status: 200 });
 }

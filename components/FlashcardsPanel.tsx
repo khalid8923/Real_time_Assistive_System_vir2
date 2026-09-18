@@ -13,10 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type {
-  Flashcard,
-  FlashcardDifficulty,
-} from "@/lib/ai-types";
+import type { Flashcard, FlashcardDifficulty } from "@/lib/db/ai-types";
 
 interface FlashcardsPanelProps {
   transcript: string;
@@ -43,9 +40,7 @@ const DIFFICULTY_META: Record<
   },
 };
 
-export default function FlashcardsPanel({
-  transcript,
-}: FlashcardsPanelProps) {
+export default function FlashcardsPanel({ transcript }: FlashcardsPanelProps) {
   const [cards, setCards] = React.useState<Flashcard[]>([]);
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [flipped, setFlipped] = React.useState(false);
@@ -112,9 +107,7 @@ export default function FlashcardsPanel({
             <Layers className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-foreground">
-              كروت المراجعة
-            </h2>
+            <h2 className="text-sm font-bold text-foreground">كروت المراجعة</h2>
             <p className="text-[10px] text-muted-foreground">
               {total > 0 ? `${total} كرت` : "اضغط للتوليد"}
             </p>
@@ -200,7 +193,7 @@ export default function FlashcardsPanel({
                 className={cn(
                   "rounded-full border px-2.5 py-0.5 font-bold",
                   DIFFICULTY_META[currentCard.difficulty].bg,
-                  DIFFICULTY_META[currentCard.difficulty].color
+                  DIFFICULTY_META[currentCard.difficulty].color,
                 )}
               >
                 {DIFFICULTY_META[currentCard.difficulty].label}
@@ -228,7 +221,7 @@ export default function FlashcardsPanel({
                   "flex min-h-64 flex-col items-center justify-center rounded-2xl border-2 p-8 text-center transition-colors",
                   flipped
                     ? "border-emerald-500/40 bg-emerald-500/5"
-                    : "border-border bg-muted/20 hover:border-primary/40"
+                    : "border-border bg-muted/20 hover:border-primary/40",
                 )}
               >
                 {!flipped ? (
@@ -285,7 +278,7 @@ export default function FlashcardsPanel({
                       "h-1.5 rounded-full transition-all",
                       i === currentIndex
                         ? "w-6 bg-primary"
-                        : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                        : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50",
                     )}
                   />
                 ))}

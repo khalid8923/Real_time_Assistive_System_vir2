@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ClassroomQuestion } from "@/lib/ai-types";
+import type { ClassroomQuestion } from "@/lib/db/ai-types";
 
 interface ClassroomQuestionsPanelProps {
   transcript: string;
@@ -80,7 +80,7 @@ export default function ClassroomQuestionsPanel({
       const newQ = data.questions ?? [];
       const merged = [...questions];
       const existing = new Set(
-        questions.map((q) => q.inferredQuestion.toLowerCase())
+        questions.map((q) => q.inferredQuestion.toLowerCase()),
       );
       newQ.forEach((q) => {
         if (!existing.has(q.inferredQuestion.toLowerCase())) {
@@ -104,9 +104,7 @@ export default function ClassroomQuestionsPanel({
             <HelpCircle className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-foreground">
-              أسئلة القاعة
-            </h2>
+            <h2 className="text-sm font-bold text-foreground">أسئلة القاعة</h2>
             <p className="text-[10px] text-muted-foreground">
               {questions.length > 0
                 ? `${questions.length} سؤال مستنتج`
@@ -141,11 +139,9 @@ export default function ClassroomQuestionsPanel({
         <div className="mb-4 flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <div className="text-[11px] leading-relaxed text-muted-foreground">
-            <strong className="text-foreground">
-              إزاي الميزة دي بتشتغل؟
-            </strong>{" "}
-            الطلاب البعيدين أسئلتهم مش بتتسمع في المايك. لكن الدكتور بيرد
-            عليهم. الميزة دي بتاخد رد الدكتور، وتستنتج السؤال الأصلي تلقائياً.
+            <strong className="text-foreground">إزاي الميزة دي بتشتغل؟</strong>{" "}
+            الطلاب البعيدين أسئلتهم مش بتتسمع في المايك. لكن الدكتور بيرد عليهم.
+            الميزة دي بتاخد رد الدكتور، وتستنتج السؤال الأصلي تلقائياً.
           </div>
         </div>
 
@@ -208,7 +204,7 @@ export default function ClassroomQuestionsPanel({
                         className={cn(
                           "flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold",
                           conf.bg,
-                          conf.color
+                          conf.color,
                         )}
                       >
                         <ConfIcon className="h-2.5 w-2.5" />

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Keyword, KeywordCategory } from "@/lib/ai-types";
+import type { Keyword, KeywordCategory } from "@/lib/db/ai-types";
 
 interface KeywordsPanelProps {
   transcript: string;
@@ -211,7 +211,7 @@ export default function KeywordsPanel({ transcript }: KeywordsPanelProps) {
                   className={cn(
                     "flex flex-col gap-2 rounded-xl border p-4 transition-transform hover:-translate-y-0.5",
                     meta.border,
-                    meta.bg
+                    meta.bg,
                   )}
                 >
                   <div className="flex items-start gap-2">
@@ -219,7 +219,7 @@ export default function KeywordsPanel({ transcript }: KeywordsPanelProps) {
                       className={cn(
                         "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
                         meta.bg,
-                        meta.color
+                        meta.color,
                       )}
                     >
                       <Icon className="h-4 w-4" />
@@ -231,7 +231,7 @@ export default function KeywordsPanel({ transcript }: KeywordsPanelProps) {
                       <p
                         className={cn(
                           "text-[10px] font-bold uppercase tracking-wider",
-                          meta.color
+                          meta.color,
                         )}
                       >
                         {meta.label}

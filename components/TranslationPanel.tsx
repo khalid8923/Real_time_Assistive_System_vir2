@@ -15,10 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import CopyButton from "@/components/ui/CopyButton";
 import { cn } from "@/lib/utils";
-import type {
-  Translation,
-  TranslationType,
-} from "@/lib/ai-types";
+import type { Translation, TranslationType } from "@/lib/db/ai-types";
 
 interface TranslationPanelProps {
   transcript: string;
@@ -141,9 +138,7 @@ export default function TranslationPanel({
         </div>
 
         <div className="flex items-center gap-2">
-          {translations.length > 0 && (
-            <CopyButton text={fullText} size="sm" />
-          )}
+          {translations.length > 0 && <CopyButton text={fullText} size="sm" />}
           <Button
             type="button"
             size="sm"
@@ -217,7 +212,7 @@ export default function TranslationPanel({
                   className={cn(
                     "rounded-xl border p-4 transition-transform hover:-translate-y-0.5",
                     meta.border,
-                    meta.bg
+                    meta.bg,
                   )}
                 >
                   <div className="mb-2 flex items-center justify-between gap-2">
@@ -226,7 +221,7 @@ export default function TranslationPanel({
                         "flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold",
                         meta.border,
                         meta.bg,
-                        meta.color
+                        meta.color,
                       )}
                     >
                       <Icon className="h-3 w-3" />

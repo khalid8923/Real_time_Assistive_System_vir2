@@ -1,5 +1,7 @@
 "use client";
 
+"use client";
+
 import React, { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Construction } from "lucide-react";
@@ -20,7 +22,7 @@ import LecturesDrawer from "@/components/LecturesDrawer";
 import { getFeature, type FeatureId } from "@/lib/features";
 import { useSpeechTranscription } from "@/hooks/useSpeechTranscription";
 import type { SavedLecture } from "@/lib/db";
-import type { ActionItem, ClassroomQuestion } from "@/lib/ai-types";
+import type { ActionItem, ClassroomQuestion } from "@/lib/db/ai-types";
 
 interface Notification {
   id: number;
@@ -72,11 +74,7 @@ export default function Page() {
 
   const handleActionItemNotify = useCallback((item: ActionItem) => {
     const icon =
-      item.type === "exam"
-        ? "🚨"
-        : item.type === "assignment"
-        ? "📝"
-        : "⚡";
+      item.type === "exam" ? "🚨" : item.type === "assignment" ? "📝" : "⚡";
     toast.warning(`${icon} ${item.title}`, {
       description: item.details.slice(0, 100),
       duration: 7000,

@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ActionItem } from "@/lib/ai-types";
+import type { ActionItem } from "@/lib/db/ai-types";
 
 interface ActionItemsPanelProps {
   transcript: string;
@@ -156,9 +156,7 @@ export default function ActionItemsPanel({
             )}
           </div>
           <div>
-            <h2 className="text-sm font-bold text-foreground">
-              رادار المهام
-            </h2>
+            <h2 className="text-sm font-bold text-foreground">رادار المهام</h2>
             <p className="text-[10px] text-muted-foreground">
               {items.length > 0
                 ? `${items.length} عنصر مكتشف`
@@ -205,9 +203,7 @@ export default function ActionItemsPanel({
         {items.length === 0 && !loading && (
           <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 py-14 text-center">
             <Target className="h-10 w-10 text-muted-foreground/40" />
-            <p className="text-sm font-bold">
-              في انتظار الفحص
-            </p>
+            <p className="text-sm font-bold">في انتظار الفحص</p>
             <p className="max-w-sm text-xs text-muted-foreground">
               {canScan
                 ? "اضغط (افحص المهام) لاستخراج التكليفات وتلميحات الامتحانات"
@@ -268,7 +264,7 @@ export default function ActionItemsPanel({
                     className={cn(
                       "relative overflow-hidden rounded-xl border p-4",
                       meta.bg,
-                      "border-border/60"
+                      "border-border/60",
                     )}
                   >
                     {/* Left accent bar */}
@@ -278,8 +274,8 @@ export default function ActionItemsPanel({
                         item.urgency === "high"
                           ? "bg-rose-500"
                           : item.urgency === "medium"
-                          ? "bg-amber-500"
-                          : "bg-muted-foreground/30"
+                            ? "bg-amber-500"
+                            : "bg-muted-foreground/30",
                       )}
                     />
 
@@ -288,7 +284,7 @@ export default function ActionItemsPanel({
                         className={cn(
                           "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
                           meta.bg,
-                          meta.color
+                          meta.color,
                         )}
                       >
                         <Icon className="h-5 w-5" />
@@ -300,7 +296,7 @@ export default function ActionItemsPanel({
                             className={cn(
                               "rounded-full px-2 py-0.5 text-[9px] font-bold",
                               meta.bg,
-                              meta.color
+                              meta.color,
                             )}
                           >
                             {meta.label}
@@ -308,7 +304,7 @@ export default function ActionItemsPanel({
                           <span
                             className={cn(
                               "rounded-full px-2 py-0.5 text-[9px] font-bold",
-                              urgency.color
+                              urgency.color,
                             )}
                           >
                             {urgency.label}
@@ -353,7 +349,7 @@ function FilterChip({
         "flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-bold transition-colors",
         active
           ? "border-primary/40 bg-primary/10 text-primary"
-          : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+          : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
       {icon}

@@ -29,7 +29,7 @@ Rules:
   ]
 }`;
 
-import type { ActionItem } from "@/lib/ai-types";
+import type { ActionItem } from "@/lib/db/ai-types";
 
 interface ErrorResponse {
   error: string;
@@ -37,7 +37,7 @@ interface ErrorResponse {
 
 function jsonError(
   message: string,
-  status: number
+  status: number,
 ): NextResponse<ErrorResponse> {
   return NextResponse.json({ error: message }, { status });
 }
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
   if (!rateLimit(ip, 10, 60_000).ok) {
     return NextResponse.json(
       { error: "Too many requests. Try again in a minute." },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
   }));
 
   console.log(
-    `[action-items] OK via "${result.provider}" | found=${items.length}`
+    `[action-items] OK via "${result.provider}" | found=${items.length}`,
   );
   return NextResponse.json({ items }, { status: 200 });
 }
