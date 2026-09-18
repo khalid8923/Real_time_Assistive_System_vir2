@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getDb } from "@/lib/db";
-import { now } from "@/lib/db";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { getDb, ensureDbReady, now } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -22,15 +20,21 @@ export async function PATCH(request: NextRequest) {
       typeof university !== "string" ||
       typeof studentId !== "string"
     ) {
-      return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
+      return NextResponse.json(
+        { error: "بيانات غير صالحة" },
+        { status: 400 }
+      );
     }
 
+    await ensureDbReady();
     const db = getDb();
-    db.prepare(
-      `UPDATE user
-       SET fullName = ?, university = ?, studentId = ?, updatedAt = ?
-       WHERE id = ?`
-    ).run(fullName, university, studentId, now(), userId);
+
+    await db.execute({
+      sql: `UPDATE user
+            SET fullName = ?, university = ?, studentId = ?, updatedAt = ?
+            WHERE id = ?`,
+      args: [fullName, university, studentId, now(), userId],
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

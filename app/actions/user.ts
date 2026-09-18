@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { getDb, ensureDbReady } from "@/lib/db";
 
 interface FullUser {
   id: string;
@@ -26,19 +26,23 @@ export async function getFullUser(): Promise<FullUser | null> {
 
     if (!userId) return null;
 
+    await ensureDbReady();
     const db = getDb();
-    const user = db
-      .prepare(
-        `SELECT 
-          id, name, email, emailVerified, image,
-          fullName, university, studentId, role,
-          createdAt, updatedAt
-        FROM user
-        WHERE id = ?`
-      )
-      .get(userId) as FullUser | undefined;
 
-    return user ?? null;
+    const result = await db.execute({
+      sql: `SELECT
+              id, name, email, emailVerified, image,
+              fullName, university, studentId, role,
+              createdAt, updatedAt
+            FROM user
+            WHERE id = ?`,
+      args: [userId],
+    });
+
+    const row = result.rows[0];
+    if (!row) return null;
+
+    return row as unknown as FullUser;
   } catch (err) {
     console.error("[getFullUser]", err);
     return null;
