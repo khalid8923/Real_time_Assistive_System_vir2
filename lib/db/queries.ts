@@ -414,3 +414,92 @@ export function getUserStats(userId: string): UserStats {
     averageMastery: Math.round(flashcards.avg),
   };
 }
+/* ------------------------------------------------------------------ */
+/* ADMIN SETTINGS                                                     */
+/* ------------------------------------------------------------------ */
+
+import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
+
+const SCRYPT_KEYLEN = 64;
+
+function hashPassword(password: string): {
+  hash: string;
+  salt: string;
+} {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, SCRYPT_KEYLEN).toString("hex");
+  return { hash, salt };
+}
+
+function verifyPasswordHash(
+  password: string,
+  hash: string,
+  salt: string
+): boolean {
+  try {
+    const derived = scryptSync(password, salt, SCRYPT_KEYLEN);
+    const stored = Buffer.from(hash, "hex");
+    if (derived.length !== stored.length) return false;
+    return timingSafeEqual(derived, stored);
+  } catch {
+    return false;
+  }
+}
+
+export function getAdminPassword(): {
+  hash: string;
+  salt: string;
+} | null {
+  const db = getDb();
+  const row = db
+    .prepare(
+      "SELECT passwordHash, passwordSalt FROM admin_settings LIMIT 1"
+    )
+    .get() as { passwordHash: string; passwordSalt: string } | undefined;
+
+  if (!row) return null;
+  return { hash: row.passwordHash, salt: row.passwordSalt };
+}
+
+export function setAdminPassword(password: string): void {
+  const db = getDb();
+  const { hash, salt } = hashPassword(password);
+  const ts = now();
+
+  const existing = db
+    .prepare("SELECT id FROM admin_settings LIMIT 1")
+    .get() as { id: string } | undefined;
+
+  if (existing) {
+    db.prepare(
+      `UPDATE admin_settings
+       SET passwordHash = ?, passwordSalt = ?, updatedAt = ?
+       WHERE id = ?`
+    ).run(hash, salt, ts, existing.id);
+  } else {
+    db.prepare(
+      `INSERT INTO admin_settings (id, passwordHash, passwordSalt, updatedAt)
+       VALUES (?, ?, ?, ?)`
+    ).run(generateId(), hash, salt, ts);
+  }
+}
+
+export function verifyAdminPassword(password: string): boolean {
+  const stored = getAdminPassword();
+
+  // If DB doesn't have a password, use .env fallback
+  if (!stored) {
+    const envPassword = process.env.ADMIN_PASSWORD?.trim();
+    return !!envPassword && password === envPassword;
+  }
+
+  return verifyPasswordHash(password, stored.hash, stored.salt);
+}
+
+export function hasCustomAdminPassword(): boolean {
+  const db = getDb();
+  const row = db
+    .prepare("SELECT id FROM admin_settings LIMIT 1")
+    .get();
+  return !!row;
+}

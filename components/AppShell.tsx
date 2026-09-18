@@ -39,9 +39,14 @@ export default function AppShell({
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [headerHidden, setHeaderHidden] = React.useState(false);
   const [lastY, setLastY] = React.useState(0);
+  const [mounted, setMounted] = React.useState(false);
+
   const { data: session } = useSession();
 
-  const user = session?.user as { name?: string } | undefined;
+  // ✅ Avoid hydration mismatch — only render user UI after mount
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   React.useEffect(() => {
     const onScroll = () => {
@@ -55,6 +60,7 @@ export default function AppShell({
     return () => window.removeEventListener("scroll", onScroll);
   }, [lastY]);
 
+  const user = session?.user as { name?: string } | undefined;
   const mobileFeatures = STUDENT_FEATURES.slice(0, 6);
 
   return (
@@ -152,8 +158,8 @@ export default function AppShell({
               </button>
             </div>
 
-            {/* ✅ زرار الحساب */}
-            {user && (
+            {/* ✅ Account button — render only after mount to avoid hydration mismatch */}
+            {mounted && user && (
               <Link
                 href="/account"
                 aria-label="حسابي"

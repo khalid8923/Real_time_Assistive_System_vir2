@@ -241,7 +241,7 @@ export default function LoginPage() {
         </Link>
       </p>
 
-      <div className="mt-6 border-t border-border pt-5">
+      <div className="mt-6 space-y-3 border-t border-border pt-5">
         <button
           type="button"
           onClick={() => {
@@ -251,6 +251,17 @@ export default function LoginPage() {
           className="w-full text-center text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
         >
           🚀 الدخول التجريبي (بدون حساب)
+        </button>
+
+        {/* ✅ Admin link */}
+        <button
+          type="button"
+          onClick={() => {
+            window.location.href = "/admin/login";
+          }}
+          className="w-full text-center text-[10px] font-medium text-muted-foreground/60 transition-colors hover:text-violet-500"
+        >
+          🛡️ دخول الأدمن
         </button>
       </div>
     </div>

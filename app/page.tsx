@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Construction } from "lucide-react";
+import { toast } from "sonner";
 import AppShell, { type ViewMode } from "@/components/AppShell";
 import SpeechInput, { type AnalysisData } from "@/components/SpeechInput";
 import MindMap, { type MindMapTopic } from "@/components/MindMap";
@@ -10,13 +11,17 @@ import GlossaryPanel, { type GlossaryTerm } from "@/components/GlossaryPanel";
 import SummaryPanel from "@/components/SummaryPanel";
 import KeywordsPanel from "@/components/KeywordsPanel";
 import FlashcardsPanel from "@/components/FlashcardsPanel";
+import ActionItemsPanel from "@/components/ActionItemsPanel";
+import ClassroomQuestionsPanel from "@/components/ClassroomQuestionsPanel";
 import FloatingChat from "@/components/FloatingChat";
 import ScrollToTop from "@/components/ScrollToTop";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import LecturesDrawer from "@/components/LecturesDrawer";
 import { getFeature, type FeatureId } from "@/lib/features";
 import { useSpeechTranscription } from "@/hooks/useSpeechTranscription";
-import type { SavedLecture } from "@/hooks/useLocalLectures";
+import type { SavedLecture } from "@/lib/db";
+import type { ActionItem } from "@/app/api/action-items/route";
+import type { ClassroomQuestion } from "@/app/api/classroom-questions/route";
 
 interface Notification {
   id: number;
@@ -35,10 +40,13 @@ export default function Page() {
 
   const [allTopics, setAllTopics] = useState<MindMapTopic[]>([]);
   const [allTerms, setAllTerms] = useState<GlossaryTerm[]>([]);
+  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
+  const [classroomQuestions, setClassroomQuestions] = useState<
+    ClassroomQuestion[]
+  >([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [lastSentFeedback, setLastSentFeedback] = useState<string | null>(null);
 
-  // Clear loaded lecture when user starts recording again
   useEffect(() => {
     if (speech.isListening) {
       setLoadedLecture(null);
@@ -63,14 +71,41 @@ export default function Page() {
     }
   }, []);
 
+  const handleActionItemNotify = useCallback((item: ActionItem) => {
+    const icon = item.type === "exam" ? "🚨" : item.type === "assignment" ? "📝" : "⚡";
+    toast.warning(`${icon} ${item.title}`, {
+      description: item.details.slice(0, 100),
+      duration: 7000,
+    });
+  }, []);
+
   const handleLoadLecture = useCallback((lecture: SavedLecture) => {
     setLoadedLecture(lecture);
-    setAllTopics(
-      lecture.topic
-        ? [{ topic: lecture.topic, children: lecture.children }]
-        : []
-    );
-    setAllTerms(lecture.terms);
+
+    let topic = "";
+    let children: string[] = [];
+    let terms: { term: string; definition: string }[] = [];
+
+    if (lecture.mindMapJson) {
+      try {
+        const parsed = JSON.parse(lecture.mindMapJson);
+        topic = parsed.topic || "";
+        children = parsed.children || [];
+      } catch {
+        /* ignore */
+      }
+    }
+
+    if (lecture.glossaryJson) {
+      try {
+        terms = JSON.parse(lecture.glossaryJson);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    setAllTopics(topic ? [{ topic, children }] : []);
+    setAllTerms(terms);
     setActiveFeature("captions");
   }, []);
 
@@ -122,6 +157,23 @@ export default function Page() {
         return <KeywordsPanel transcript={displayTranscript} />;
       case "flashcards":
         return <FlashcardsPanel transcript={displayTranscript} />;
+      case "actionItems":
+        return (
+          <ActionItemsPanel
+            transcript={displayTranscript}
+            items={actionItems}
+            onItemsChange={setActionItems}
+            onNotify={handleActionItemNotify}
+          />
+        );
+      case "classroomQuestions":
+        return (
+          <ClassroomQuestionsPanel
+            transcript={displayTranscript}
+            questions={classroomQuestions}
+            onQuestionsChange={setClassroomQuestions}
+          />
+        );
       default:
         return <ComingSoon featureId={activeFeature} />;
     }

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
+import Link from "next/link";
 import {
   Users,
   Mail,
@@ -13,6 +14,8 @@ import {
   Loader2,
   Shield,
   Calendar,
+  LogOut,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -117,6 +120,12 @@ export default function AdminUsersPage() {
     toast.success("تم تصدير CSV");
   };
 
+  const handleAdminLogout = async () => {
+    if (!confirm("متأكد إنك عايز تسجل خروج؟")) return;
+    await fetch("/api/admin/logout", { method: "POST" });
+    window.location.href = "/admin/login";
+  };
+
   const filtered = React.useMemo(() => {
     if (!search.trim()) return users;
     const q = search.trim().toLowerCase();
@@ -132,10 +141,10 @@ export default function AdminUsersPage() {
   return (
     <div dir="rtl" className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        {/* Header */}
+        {/* ==================== HEADER ==================== */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-accent-1 shadow-lg shadow-primary/30">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-violet-600 to-rose-600 shadow-lg shadow-violet-500/30">
               <Users className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -148,7 +157,7 @@ export default function AdminUsersPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               onClick={handleExportCSV}
@@ -156,8 +165,9 @@ export default function AdminUsersPage() {
               className="gap-2 rounded-xl"
             >
               <Download className="h-4 w-4" />
-              تصدير CSV
+              <span className="hidden sm:inline">تصدير CSV</span>
             </Button>
+
             <Button
               onClick={fetchUsers}
               disabled={loading}
@@ -170,10 +180,27 @@ export default function AdminUsersPage() {
               )}
               تحديث
             </Button>
+
+            <Link
+              href="/admin/settings"
+              className="flex h-9 items-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-bold text-foreground transition-colors hover:border-primary/40 hover:bg-muted"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">الإعدادات</span>
+            </Link>
+
+            <Button
+              variant="outline"
+              onClick={handleAdminLogout}
+              className="gap-2 rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">خروج</span>
+            </Button>
           </div>
         </div>
 
-        {/* Search */}
+        {/* ==================== SEARCH ==================== */}
         <div className="relative">
           <Search className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -185,7 +212,7 @@ export default function AdminUsersPage() {
           />
         </div>
 
-        {/* Stats */}
+        {/* ==================== STATS ==================== */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard
             label="إجمالي المستخدمين"
@@ -223,22 +250,24 @@ export default function AdminUsersPage() {
           />
         </div>
 
-        {/* Error */}
+        {/* ==================== ERROR ==================== */}
         {error && (
           <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
             {error}
           </div>
         )}
 
-        {/* Loading */}
+        {/* ==================== LOADING ==================== */}
         {loading && (
           <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">جارٍ تحميل البيانات...</p>
+            <p className="text-sm text-muted-foreground">
+              جارٍ تحميل البيانات...
+            </p>
           </div>
         )}
 
-        {/* Table */}
+        {/* ==================== TABLE ==================== */}
         {!loading && filtered.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -308,11 +337,12 @@ export default function AdminUsersPage() {
                             <p className="truncate text-sm font-bold text-foreground">
                               {user.name || "—"}
                             </p>
-                            {user.fullName && user.fullName !== user.name && (
-                              <p className="truncate text-[10px] text-muted-foreground">
-                                {user.fullName}
-                              </p>
-                            )}
+                            {user.fullName &&
+                              user.fullName !== user.name && (
+                                <p className="truncate text-[10px] text-muted-foreground">
+                                  {user.fullName}
+                                </p>
+                              )}
                           </div>
                         </div>
                       </td>
@@ -389,7 +419,7 @@ export default function AdminUsersPage() {
           </motion.div>
         )}
 
-        {/* Empty */}
+        {/* ==================== EMPTY ==================== */}
         {!loading && filtered.length === 0 && !error && (
           <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-card py-20 text-center">
             <Users className="h-12 w-12 text-muted-foreground/40" />

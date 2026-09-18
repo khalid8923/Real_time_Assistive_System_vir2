@@ -5,38 +5,32 @@ import { generateText, parseJsonResponse } from "@/lib/ai/provider";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const SYSTEM_PROMPT = `You are an academic action-item radar. You receive a lecture transcript and extract academic hints.
+const SYSTEM_PROMPT = `You are a smart analyzer in a university classroom. Distant students' questions are not caught by the mic. The professor replies to them.
 
-Look for:
-- Exams and midterms
-- Assignments and homework
-- Deadlines
-- Important pages/chapters
-- Focus points ("this is very important")
+Your task: infer the hidden question from the professor's answer.
 
-For each item:
-- type: "exam" | "assignment" | "deadline" | "page" | "important" | "note"
-- title: Short title (5-10 words)
-- details: Details
-- urgency: "high" | "medium" | "low"
+Look for professor replies to classroom questions:
+- "سؤال ممتاز"
+- "زي ما زميلكم سأل"
+- "بالنسبة لسؤالك"
+- "في حد سأل عن..."
+
+For each pair:
+- inferredQuestion: The likely question (5-15 words)
+- answer: Summary of professor's answer (10-40 words)
+- confidence: "high" | "medium" | "low"
 
 Rules:
-- If no hints -> items: []
+- Infer from the answer content, not imagination
+- If unsure -> confidence: "low"
 - Reply with JSON only:
 {
-  "items": [
-    { "type": "exam", "title": "...", "details": "...", "urgency": "high" }
+  "questions": [
+    { "inferredQuestion": "...", "answer": "...", "confidence": "high" }
   ]
 }`;
 
-export interface ActionItem {
-  id: string;
-  type: "exam" | "assignment" | "deadline" | "page" | "important" | "note";
-  title: string;
-  details: string;
-  urgency: "high" | "medium" | "low";
-  detectedAt: number;
-}
+import type { ClassroomQuestion } from "@/lib/ai-types";
 
 interface ErrorResponse {
   error: string;
@@ -76,31 +70,31 @@ export async function POST(request: NextRequest) {
   const result = await generateText({
     systemPrompt: SYSTEM_PROMPT,
     messages: [{ role: "user", content: `Text:\n\n${trimmed}` }],
-    temperature: 0.1,
+    temperature: 0.3,
     maxTokens: 2048,
     prefer: "groq",
   });
 
   if (!result.ok || !result.text) {
-    return jsonError(result.error || "Scan failed.", 502);
+    return jsonError(result.error || "Inference failed.", 502);
   }
 
   const parsed = parseJsonResponse<{
-    items?: Omit<ActionItem, "id" | "detectedAt">[];
+    questions?: Omit<ClassroomQuestion, "id" | "detectedAt">[];
   }>(result.text);
 
   if (!parsed) {
     return jsonError("Response does not match schema.", 502);
   }
 
-  const items: ActionItem[] = (parsed.items ?? []).map((item) => ({
-    ...item,
+  const questions: ClassroomQuestion[] = (parsed.questions ?? []).map((q) => ({
+    ...q,
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     detectedAt: Date.now(),
   }));
 
   console.log(
-    `[action-items] OK via "${result.provider}" | found=${items.length}`
+    `[classroom-questions] OK via "${result.provider}" | found=${questions.length}`
   );
-  return NextResponse.json({ items }, { status: 200 });
+  return NextResponse.json({ questions }, { status: 200 });
 }

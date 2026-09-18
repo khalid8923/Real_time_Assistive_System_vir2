@@ -7,7 +7,9 @@ import {
   Languages,
   Layers,
   Mic,
+  Target,
   Users,
+  HelpCircle,
 } from "lucide-react";
 
 export type FeatureId =
@@ -18,6 +20,8 @@ export type FeatureId =
   | "translation"
   | "summary"
   | "flashcards"
+  | "actionItems"
+  | "classroomQuestions"
   | "qa"
   | "sounds"
   | "teacher";
@@ -68,6 +72,24 @@ export const STUDENT_FEATURES: Feature[] = [
     category: "accessibility",
   },
   {
+    id: "actionItems",
+    label: "رادار المهام",
+    shortLabel: "المهام",
+    description: "استخراج تكليفات ومواعيد الامتحانات من المحاضرة",
+    icon: Target,
+    category: "ai",
+    badge: "جديد",
+  },
+  {
+    id: "classroomQuestions",
+    label: "أسئلة القاعة",
+    shortLabel: "أسئلة",
+    description: "استنتاج أسئلة الطلاب من ردود الدكتور",
+    icon: HelpCircle,
+    category: "ai",
+    badge: "جديد",
+  },
+  {
     id: "translation",
     label: "الترجمة الفورية",
     shortLabel: "ترجمة",
@@ -79,7 +101,7 @@ export const STUDENT_FEATURES: Feature[] = [
     id: "summary",
     label: "ملخص المحاضرة",
     shortLabel: "الملخص",
-    description: "ملخص ذكي لأهم النقاط في نهاية كل محاضرة",
+    description: "ملخص ذكي لأهم النقاط",
     icon: FileText,
     category: "ai",
   },
@@ -87,14 +109,14 @@ export const STUDENT_FEATURES: Feature[] = [
     id: "flashcards",
     label: "كروت المراجعة",
     shortLabel: "كروت",
-    description: "توليد كروت مراجعة وأسئلة من محتوى المحاضرة",
+    description: "توليد كروت مراجعة من المحتوى",
     icon: Layers,
     category: "ai",
   },
   {
     id: "qa",
     label: "أسئلة AI",
-    shortLabel: "أسئلة",
+    shortLabel: "أسئلة AI",
     description: "شات بوت ذكي",
     icon: Mic,
     category: "ai",
@@ -125,11 +147,10 @@ export const ALL_FEATURES: Feature[] = [
   ...TEACHER_FEATURES,
 ];
 
-// ✅ الـ Features اللي مش بتظهر في الـ Sidebar
 export const HIDDEN_FROM_SIDEBAR: FeatureId[] = [
   "qa",
   "sounds",
-  "translation", // ← جديد
+  "translation",
 ];
 
 export function getFeature(id: FeatureId): Feature {

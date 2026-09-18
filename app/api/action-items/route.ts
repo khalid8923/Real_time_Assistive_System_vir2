@@ -29,14 +29,7 @@ Rules:
   ]
 }`;
 
-export interface ActionItem {
-  id: string;
-  type: "exam" | "assignment" | "deadline" | "page" | "important" | "note";
-  title: string;
-  details: string;
-  urgency: "high" | "medium" | "low";
-  detectedAt: number;
-}
+import type { ActionItem } from "@/lib/ai-types";
 
 interface ErrorResponse {
   error: string;

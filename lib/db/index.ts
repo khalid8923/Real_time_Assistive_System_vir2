@@ -135,6 +135,14 @@ function runMigrations(db: Database.Database) {
 
     CREATE INDEX IF NOT EXISTS idx_flashcards_user
       ON flashcards_progress(userId, createdAt DESC);
+
+    /* ============ Admin Settings ============ */
+    CREATE TABLE IF NOT EXISTS admin_settings (
+      id TEXT PRIMARY KEY,
+      passwordHash TEXT NOT NULL,
+      passwordSalt TEXT NOT NULL,
+      updatedAt INTEGER NOT NULL
+    );
   `);
 }
 

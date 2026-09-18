@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import type {
   Flashcard,
   FlashcardDifficulty,
-} from "@/app/api/flashcards/route";
+} from "@/lib/ai-types";
 
 interface FlashcardsPanelProps {
   transcript: string;

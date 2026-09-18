@@ -10,13 +10,16 @@ import {
   FolderOpen,
   Clock,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
-  useLocalLectures,
-  type SavedLecture,
-} from "@/hooks/useLocalLectures";
+  getMyLectures,
+  saveMyLecture,
+  deleteMyLecture,
+} from "@/app/actions/lectures";
+import type { SavedLecture } from "@/lib/db";
 
 interface LecturesDrawerProps {
   open: boolean;
@@ -25,6 +28,7 @@ interface LecturesDrawerProps {
   currentTopic?: string;
   currentChildren?: string[];
   currentTerms?: { term: string; definition: string }[];
+  summary?: string;
   onLoad: (lecture: SavedLecture) => void;
 }
 
@@ -45,12 +49,28 @@ export default function LecturesDrawer({
   currentTopic,
   currentChildren,
   currentTerms,
+  summary,
   onLoad,
 }: LecturesDrawerProps) {
-  const { lectures, saveLecture, deleteLecture } = useLocalLectures();
+  const [lectures, setLectures] = React.useState<SavedLecture[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  const [deleting, setDeleting] = React.useState<string | null>(null);
   const [name, setName] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
 
+  // Load lectures when drawer opens
+  React.useEffect(() => {
+    if (!open) return;
+    setLoading(true);
+    (async () => {
+      const data = await getMyLectures();
+      setLectures(data);
+      setLoading(false);
+    })();
+  }, [open]);
+
+  // Escape closes
   React.useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -60,13 +80,14 @@ export default function LecturesDrawer({
     return () => document.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
+  // Reset name when opens
   React.useEffect(() => {
     if (open) setName("");
   }, [open]);
 
   const canSave = currentTranscript.trim().length > 0;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!canSave) {
       toast.error("مفيش محتوى للحفظ");
       return;
@@ -77,16 +98,35 @@ export default function LecturesDrawer({
       currentTopic?.trim() ||
       `محاضرة ${new Date().toLocaleDateString("ar-EG")}`;
 
-    saveLecture({
-      name: finalName,
-      transcript: currentTranscript,
-      topic: currentTopic ?? "",
-      children: currentChildren ?? [],
-      terms: currentTerms ?? [],
-    });
+    setSaving(true);
+    try {
+      const res = await saveMyLecture({
+        name: finalName,
+        transcript: currentTranscript,
+        summary,
+        glossaryJson: currentTerms ? JSON.stringify(currentTerms) : undefined,
+        mindMapJson:
+          currentTopic && currentChildren
+            ? JSON.stringify({
+                topic: currentTopic,
+                children: currentChildren,
+              })
+            : undefined,
+      });
 
-    setName("");
-    toast.success("تم حفظ المحاضرة!");
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+
+      setLectures((prev) => [res.lecture, ...prev]);
+      setName("");
+      toast.success("تم حفظ المحاضرة!");
+    } catch {
+      toast.error("فشل الحفظ");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleLoad = (lecture: SavedLecture) => {
@@ -95,11 +135,23 @@ export default function LecturesDrawer({
     toast.success(`تم تحميل: ${lecture.name}`);
   };
 
+  const handleDelete = async (id: string, lectureName: string) => {
+    if (!confirm(`متأكد إنك عايز تحذف "${lectureName}"؟`)) return;
+    setDeleting(id);
+    const res = await deleteMyLecture(id);
+    if (res.ok) {
+      setLectures((prev) => prev.filter((l) => l.id !== id));
+      toast.success("تم الحذف");
+    } else {
+      toast.error("فشل الحذف");
+    }
+    setDeleting(null);
+  };
+
   return (
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -110,7 +162,6 @@ export default function LecturesDrawer({
             aria-hidden="true"
           />
 
-          {/* Drawer */}
           <motion.aside
             dir="rtl"
             initial={{ x: "100%" }}
@@ -162,17 +213,21 @@ export default function LecturesDrawer({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={currentTopic || "اسم المحاضرة (اختياري)"}
-                  disabled={!canSave}
+                  disabled={!canSave || saving}
                   className="h-10 flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
                   maxLength={80}
                 />
                 <Button
                   type="button"
                   onClick={handleSave}
-                  disabled={!canSave}
+                  disabled={!canSave || saving}
                   className="h-10 gap-1.5 rounded-xl bg-linear-to-l from-primary to-accent-1 px-4 text-xs font-bold text-white shadow-md"
                 >
-                  <Save className="h-3.5 w-3.5" />
+                  {saving ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Save className="h-3.5 w-3.5" />
+                  )}
                   احفظ
                 </Button>
               </div>
@@ -185,7 +240,14 @@ export default function LecturesDrawer({
 
             {/* Lectures list */}
             <div className="flex-1 overflow-y-auto p-4">
-              {lectures.length === 0 ? (
+              {loading ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-14">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <p className="text-xs text-muted-foreground">
+                    جارٍ التحميل...
+                  </p>
+                </div>
+              ) : lectures.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 py-14 text-center">
                   <Bookmark className="h-8 w-8 text-muted-foreground/40" />
                   <p className="text-sm text-muted-foreground">
@@ -197,7 +259,7 @@ export default function LecturesDrawer({
                 </div>
               ) : (
                 <ul className="space-y-2">
-                  {lectures.map((lecture: SavedLecture) => (
+                  {lectures.map((lecture) => (
                     <motion.li
                       key={lecture.id}
                       initial={{ opacity: 0, y: 6 }}
@@ -216,18 +278,15 @@ export default function LecturesDrawer({
                             </span>
                             <span className="flex items-center gap-1">
                               <FileText className="h-3 w-3" />
-                              {lecture.transcript
-                                .split(/\s+/)
-                                .filter(Boolean).length}{" "}
-                              كلمة
+                              {lecture.wordCount} كلمة
                             </span>
                           </div>
                         </div>
                       </div>
 
-                      {lecture.topic && (
-                        <p className="mb-2 truncate rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-                          {lecture.topic}
+                      {lecture.summary && (
+                        <p className="mb-2 line-clamp-2 text-[11px] text-muted-foreground">
+                          {lecture.summary}
                         </p>
                       )}
 
@@ -242,14 +301,16 @@ export default function LecturesDrawer({
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            deleteLecture(lecture.id);
-                            toast.success("تم الحذف");
-                          }}
+                          onClick={() => handleDelete(lecture.id, lecture.name)}
+                          disabled={deleting === lecture.id}
                           aria-label="حذف"
                           className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          {deleting === lecture.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
                         </button>
                       </div>
                     </motion.li>

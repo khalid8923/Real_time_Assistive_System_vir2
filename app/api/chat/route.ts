@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { generateText, type ChatMessage } from "@/lib/ai/provider";
 
 export const runtime = "nodejs";
@@ -8,25 +9,25 @@ const MAX_CONTEXT_LENGTH = 8000;
 const MAX_MESSAGES = 20;
 const MAX_QUESTION_LENGTH = 500;
 
-const SYSTEM_PROMPT = `أنت مساعد أكاديمي ذكي للطلاب الصم في تطبيق CaptionBridge. بتساعدهم يفهموا محاضرة جامعية اتسجلت.
+const SYSTEM_PROMPT = `You are a smart academic assistant for deaf students in CaptionBridge. You help them understand a recorded university lecture.
 
-عندك:
-- نص المحاضرة الكامل (السياق)
-- سؤال الطالب
+You have:
+- The full lecture transcript (context)
+- The student's question
 
-مهمتك:
-- جاوب سؤال الطالب بناءً على محتوى المحاضرة
-- لو السؤال مش متعلق بالمحاضرة، قول بأدب إن السؤال خارج الموضوع
-- جاوب بالعربي الفصيح البسيط
-- خليك مختصر وواضح
-- سيب المصطلحات الإنجليزي زي ما هي (Array, API, React)
-- لو معلومة مش موجودة في المحاضرة، قول "المعلومة دي مش موجودة في المحاضرة"
-- ممنوع تأليف معلومات مش موجودة
+Your task:
+- Answer the question based on the lecture content
+- If the question is unrelated, politely say it is out of scope
+- Answer in clear Modern Standard Arabic
+- Be concise and clear
+- Keep English terms as-is (Array, API, React)
+- If info is not in the lecture, say "هذه المعلومة غير موجودة في المحاضرة"
+- Never invent information
 
-أسلوب الرد:
-- مباشر وبدون مقدمات طويلة
-- اشرح بمثال لو ممكن
-- استخدم نقاط لما يكون فيه أكثر من عنصر`;
+Style:
+- Direct without long introductions
+- Explain with example when possible
+- Use bullet points for multiple items`;
 
 interface RequestBody {
   question: string;
@@ -44,13 +45,24 @@ interface SuccessResponse {
   model: string;
 }
 
-function jsonError(message: string, status: number): NextResponse<ErrorResponse> {
+function jsonError(
+  message: string,
+  status: number
+): NextResponse<ErrorResponse> {
   return NextResponse.json({ error: message }, { status });
 }
 
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 20, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -65,15 +77,18 @@ export async function POST(
   const { question, context, history } = body as Partial<RequestBody>;
 
   if (typeof question !== "string" || question.trim().length === 0) {
-    return jsonError("السؤال مطلوب.", 400);
+    return jsonError("Question is required.", 400);
   }
 
   if (question.length > MAX_QUESTION_LENGTH) {
-    return jsonError(`السؤال طويل أوي (الحد الأقصى ${MAX_QUESTION_LENGTH} حرف).`, 413);
+    return jsonError(
+      `Question too long (max ${MAX_QUESTION_LENGTH} characters).`,
+      413
+    );
   }
 
   if (typeof context !== "string" || context.trim().length === 0) {
-    return jsonError("النص الأصلي (المحاضرة) مطلوب.", 400);
+    return jsonError("Context (lecture) is required.", 400);
   }
 
   const trimmedContext =
@@ -97,7 +112,7 @@ export async function POST(
 
 ---
 
-نص المحاضرة (السياق):
+Lecture text (context):
 ${trimmedContext}
 
 ---`;
@@ -116,7 +131,7 @@ ${trimmedContext}
 
   if (!result.ok || !result.text) {
     console.error("[chat] Failed:", result.error);
-    return jsonError(result.error || "تعذّر توليد الرد.", 502);
+    return jsonError(result.error || "Failed to generate response.", 502);
   }
 
   console.log(

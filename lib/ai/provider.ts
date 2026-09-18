@@ -1,6 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 
-export type AIProvider = "gemini" | "groq";
+/* ------------------------------------------------------------------ */
+/* Config                                                             */
+/* ------------------------------------------------------------------ */
 
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL = "llama-3.3-70b-versatile";
@@ -10,6 +12,12 @@ const GEMINI_MODELS = [
   "gemini-flash-latest",
   "gemini-2.0-flash",
 ];
+
+/* ------------------------------------------------------------------ */
+/* Types                                                              */
+/* ------------------------------------------------------------------ */
+
+export type AIProvider = "gemini" | "groq";
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -21,6 +29,8 @@ export interface GenerateOptions {
   messages: ChatMessage[];
   temperature?: number;
   maxTokens?: number;
+  /** Preferred provider — will still fallback if fails */
+  prefer?: AIProvider;
 }
 
 export interface GenerateResult {
@@ -31,7 +41,13 @@ export interface GenerateResult {
   error?: string;
 }
 
-async function tryGemini(options: GenerateOptions): Promise<GenerateResult> {
+/* ------------------------------------------------------------------ */
+/* Gemini                                                             */
+/* ------------------------------------------------------------------ */
+
+async function tryGemini(
+  options: GenerateOptions
+): Promise<GenerateResult> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) return { ok: false, error: "GEMINI_API_KEY missing" };
 
@@ -42,6 +58,8 @@ async function tryGemini(options: GenerateOptions): Promise<GenerateResult> {
     parts: [{ text: m.content }],
   }));
 
+  let lastError = "";
+
   for (const model of GEMINI_MODELS) {
     try {
       const response = await ai.models.generateContent({
@@ -50,7 +68,7 @@ async function tryGemini(options: GenerateOptions): Promise<GenerateResult> {
         config: {
           systemInstruction: options.systemPrompt,
           temperature: options.temperature ?? 0.5,
-          maxOutputTokens: options.maxTokens ?? 1024,
+          maxOutputTokens: options.maxTokens ?? 2048,
         },
       });
 
@@ -60,24 +78,41 @@ async function tryGemini(options: GenerateOptions): Promise<GenerateResult> {
       }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      const notFound =
-        errMsg.includes("404") || errMsg.toLowerCase().includes("not_found");
-      if (!notFound) {
-        return { ok: false, error: errMsg };
-      }
+      lastError = errMsg;
+
+      const isQuota =
+        errMsg.includes("429") ||
+        errMsg.toLowerCase().includes("quota") ||
+        errMsg.toLowerCase().includes("resource_exhausted");
+      const isHighDemand = errMsg.includes("503");
+
+      // If quota or high-demand, try next model
+      if (isQuota || isHighDemand) continue;
+
+      // Hard error — bail out
+      return { ok: false, error: errMsg };
     }
   }
 
-  return { ok: false, error: "All Gemini models failed" };
+  return { ok: false, error: lastError || "All Gemini models failed" };
 }
 
-async function tryGroq(options: GenerateOptions): Promise<GenerateResult> {
+/* ------------------------------------------------------------------ */
+/* Groq                                                               */
+/* ------------------------------------------------------------------ */
+
+async function tryGroq(
+  options: GenerateOptions
+): Promise<GenerateResult> {
   const apiKey = process.env.GROQ_API_KEY?.trim();
   if (!apiKey) return { ok: false, error: "GROQ_API_KEY missing" };
 
   const messages = [
     { role: "system", content: options.systemPrompt },
-    ...options.messages.map((m) => ({ role: m.role, content: m.content })),
+    ...options.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    })),
   ];
 
   try {
@@ -91,13 +126,17 @@ async function tryGroq(options: GenerateOptions): Promise<GenerateResult> {
         model: GROQ_MODEL,
         messages,
         temperature: options.temperature ?? 0.5,
-        max_tokens: options.maxTokens ?? 1024,
+        max_tokens: options.maxTokens ?? 2048,
+        response_format: { type: "json_object" },
       }),
     });
 
     if (!res.ok) {
       const errText = await res.text();
-      return { ok: false, error: `Groq ${res.status}: ${errText.slice(0, 150)}` };
+      return {
+        ok: false,
+        error: `Groq ${res.status}: ${errText.slice(0, 200)}`,
+      };
     }
 
     const data: {
@@ -116,21 +155,53 @@ async function tryGroq(options: GenerateOptions): Promise<GenerateResult> {
   }
 }
 
-export async function generateText(options: GenerateOptions): Promise<GenerateResult> {
-  // Try Gemini first
-  const gemini = await tryGemini(options);
-  if (gemini.ok) return gemini;
+/* ------------------------------------------------------------------ */
+/* Public API                                                         */
+/* ------------------------------------------------------------------ */
 
-  console.warn("[ai] Gemini failed:", gemini.error?.slice(0, 150));
+/**
+ * Generate text using Gemini or Groq.
+ * Default order: Gemini → Groq (best quality first).
+ * Set `prefer: "groq"` to try Groq first (faster + higher quota).
+ */
+export async function generateText(
+  options: GenerateOptions
+): Promise<GenerateResult> {
+  const order: AIProvider[] =
+    options.prefer === "groq" ? ["groq", "gemini"] : ["gemini", "groq"];
 
-  // Fallback to Groq
-  const groq = await tryGroq(options);
-  if (groq.ok) return groq;
+  let lastError = "";
 
-  console.error("[ai] Groq failed too:", groq.error?.slice(0, 150));
+  for (const provider of order) {
+    const result =
+      provider === "gemini"
+        ? await tryGemini(options)
+        : await tryGroq(options);
+
+    if (result.ok) return result;
+
+    lastError = result.error ?? "Unknown error";
+    console.warn(`[ai] ${provider} failed:`, lastError.slice(0, 150));
+  }
 
   return {
     ok: false,
-    error: "كل الخدمات مشغولة حالياً. حاول بعد لحظات.",
+    error: lastError || "كل الخدمات مشغولة حالياً. حاول بعد لحظات.",
   };
+}
+
+/**
+ * Parse JSON from an AI response (strips markdown fences if present).
+ */
+export function parseJsonResponse<T = unknown>(raw: string): T | null {
+  try {
+    const cleaned = raw
+      .trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+    return JSON.parse(cleaned) as T;
+  } catch {
+    return null;
+  }
 }

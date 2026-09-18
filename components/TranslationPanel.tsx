@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import type {
   Translation,
   TranslationType,
-} from "@/app/api/translate/route";
+} from "@/lib/ai-types";
 
 interface TranslationPanelProps {
   transcript: string;
