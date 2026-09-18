@@ -1,27 +1,51 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import * as React from "react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { signIn } from "@/lib/auth-client";
+import { Button } from "@/components/ui/button";
 
 interface GoogleButtonProps {
   mode?: "login" | "signup";
 }
 
 export default function GoogleButton({ mode = "login" }: GoogleButtonProps) {
+  const [loading, setLoading] = React.useState(false);
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    try {
+      await signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+    } catch (err) {
+      console.error("[google oauth]", err);
+      toast.error("فشل تسجيل الدخول بجوجل");
+      setLoading(false);
+    }
+  };
+
   return (
     <Button
       type="button"
       variant="outline"
-      onClick={() =>
-        toast.info("Google Sign-In قريباً — استخدم الإيميل حالياً")
-      }
+      onClick={handleGoogle}
+      disabled={loading}
       className="h-11 w-full gap-2 rounded-xl border-border bg-background text-sm font-bold transition-colors hover:bg-muted"
     >
-      <GoogleIcon className="h-4 w-4" />
-      {mode === "login" ? "الدخول بجوجل" : "التسجيل بجوجل"}
-      <span className="ml-auto rounded-full bg-amber-500/15 px-2 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
-        قريباً
-      </span>
+      {loading ? (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          جارٍ التحويل...
+        </>
+      ) : (
+        <>
+          <GoogleIcon className="h-4 w-4" />
+          {mode === "login" ? "الدخول بجوجل" : "التسجيل بجوجل"}
+        </>
+      )}
     </Button>
   );
 }
