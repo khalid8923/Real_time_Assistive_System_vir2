@@ -20,8 +20,7 @@ import LecturesDrawer from "@/components/LecturesDrawer";
 import { getFeature, type FeatureId } from "@/lib/features";
 import { useSpeechTranscription } from "@/hooks/useSpeechTranscription";
 import type { SavedLecture } from "@/lib/db";
-import type { ActionItem } from "@/app/api/action-items/route";
-import type { ClassroomQuestion } from "@/app/api/classroom-questions/route";
+import type { ActionItem, ClassroomQuestion } from "@/lib/ai-types";
 
 interface Notification {
   id: number;
@@ -72,7 +71,12 @@ export default function Page() {
   }, []);
 
   const handleActionItemNotify = useCallback((item: ActionItem) => {
-    const icon = item.type === "exam" ? "🚨" : item.type === "assignment" ? "📝" : "⚡";
+    const icon =
+      item.type === "exam"
+        ? "🚨"
+        : item.type === "assignment"
+        ? "📝"
+        : "⚡";
     toast.warning(`${icon} ${item.title}`, {
       description: item.details.slice(0, 100),
       duration: 7000,
@@ -92,7 +96,7 @@ export default function Page() {
         topic = parsed.topic || "";
         children = parsed.children || [];
       } catch {
-        /* ignore */
+        // ignore
       }
     }
 
@@ -100,7 +104,7 @@ export default function Page() {
       try {
         terms = JSON.parse(lecture.glossaryJson);
       } catch {
-        /* ignore */
+        // ignore
       }
     }
 
@@ -124,7 +128,8 @@ export default function Page() {
     window.setTimeout(() => setLastSentFeedback(null), 2500);
   }, []);
 
-  const displayTranscript = loadedLecture?.transcript || speech.currentTranscript;
+  const displayTranscript =
+    loadedLecture?.transcript || speech.currentTranscript;
   const latestTopic =
     allTopics.length > 0 ? allTopics[allTopics.length - 1].topic : "";
   const latestChildren =

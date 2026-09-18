@@ -14,10 +14,7 @@ import {
   getUserStats,
   type UserStats,
 } from "@/lib/db/queries";
-import type {
-  SavedGlossaryItem,
-  FlashcardProgress,
-} from "@/lib/db";
+import type { SavedGlossaryItem, FlashcardProgress } from "@/lib/db";
 
 async function requireUserId(): Promise<string> {
   const headersList = await headers();
@@ -32,25 +29,22 @@ async function requireUserId(): Promise<string> {
 export async function getMyGlossary(): Promise<SavedGlossaryItem[]> {
   try {
     const userId = await requireUserId();
-    return listGlossary(userId);
+    return await listGlossary(userId);
   } catch {
     return [];
   }
 }
 
-export async function saveGlossary(
-  input: {
-    term: string;
-    definition: string;
-    sourceLectureId?: string;
-  }
-): Promise<
-  | { ok: true; item: SavedGlossaryItem }
-  | { ok: false; error: string }
+export async function saveGlossary(input: {
+  term: string;
+  definition: string;
+  sourceLectureId?: string;
+}): Promise<
+  { ok: true; item: SavedGlossaryItem } | { ok: false; error: string }
 > {
   try {
     const userId = await requireUserId();
-    const item = saveGlossaryTerm(userId, input);
+    const item = await saveGlossaryTerm(userId, input);
     revalidatePath("/account");
     return { ok: true, item };
   } catch {
@@ -63,7 +57,7 @@ export async function deleteGlossary(
 ): Promise<{ ok: boolean }> {
   try {
     const userId = await requireUserId();
-    const ok = deleteGlossaryTerm(userId, id);
+    const ok = await deleteGlossaryTerm(userId, id);
     revalidatePath("/account");
     return { ok };
   } catch {
@@ -76,26 +70,23 @@ export async function deleteGlossary(
 export async function getMyFlashcards(): Promise<FlashcardProgress[]> {
   try {
     const userId = await requireUserId();
-    return listFlashcards(userId);
+    return await listFlashcards(userId);
   } catch {
     return [];
   }
 }
 
-export async function saveCard(
-  input: {
-    question: string;
-    answer: string;
-    difficulty?: string;
-    sourceLectureId?: string;
-  }
-): Promise<
-  | { ok: true; card: FlashcardProgress }
-  | { ok: false; error: string }
+export async function saveCard(input: {
+  question: string;
+  answer: string;
+  difficulty?: string;
+  sourceLectureId?: string;
+}): Promise<
+  { ok: true; card: FlashcardProgress } | { ok: false; error: string }
 > {
   try {
     const userId = await requireUserId();
-    const card = saveFlashcard(userId, input);
+    const card = await saveFlashcard(userId, input);
     revalidatePath("/account");
     return { ok: true, card };
   } catch {
@@ -109,7 +100,7 @@ export async function reviewCard(
 ): Promise<{ ok: boolean }> {
   try {
     const userId = await requireUserId();
-    const ok = reviewFlashcard(userId, id, newMastery);
+    const ok = await reviewFlashcard(userId, id, newMastery);
     revalidatePath("/account");
     return { ok };
   } catch {
@@ -122,7 +113,7 @@ export async function deleteCard(
 ): Promise<{ ok: boolean }> {
   try {
     const userId = await requireUserId();
-    const ok = deleteFlashcard(userId, id);
+    const ok = await deleteFlashcard(userId, id);
     revalidatePath("/account");
     return { ok };
   } catch {
@@ -135,7 +126,7 @@ export async function deleteCard(
 export async function getMyStats(): Promise<UserStats> {
   try {
     const userId = await requireUserId();
-    return getUserStats(userId);
+    return await getUserStats(userId);
   } catch {
     return {
       totalLectures: 0,

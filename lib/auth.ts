@@ -1,11 +1,22 @@
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
-import Database from "better-sqlite3";
+import { Kysely } from "kysely";
+import { LibsqlDialect } from "@libsql/kysely-libsql";
 
 export const runtime = "nodejs";
 
+const db = new Kysely({
+  dialect: new LibsqlDialect({
+    url: process.env.TURSO_DATABASE_URL!,
+    authToken: process.env.TURSO_AUTH_TOKEN!,
+  }),
+});
+
 export const auth = betterAuth({
-  database: new Database("./sqlite.db"),
+  database: {
+    db,
+    type: "sqlite",
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,

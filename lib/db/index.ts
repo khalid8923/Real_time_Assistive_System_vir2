@@ -1,5 +1,4 @@
-import Database from "better-sqlite3";
-import path from "path";
+import { createClient, type Client } from "@libsql/client";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -63,99 +62,119 @@ export interface FlashcardProgress {
 /* Connection (Singleton)                                             */
 /* ------------------------------------------------------------------ */
 
-const DB_PATH = path.join(process.cwd(), "sqlite.db");
-
 const globalForDb = globalThis as unknown as {
-  __cb_db?: Database.Database;
+  __cb_db?: Client;
+  __cb_db_ready?: Promise<Client>;
 };
 
-function runMigrations(db: Database.Database) {
-  db.exec(`
-    /* ============ User Settings ============ */
-    CREATE TABLE IF NOT EXISTS user_settings (
-      id TEXT PRIMARY KEY,
-      userId TEXT NOT NULL UNIQUE,
-      theme TEXT NOT NULL DEFAULT 'dark',
-      transcriptFontSize INTEGER NOT NULL DEFAULT 16,
-      colorCodingEnabled INTEGER NOT NULL DEFAULT 1,
-      soundDetectionEnabled INTEGER NOT NULL DEFAULT 0,
-      soundSensitivityQuiet INTEGER NOT NULL DEFAULT 15,
-      soundSensitivityNormal INTEGER NOT NULL DEFAULT 45,
-      soundSensitivityLoud INTEGER NOT NULL DEFAULT 70,
-      soundSensitivitySpike INTEGER NOT NULL DEFAULT 30,
-      createdAt INTEGER NOT NULL,
-      updatedAt INTEGER NOT NULL
+function createDbClient(): Client {
+  const url = process.env.TURSO_DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+
+  if (!url) {
+    throw new Error(
+      "TURSO_DATABASE_URL is not set. Add it to .env.local"
     );
+  }
 
-    /* ============ Saved Lectures ============ */
-    CREATE TABLE IF NOT EXISTS saved_lectures (
-      id TEXT PRIMARY KEY,
-      userId TEXT NOT NULL,
-      name TEXT NOT NULL,
-      transcript TEXT NOT NULL,
-      summary TEXT,
-      mindMapJson TEXT,
-      glossaryJson TEXT,
-      wordCount INTEGER NOT NULL DEFAULT 0,
-      durationMs INTEGER NOT NULL DEFAULT 0,
-      createdAt INTEGER NOT NULL,
-      updatedAt INTEGER NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_lectures_user
-      ON saved_lectures(userId, createdAt DESC);
-
-    /* ============ Saved Glossary ============ */
-    CREATE TABLE IF NOT EXISTS saved_glossary (
-      id TEXT PRIMARY KEY,
-      userId TEXT NOT NULL,
-      term TEXT NOT NULL,
-      definition TEXT NOT NULL,
-      sourceLectureId TEXT,
-      starred INTEGER NOT NULL DEFAULT 1,
-      createdAt INTEGER NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_glossary_user
-      ON saved_glossary(userId, createdAt DESC);
-
-    /* ============ Flashcards Progress ============ */
-    CREATE TABLE IF NOT EXISTS flashcards_progress (
-      id TEXT PRIMARY KEY,
-      userId TEXT NOT NULL,
-      question TEXT NOT NULL,
-      answer TEXT NOT NULL,
-      difficulty TEXT NOT NULL DEFAULT 'medium',
-      sourceLectureId TEXT,
-      masteryLevel INTEGER NOT NULL DEFAULT 0,
-      reviewCount INTEGER NOT NULL DEFAULT 0,
-      lastReviewedAt INTEGER,
-      createdAt INTEGER NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_flashcards_user
-      ON flashcards_progress(userId, createdAt DESC);
-
-    /* ============ Admin Settings ============ */
-    CREATE TABLE IF NOT EXISTS admin_settings (
-      id TEXT PRIMARY KEY,
-      passwordHash TEXT NOT NULL,
-      passwordSalt TEXT NOT NULL,
-      updatedAt INTEGER NOT NULL
-    );
-  `);
+  return createClient({ url, authToken });
 }
 
-export function getDb(): Database.Database {
+export function getDb(): Client {
   if (globalForDb.__cb_db) return globalForDb.__cb_db;
-
-  const db = new Database(DB_PATH);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
-  runMigrations(db);
-
+  const db = createDbClient();
   globalForDb.__cb_db = db;
   return db;
+}
+
+/* ------------------------------------------------------------------ */
+/* Migrations                                                         */
+/* ------------------------------------------------------------------ */
+
+const MIGRATIONS: string[] = [
+  `CREATE TABLE IF NOT EXISTS user_settings (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL UNIQUE,
+    theme TEXT NOT NULL DEFAULT 'dark',
+    transcriptFontSize INTEGER NOT NULL DEFAULT 16,
+    colorCodingEnabled INTEGER NOT NULL DEFAULT 1,
+    soundDetectionEnabled INTEGER NOT NULL DEFAULT 0,
+    soundSensitivityQuiet INTEGER NOT NULL DEFAULT 15,
+    soundSensitivityNormal INTEGER NOT NULL DEFAULT 45,
+    soundSensitivityLoud INTEGER NOT NULL DEFAULT 70,
+    soundSensitivitySpike INTEGER NOT NULL DEFAULT 30,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+  )`,
+
+  `CREATE TABLE IF NOT EXISTS saved_lectures (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL,
+    name TEXT NOT NULL,
+    transcript TEXT NOT NULL,
+    summary TEXT,
+    mindMapJson TEXT,
+    glossaryJson TEXT,
+    wordCount INTEGER NOT NULL DEFAULT 0,
+    durationMs INTEGER NOT NULL DEFAULT 0,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+  )`,
+
+  `CREATE INDEX IF NOT EXISTS idx_lectures_user
+    ON saved_lectures(userId, createdAt DESC)`,
+
+  `CREATE TABLE IF NOT EXISTS saved_glossary (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL,
+    term TEXT NOT NULL,
+    definition TEXT NOT NULL,
+    sourceLectureId TEXT,
+    starred INTEGER NOT NULL DEFAULT 1,
+    createdAt INTEGER NOT NULL
+  )`,
+
+  `CREATE INDEX IF NOT EXISTS idx_glossary_user
+    ON saved_glossary(userId, createdAt DESC)`,
+
+  `CREATE TABLE IF NOT EXISTS flashcards_progress (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    difficulty TEXT NOT NULL DEFAULT 'medium',
+    sourceLectureId TEXT,
+    masteryLevel INTEGER NOT NULL DEFAULT 0,
+    reviewCount INTEGER NOT NULL DEFAULT 0,
+    lastReviewedAt INTEGER,
+    createdAt INTEGER NOT NULL
+  )`,
+
+  `CREATE INDEX IF NOT EXISTS idx_flashcards_user
+    ON flashcards_progress(userId, createdAt DESC)`,
+
+  `CREATE TABLE IF NOT EXISTS admin_settings (
+    id TEXT PRIMARY KEY,
+    passwordHash TEXT NOT NULL,
+    passwordSalt TEXT NOT NULL,
+    updatedAt INTEGER NOT NULL
+  )`,
+];
+
+export async function ensureDbReady(): Promise<Client> {
+  if (globalForDb.__cb_db_ready) {
+    return globalForDb.__cb_db_ready;
+  }
+
+  const db = getDb();
+
+  const readyPromise = (async () => {
+    await db.batch(MIGRATIONS, "write");
+    return db;
+  })();
+
+  globalForDb.__cb_db_ready = readyPromise;
+  return readyPromise;
 }
 
 /* ------------------------------------------------------------------ */

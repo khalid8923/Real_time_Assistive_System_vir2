@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminPassword } from "@/lib/db/queries";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -53,8 +52,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "الباسورد مطلوب." }, { status: 400 });
   }
 
-  // ✅ Use DB password OR fallback to env
-  const isValid = verifyAdminPassword(password.trim());
+  const isValid = await verifyAdminPassword(password.trim());
 
   if (!isValid) {
     const current = attempts.get(clientKey) ?? { count: 0, lockedUntil: 0 };

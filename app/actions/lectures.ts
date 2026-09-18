@@ -24,7 +24,7 @@ async function requireUserId(): Promise<string> {
 export async function getMyLectures(): Promise<SavedLecture[]> {
   try {
     const userId = await requireUserId();
-    return listLectures(userId);
+    return await listLectures(userId);
   } catch {
     return [];
   }
@@ -35,7 +35,7 @@ export async function getMyLecture(
 ): Promise<SavedLecture | null> {
   try {
     const userId = await requireUserId();
-    return getLecture(userId, id);
+    return await getLecture(userId, id);
   } catch {
     return null;
   }
@@ -48,7 +48,7 @@ export async function saveMyLecture(
 > {
   try {
     const userId = await requireUserId();
-    const lecture = saveLecture(userId, input);
+    const lecture = await saveLecture(userId, input);
     revalidatePath("/account");
     revalidatePath("/");
     return { ok: true, lecture };
@@ -63,7 +63,7 @@ export async function deleteMyLecture(
 ): Promise<{ ok: boolean }> {
   try {
     const userId = await requireUserId();
-    const deleted = deleteLecture(userId, id);
+    const deleted = await deleteLecture(userId, id);
     revalidatePath("/account");
     return { ok: deleted };
   } catch {
@@ -77,7 +77,7 @@ export async function renameMyLecture(
 ): Promise<{ ok: boolean }> {
   try {
     const userId = await requireUserId();
-    const renamed = renameLecture(userId, id, newName);
+    const renamed = await renameLecture(userId, id, newName);
     revalidatePath("/account");
     return { ok: renamed };
   } catch {

@@ -17,7 +17,7 @@ async function requireUserId(): Promise<string> {
 export async function getMySettings(): Promise<UserSettings | null> {
   try {
     const userId = await requireUserId();
-    return getSettings(userId);
+    return await getSettings(userId);
   } catch {
     return null;
   }
@@ -34,10 +34,12 @@ export async function updateMySettings(
     soundSensitivityLoud?: number;
     soundSensitivitySpike?: number;
   }
-): Promise<{ ok: true; settings: UserSettings } | { ok: false; error: string }> {
+): Promise<
+  { ok: true; settings: UserSettings } | { ok: false; error: string }
+> {
   try {
     const userId = await requireUserId();
-    const settings = updateSettings(userId, patch);
+    const settings = await updateSettings(userId, patch);
     revalidatePath("/account");
     return { ok: true, settings };
   } catch (err) {

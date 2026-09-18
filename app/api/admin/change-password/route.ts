@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  verifyAdminPassword,
-  setAdminPassword,
-} from "@/lib/db/queries";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { verifyAdminPassword, setAdminPassword } from "@/lib/db/queries";
+
 export const runtime = "nodejs";
 
 function isAdmin(request: NextRequest): boolean {
@@ -11,8 +9,16 @@ function isAdmin(request: NextRequest): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 5, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
   if (!isAdmin(request)) {
-    return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   let body: {
@@ -24,7 +30,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "طلب غير صالح." }, { status: 400 });
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
   const { currentPassword, newPassword, confirmPassword } = body;
@@ -35,44 +41,42 @@ export async function POST(request: NextRequest) {
     typeof confirmPassword !== "string"
   ) {
     return NextResponse.json(
-      { error: "كل الحقول مطلوبة." },
+      { error: "All fields are required." },
       { status: 400 }
     );
   }
 
-  // Verify current password
-  if (!verifyAdminPassword(currentPassword.trim())) {
+  if (!(await verifyAdminPassword(currentPassword.trim()))) {
     return NextResponse.json(
-      { error: "الباسورد الحالي غير صحيح." },
+      { error: "Current password is incorrect." },
       { status: 401 }
     );
   }
 
-  // Validate new password
   if (newPassword.length < 8) {
     return NextResponse.json(
-      { error: "الباسورد الجديد لازم 8 أحرف على الأقل." },
+      { error: "New password must be at least 8 characters." },
       { status: 400 }
     );
   }
 
   if (newPassword !== confirmPassword) {
     return NextResponse.json(
-      { error: "الباسوردين الجداد مش متطابقين." },
+      { error: "Passwords do not match." },
       { status: 400 }
     );
   }
 
   if (newPassword === currentPassword) {
     return NextResponse.json(
-      { error: "الباسورد الجديد لازم يكون مختلف عن الحالي." },
+      { error: "New password must be different from current." },
       { status: 400 }
     );
   }
 
-  setAdminPassword(newPassword.trim());
+  await setAdminPassword(newPassword.trim());
 
-  console.log(`[admin/change-password] ✓ Password updated`);
+  console.log(`[admin/change-password] Password updated`);
 
   return NextResponse.json({ ok: true });
 }
