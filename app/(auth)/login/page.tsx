@@ -2,15 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {
-  Mail,
-  Lock,
-  Loader2,
-  LogIn,
-  ShieldAlert,
-  Sparkles,
-} from "lucide-react";
+import { Mail, Lock, Loader2, LogIn, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
@@ -132,9 +126,14 @@ export default function LoginPage() {
   return (
     <div>
       <header className="mb-6 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-accent-1 shadow-lg shadow-primary/30">
-          <Sparkles className="h-6 w-6 text-white" />
-        </div>
+        <Image
+          src="/logo.png"
+          alt="CaptionBridge"
+          width={48}
+          height={48}
+          className="mx-auto mb-3 h-12 w-12 rounded-xl shadow-lg shadow-primary/20"
+          priority
+        />
         <h2 className="text-xl font-bold text-foreground">
           أهلاً بيك تاني 👋
         </h2>
@@ -235,9 +234,9 @@ export default function LoginPage() {
       </div>
 
       <p className="mt-4 text-center text-sm text-muted-foreground">
-        معندكش حساب؟{" "}
+        ليس لديك حساب؟{" "}
         <Link href="/signup" className="font-bold text-primary hover:underline">
-          أنشئ حساب جديد
+          أنشئ حساباً جديداً
         </Link>
       </p>
 
@@ -253,7 +252,6 @@ export default function LoginPage() {
           🚀 الدخول التجريبي (بدون حساب)
         </button>
 
-        {/* ✅ Admin link */}
         <button
           type="button"
           onClick={() => {

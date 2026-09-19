@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { motion } from "motion/react";
 import { PanelLeft, User } from "lucide-react";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
@@ -84,15 +85,20 @@ export default function AppShell({
             </button>
 
             <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-primary to-accent-1 shadow-sm">
-                <span className="text-xs font-black text-white">CB</span>
-              </div>
+              <Image
+                src="/logo.png"
+                alt="CaptionBridge"
+                width={36}
+                height={36}
+                className="h-9 w-9 rounded-xl shadow-sm"
+                priority
+              />
               <div className="hidden leading-tight sm:flex sm:flex-col">
                 <span className="text-sm font-bold tracking-tight">
                   CaptionBridge
                 </span>
                 <span className="text-[10px] text-muted-foreground">
-                  جسر التواصل للطلاب الصم
+                  رفيقك الذكي في المحاضرات الجامعية
                 </span>
               </div>
             </div>

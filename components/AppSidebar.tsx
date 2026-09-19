@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import * as React from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -78,13 +79,18 @@ export default function AppSidebar({
         >
           {!collapsed && (
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-primary to-accent-1 text-white shadow-sm">
-                <span className="text-xs font-black">CB</span>
-              </div>
+              <Image
+                src="/logo.png"
+                alt="CaptionBridge"
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded-lg shadow-sm"
+                priority
+              />
               <div className="leading-tight">
                 <p className="text-sm font-bold">CaptionBridge</p>
                 <p className="text-[9px] text-muted-foreground">
-                  للطلاب الصم
+                  للطلاب الجامعيين
                 </p>
               </div>
             </div>

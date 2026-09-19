@@ -1,41 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { generateText, parseJsonResponse } from "@/lib/ai/provider";
+import type { Flashcard, FlashcardDifficulty } from "@/lib/ai-types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const SYSTEM_PROMPT = `You are an academic action-item radar. You receive a lecture transcript and extract academic hints.
+const MAX_TEXT_LENGTH = 8000;
 
-Look for:
-- Exams and midterms
-- Assignments and homework
-- Deadlines
-- Important pages/chapters
-- Focus points ("this is very important")
+const SYSTEM_PROMPT = `You are a study-card generator for deaf university students. You receive a lecture transcript in Arabic (may contain English technical terms) and generate study flashcards.
 
-For each item:
-- type: "exam" | "assignment" | "deadline" | "page" | "important" | "note"
-- title: Short title (5-10 words)
-- details: Details
-- urgency: "high" | "medium" | "low"
+Your task: create 4-8 high-quality flashcards that test understanding of the lecture.
+
+For each card:
+- question: Clear question in Modern Standard Arabic (5-15 words)
+- answer: Concise answer in Arabic (10-40 words), keep English terms as-is (Array, API, React)
+- difficulty: "easy" | "medium" | "hard"
 
 Rules:
-- If no hints -> items: []
+- Questions should test understanding, not memorization of random facts
+- Cover the most important concepts from the lecture
+- If the text is too short or unclear, generate fewer cards (minimum 3)
+- If no useful content at all, return cards: []
+- Rely ONLY on the transcript content — never invent information
 - Reply with JSON only:
 {
-  "items": [
-    { "type": "exam", "title": "...", "details": "...", "urgency": "high" }
+  "cards": [
+    { "question": "...", "answer": "...", "difficulty": "medium" }
   ]
 }`;
 
-export interface ActionItem {
-  id: string;
-  type: "exam" | "assignment" | "deadline" | "page" | "important" | "note";
-  title: string;
-  details: string;
-  urgency: "high" | "medium" | "low";
-  detectedAt: number;
+interface SuccessResponse {
+  cards: Flashcard[];
 }
 
 interface ErrorResponse {
@@ -49,7 +45,25 @@ function jsonError(
   return NextResponse.json({ error: message }, { status });
 }
 
-export async function POST(request: NextRequest) {
+function isValidCard(card: unknown): card is Flashcard {
+  if (typeof card !== "object" || card === null) return false;
+  const c = card as Record<string, unknown>;
+  if (typeof c.question !== "string" || c.question.trim().length === 0)
+    return false;
+  if (typeof c.answer !== "string" || c.answer.trim().length === 0)
+    return false;
+  if (
+    c.difficulty !== "easy" &&
+    c.difficulty !== "medium" &&
+    c.difficulty !== "hard"
+  )
+    return false;
+  return true;
+}
+
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
   const ip = getClientIp(request);
   if (!rateLimit(ip, 10, 60_000).ok) {
     return NextResponse.json(
@@ -71,36 +85,36 @@ export async function POST(request: NextRequest) {
   }
 
   const text = rawText.trim();
-  const trimmed = text.length > 8000 ? text.slice(0, 8000) : text;
+  const trimmed =
+    text.length > MAX_TEXT_LENGTH ? text.slice(0, MAX_TEXT_LENGTH) : text;
 
   const result = await generateText({
     systemPrompt: SYSTEM_PROMPT,
     messages: [{ role: "user", content: `Text:\n\n${trimmed}` }],
-    temperature: 0.1,
+    temperature: 0.4,
     maxTokens: 2048,
     prefer: "groq",
   });
 
   if (!result.ok || !result.text) {
-    return jsonError(result.error || "Scan failed.", 502);
+    return jsonError(result.error || "Generation failed.", 502);
   }
 
-  const parsed = parseJsonResponse<{
-    items?: Omit<ActionItem, "id" | "detectedAt">[];
-  }>(result.text);
-
-  if (!parsed) {
+  const parsed = parseJsonResponse<{ cards?: unknown[] }>(result.text);
+  if (!parsed || !Array.isArray(parsed.cards)) {
     return jsonError("Response does not match schema.", 502);
   }
 
-  const items: ActionItem[] = (parsed.items ?? []).map((item) => ({
-    ...item,
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    detectedAt: Date.now(),
-  }));
+  const cards: Flashcard[] = parsed.cards
+    .filter(isValidCard)
+    .map((c) => ({
+      question: c.question.trim(),
+      answer: c.answer.trim(),
+      difficulty: c.difficulty as FlashcardDifficulty,
+    }));
 
   console.log(
-    `[action-items] OK via "${result.provider}" | found=${items.length}`
+    `[flashcards] OK via "${result.provider}" | count=${cards.length}`
   );
-  return NextResponse.json({ items }, { status: 200 });
+  return NextResponse.json({ cards }, { status: 200 });
 }

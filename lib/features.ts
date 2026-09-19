@@ -78,7 +78,6 @@ export const STUDENT_FEATURES: Feature[] = [
     description: "استخراج تكليفات ومواعيد الامتحانات من المحاضرة",
     icon: Target,
     category: "ai",
-    badge: "جديد",
   },
   {
     id: "classroomQuestions",
@@ -87,7 +86,6 @@ export const STUDENT_FEATURES: Feature[] = [
     description: "استنتاج أسئلة الطلاب من ردود الدكتور",
     icon: HelpCircle,
     category: "ai",
-    badge: "جديد",
   },
   {
     id: "translation",

@@ -1,9 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { signIn } from "@/lib/auth-client";
+import { Construction } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface GoogleButtonProps {
@@ -11,41 +9,21 @@ interface GoogleButtonProps {
 }
 
 export default function GoogleButton({ mode = "login" }: GoogleButtonProps) {
-  const [loading, setLoading] = React.useState(false);
-
-  const handleGoogle = async () => {
-    setLoading(true);
-    try {
-      await signIn.social({
-        provider: "google",
-        callbackURL: "/",
-      });
-    } catch (err) {
-      console.error("[google oauth]", err);
-      toast.error("فشل تسجيل الدخول بجوجل");
-      setLoading(false);
-    }
-  };
-
   return (
     <Button
       type="button"
       variant="outline"
-      onClick={handleGoogle}
-      disabled={loading}
-      className="h-11 w-full gap-2 rounded-xl border-border bg-background text-sm font-bold transition-colors hover:bg-muted"
+      disabled
+      aria-disabled="true"
+      title="جاري التطوير — قريباً"
+      className="relative h-11 w-full cursor-not-allowed gap-2 rounded-xl border-dashed border-border bg-muted/30 text-sm font-bold text-muted-foreground opacity-80"
     >
-      {loading ? (
-        <>
-          <Loader2 className="h-4 w-4 animate-spin" />
-          جارٍ التحويل...
-        </>
-      ) : (
-        <>
-          <GoogleIcon className="h-4 w-4" />
-          {mode === "login" ? "الدخول بجوجل" : "التسجيل بجوجل"}
-        </>
-      )}
+      <GoogleIcon className="h-4 w-4 opacity-60" />
+      <span>{mode === "login" ? "الدخول بجوجل" : "التسجيل بجوجل"}</span>
+      <span className="ms-auto inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+        <Construction className="h-2.5 w-2.5" />
+        جاري التطوير
+      </span>
     </Button>
   );
 }

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Mail,
@@ -9,7 +10,6 @@ import {
   User,
   Loader2,
   UserPlus,
-  Sparkles,
   GraduationCap,
   Building2,
 } from "lucide-react";
@@ -157,9 +157,14 @@ export default function SignupPage() {
   return (
     <div>
       <header className="mb-6 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-accent-1 shadow-lg shadow-primary/30">
-          <Sparkles className="h-6 w-6 text-white" />
-        </div>
+        <Image
+          src="/logo.png"
+          alt="CaptionBridge"
+          width={48}
+          height={48}
+          className="mx-auto mb-3 h-12 w-12 rounded-xl shadow-lg shadow-primary/20"
+          priority
+        />
         <h2 className="text-xl font-bold text-foreground">أهلاً بيك! 👋</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           أنشئ حسابك عشان تبدأ
@@ -288,9 +293,9 @@ export default function SignupPage() {
       </AuthForm>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        عندك حساب بالفعل؟{" "}
+        لديك حساب بالفعل؟{" "}
         <Link href="/login" className="font-bold text-primary hover:underline">
-          سجّل دخول
+          تسجيل الدخول
         </Link>
       </p>
     </div>

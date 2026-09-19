@@ -3,17 +3,16 @@
 import * as React from "react";
 import { motion, AnimatePresence, useDragControls } from "motion/react";
 import {
-  Bot,
   X,
   Send,
   Loader2,
-  MessageSquare,
   Sparkles,
   Trash2,
   User,
   GripHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import RobotIcon from "@/components/RobotIcon";
 
 interface Message {
   id: string;
@@ -142,7 +141,7 @@ export default function FloatingChat({ transcript }: FloatingChatProps) {
             aria-label="فتح المساعد الذكي"
             className="fixed bottom-20 left-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-linear-to-br from-primary to-accent-1 text-white shadow-lg shadow-primary/30 transition-transform hover:scale-105 active:scale-95 lg:bottom-6"
           >
-            <MessageSquare className="h-6 w-6" />
+            <RobotIcon className="h-8 w-8" />
             {messages.length > 0 && (
               <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm">
                 {messages.length}
@@ -175,7 +174,7 @@ export default function FloatingChat({ transcript }: FloatingChatProps) {
             >
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-primary to-accent-1 text-white shadow-sm">
-                  <Bot className="h-4 w-4" />
+                  <RobotIcon className="h-5 w-5" />
                 </div>
                 <div className="leading-tight">
                   <p className="text-xs font-bold">مساعد CaptionBridge</p>
@@ -214,8 +213,8 @@ export default function FloatingChat({ transcript }: FloatingChatProps) {
             >
               {messages.length === 0 && !loading && (
                 <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-                    <Sparkles className="h-6 w-6 text-primary" />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-accent-1 text-white shadow-md shadow-primary/20">
+                    <RobotIcon className="h-9 w-9" />
                   </div>
                   <div>
                     <p className="text-sm font-bold">أنا مساعدك الذكي</p>
@@ -263,7 +262,7 @@ export default function FloatingChat({ transcript }: FloatingChatProps) {
                     {msg.role === "user" ? (
                       <User className="h-3.5 w-3.5" />
                     ) : (
-                      <Bot className="h-3.5 w-3.5" />
+                      <RobotIcon className="h-4 w-4" />
                     )}
                   </div>
                   <div
@@ -282,7 +281,7 @@ export default function FloatingChat({ transcript }: FloatingChatProps) {
               {loading && (
                 <div className="flex gap-2">
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/20 text-primary">
-                    <Bot className="h-3.5 w-3.5" />
+                    <RobotIcon className="h-4 w-4" />
                   </div>
                   <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2">
                     <Loader2 className="h-3 w-3 animate-spin text-primary" />
