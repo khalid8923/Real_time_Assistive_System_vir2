@@ -15,6 +15,7 @@ export interface UseSpeechTranscriptionReturn {
   isListening: boolean;
   startListening: () => void;
   stopListening: () => void;
+  clearTranscript: () => void;
   currentTranscript: string;
   refinedChunks: RefinedChunk[];
   error: string | null;
@@ -190,6 +191,11 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
     }
     setIsListening(false);
   }, []);
+    const clearTranscript = useCallback(() => {
+    setCurrentTranscript("");
+    setRefinedChunks([]);
+    setError(null);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -208,6 +214,7 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
     isListening,
     startListening,
     stopListening,
+    clearTranscript,
     currentTranscript,
     refinedChunks,
     error,

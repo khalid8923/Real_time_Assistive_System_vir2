@@ -165,10 +165,9 @@ export default function LoginPage() {
 
         <AuthInput
           ref={emailRef}
-          label="إيميل الجامعة"
+          label="الإيميل"
           name="email"
           type="email"
-          placeholder="student@university.edu.eg"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           icon={<Mail className="h-4 w-4" />}

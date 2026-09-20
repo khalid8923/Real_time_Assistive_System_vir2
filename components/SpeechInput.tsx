@@ -35,6 +35,7 @@ interface SpeechInputProps {
   isListening: boolean;
   onToggleMic: () => void;
   onAnalyze: (data: AnalysisData) => void;
+  onClearTranscript?: () => void;
   error: string | null;
 }
 
@@ -44,6 +45,7 @@ export default function SpeechInput({
   isListening,
   onToggleMic,
   onAnalyze,
+  onClearTranscript,
   error,
 }: SpeechInputProps) {
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
@@ -164,10 +166,25 @@ export default function SpeechInput({
               تمييز
             </button>
 
-            <SearchInTranscript
-              text={currentTranscript}
-              containerRef={textareaRef}
-            />
+            {currentTranscript.trim().length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (
+                    confirm("متأكد إنك عايز تمسح النص كله؟ مش هينفع ترجعه.")
+                  ) {
+                    onClearTranscript?.();
+                    setAnalysis(null);
+                    setAnalysisError(null);
+                  }
+                }}
+                aria-label="مسح النص"
+                title="مسح النص المباشر"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 text-destructive transition-colors hover:bg-destructive/15"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
 
             <ExportButton
               transcript={currentTranscript}

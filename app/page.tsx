@@ -145,6 +145,7 @@ export default function Page() {
                 : speech.startListening()
             }
             onAnalyze={handleAnalyze}
+            onClearTranscript={speech.clearTranscript}
             error={speech.error}
           />
         );

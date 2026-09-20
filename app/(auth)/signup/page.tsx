@@ -21,10 +21,8 @@ import {
   AuthInput,
   AuthPasswordInput,
   AuthError,
-  AuthDivider,
   type ValidationState,
 } from "@/components/auth/AuthForm";
-import GoogleButton from "@/components/auth/GoogleButton";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -171,9 +169,9 @@ export default function SignupPage() {
         </p>
       </header>
 
-      <GoogleButton mode="signup" />
-
-      <AuthDivider label="أو بالإيميل" />
+      {/* ✅ Google signup مخفي مؤقتاً (سايبه في الباك اند) */}
+      {/* <GoogleButton mode="signup" /> */}
+      {/* <AuthDivider label="أو بالإيميل" /> */}
 
       <AuthForm onSubmit={handleSubmit}>
         <AuthError message={error} />
@@ -183,7 +181,6 @@ export default function SignupPage() {
           label="الاسم الكامل"
           name="name"
           type="text"
-          placeholder="خالد محمد"
           value={name}
           onChange={(e) => setName(e.target.value)}
           icon={<User className="h-4 w-4" />}
@@ -197,7 +194,6 @@ export default function SignupPage() {
           label="الجامعة"
           name="university"
           type="text"
-          placeholder="جامعة حلوان"
           value={university}
           onChange={(e) => setUniversity(e.target.value)}
           icon={<Building2 className="h-4 w-4" />}
@@ -210,7 +206,6 @@ export default function SignupPage() {
           label="الرقم الجامعي"
           name="studentId"
           type="text"
-          placeholder="e2511081"
           value={studentId}
           onChange={(e) => setStudentId(e.target.value)}
           icon={<GraduationCap className="h-4 w-4" />}
@@ -220,10 +215,9 @@ export default function SignupPage() {
         />
 
         <AuthInput
-          label="إيميل الجامعة"
+          label="الإيميل"
           name="email"
           type="email"
-          placeholder="student@university.edu.eg"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           icon={<Mail className="h-4 w-4" />}
