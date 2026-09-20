@@ -142,9 +142,9 @@ export default function LoginPage() {
         </p>
       </header>
 
-      <GoogleButton mode="login" />
-
-      <AuthDivider label="أو بالإيميل" />
+      {/* ✅ Google login مخفي مؤقتاً */}
+      {/* <GoogleButton mode="login" /> */}
+      {/* <AuthDivider label="أو بالإيميل" /> */}
 
       {locked && (
         <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm">
