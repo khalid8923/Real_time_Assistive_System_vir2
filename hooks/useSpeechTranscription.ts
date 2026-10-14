@@ -22,9 +22,9 @@ export interface UseSpeechTranscriptionReturn {
   isSupported: boolean;
 }
 
-/** 25 ثانية (كانت 15) — يوفر ~40% من استدعاءات Whisper */
-const CHUNK_DURATION_MS = 25_000;
-const MIN_BLOB_SIZE = 5000;
+/** 6 ثواني — للحصول على feedback أسرع (يستنزف rate limit أسرع) */
+const CHUNK_DURATION_MS = 6_000;
+const MIN_BLOB_SIZE = 4000;
 
 export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
   const [isListening, setIsListening] = useState(false);
@@ -48,6 +48,12 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
     isProcessingQueueRef.current = true;
 
     while (chunkQueueRef.current.length > 0) {
+      if (isStoppingRef.current) {
+        // المستخدم وقّف — امسح الطابور واطلع
+        chunkQueueRef.current = [];
+        break;
+      }
+
       const blob = chunkQueueRef.current.shift();
       if (!blob) continue;
 
@@ -63,13 +69,7 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
           signal: abortControllerRef.current.signal,
         });
 
-        const data: {
-          text?: string;
-          topic?: string;
-          children?: string[];
-          terms?: { term: string; definition: string }[];
-          error?: string;
-        } = await response.json();
+        const data: { text?: string; error?: string } = await response.json();
 
         if (!response.ok) {
           setError(data.error || "فشل معالجة الصوت.");
@@ -84,9 +84,9 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
         const refined: RefinedChunk = {
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
           text: cleanText,
-          topic: (data.topic ?? "").trim(),
-          children: Array.isArray(data.children) ? data.children : [],
-          terms: Array.isArray(data.terms) ? data.terms : [],
+          topic: "",
+          children: [],
+          terms: [],
           timestamp: Date.now(),
         };
 
@@ -96,7 +96,6 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
         setRefinedChunks((prev) => [...prev, refined]);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
-          // إلغاء طبيعي — تجاهل
           return;
         }
         console.error("[smart] Request failed:", err);
@@ -190,24 +189,32 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
   }, [isListening, startRecording]);
 
   const stopListening = useCallback(() => {
+    // 1. علّم إننا بنوقف
     isStoppingRef.current = true;
-    if (rotationTimerRef.current) clearTimeout(rotationTimerRef.current);
 
-    // إلغاء أي طلب جاري
+    // 2. ألغِ أي طلب جاري
     if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+      try { abortControllerRef.current.abort(); } catch {}
       abortControllerRef.current = null;
     }
 
+    // 3. امسح الطابور
+    chunkQueueRef.current = [];
+    isProcessingQueueRef.current = false;
+
+    // 4. اقفل الـ recorder
+    if (rotationTimerRef.current) clearTimeout(rotationTimerRef.current);
     if (recorderRef.current && recorderRef.current.state === "recording") {
-      recorderRef.current.stop();
+      try { recorderRef.current.stop(); } catch {}
     }
     recorderRef.current = null;
 
+    // 5. اقفل الـ stream
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
+
     setIsListening(false);
   }, []);
 
@@ -221,9 +228,11 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
     return () => {
       isStoppingRef.current = true;
       if (rotationTimerRef.current) clearTimeout(rotationTimerRef.current);
-      if (abortControllerRef.current) abortControllerRef.current.abort();
+      if (abortControllerRef.current) {
+        try { abortControllerRef.current.abort(); } catch {}
+      }
       if (recorderRef.current && recorderRef.current.state === "recording") {
-        recorderRef.current.stop();
+        try { recorderRef.current.stop(); } catch {}
       }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());

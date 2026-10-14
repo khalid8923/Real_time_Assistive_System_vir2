@@ -1,6 +1,6 @@
-﻿/* ================================================================== */
+/* ================================================================== */
 /*  CaptionBridge — Unified Error System                              */
-/*  تصنيفات الأخطاء + رسائل عربية جاهزة                              */
+/*  تصنيفات + عنوان + شرح بسيط + نصيحة                                */
 /* ================================================================== */
 
 export type ErrorCategory =
@@ -20,7 +20,9 @@ export type ErrorCategory =
 export interface AppError {
   category: ErrorCategory;
   code: string;
+  title: string;
   userMessage: string;
+  hint?: string;
   technicalMessage: string;
   httpStatus?: number;
   retryable: boolean;
@@ -29,26 +31,115 @@ export interface AppError {
 }
 
 /* ------------------------------------------------------------------ */
-/* Arabic messages per category                                       */
+/* Metadata لكل تصنيف                                                 */
 /* ------------------------------------------------------------------ */
 
-export const USER_MESSAGES: Record<ErrorCategory, string> = {
-  network: "في مشكلة في الاتصال بالإنترنت. اتأكد إن الشبكة شغالة وحاول تاني.",
-  timeout: "الخدمة اتأخرت في الرد. جرّب تاني بعد لحظة.",
-  offline: "إنت مش متصل بالإنترنت. لما ترجع الاتصال هيكمل الشغل.",
-  auth: "الجلسة انتهت. من فضلك سجّل دخول من جديد.",
-  permission: "معندكش صلاحية للعملية دي. راجع الأدمن لو محتاجها.",
-  notFound: "اللي بتدور عليه مش موجود أو اتحذف.",
-  validation: "في بيانات ناقصة أو غير صحيحة. راجعها وحاول تاني.",
-  rateLimit: "طلبات كثيرة بسرعة. استنى شوية وحاول تاني.",
-  server: "في مشكلة في السيرفر. فريقنا بيراجعها دلوقتي.",
-  provider: "خدمة الذكاء الاصطناعي مشغولة. جرّب بعد لحظة.",
-  storage: "مش قادرين نحفظ البيانات مؤقتاً. جرّب تمسح بيانات المتصفح.",
-  unknown: "في مشكلة غير متوقعة حصلت. حاول تاني ولو استمرت كلّم الدعم.",
+export interface CategoryMeta {
+  title: string;
+  description: string;
+  hint: string;
+  icon:
+    | "wifi"
+    | "clock"
+    | "lock"
+    | "shield"
+    | "search"
+    | "alert"
+    | "server"
+    | "hard-drive"
+    | "refresh";
+  color: string;
+}
+
+export const CATEGORY_META: Record<ErrorCategory, CategoryMeta> = {
+  network: {
+    title: "مشكلة في الاتصال",
+    description: "مقدرناش نوصل للسيرفر. الشبكة ممكن تكون ضعيفة.",
+    hint: "اتأكد إن الإنترنت شغال وحاول تاني",
+    icon: "wifi",
+    color: "amber",
+  },
+  timeout: {
+    title: "الخدمة اتأخرت",
+    description: "الرد أخد وقت أطول من المتوقع.",
+    hint: "جرّب تاني بعد لحظة",
+    icon: "clock",
+    color: "amber",
+  },
+  offline: {
+    title: "مفيش إنترنت",
+    description: "إنت مش متصل بالإنترنت حالياً.",
+    hint: "لما الاتصال يرجع هنكمل تلقائياً",
+    icon: "wifi",
+    color: "amber",
+  },
+  auth: {
+    title: "انتهت الجلسة",
+    description: "محتاج تسجّل دخول من جديد عشان تكمّل.",
+    hint: "سجّل دخولك وهنرجعك لنفس المكان",
+    icon: "lock",
+    color: "rose",
+  },
+  permission: {
+    title: "معندكش صلاحية",
+    description: "الحساب ده مش مسموح له بالعملية دي.",
+    hint: "كلّم الأدمن لو محتاج الصلاحية",
+    icon: "shield",
+    color: "rose",
+  },
+  notFound: {
+    title: "مش موجود",
+    description: "اللي بتدور عليه مش موجود أو اتحذف.",
+    hint: "جرّب ترجع للصفحة السابقة",
+    icon: "search",
+    color: "amber",
+  },
+  validation: {
+    title: "بيانات غير صحيحة",
+    description: "في بيانات ناقصة أو مش مطابقة للمطلوب.",
+    hint: "راجع البيانات وحاول تاني",
+    icon: "alert",
+    color: "amber",
+  },
+  rateLimit: {
+    title: "طلبات كثيرة",
+    description: "بعتنالك طلبات كتير في وقت قصير.",
+    hint: "استنى دقيقة وحاول تاني",
+    icon: "clock",
+    color: "amber",
+  },
+  server: {
+    title: "مشكلة في السيرفر",
+    description: "السيرفر مش قادر يكمّل الطلب حالياً.",
+    hint: "مش مشكلة عندك — جرّب تاني بعد لحظة",
+    icon: "server",
+    color: "rose",
+  },
+  provider: {
+    title: "خدمة الذكاء الاصطناعي مشغولة",
+    description: "مزود الذكاء الاصطناعي بيرد ببطء أو مش متاح.",
+    hint: "جرّب تاني — بنحول تلقائياً لمزود تاني",
+    icon: "server",
+    color: "amber",
+  },
+  storage: {
+    title: "مشكلة في التخزين",
+    description: "مقدرناش نحفظ البيانات مؤقتاً على الجهاز.",
+    hint: "جرّب تمسح بيانات المتصفح لمدة دقيقة",
+    icon: "hard-drive",
+    color: "amber",
+  },
+  unknown: {
+    title: "حصلت مشكلة غير متوقعة",
+    description: "في حاجة مش عادية حصلت. مش عارفين سببها بالظبط.",
+    hint: "جرّب تاني — لو استمرت كلّم الدعم",
+    icon: "alert",
+    color: "rose",
+  },
 };
 
 /* ------------------------------------------------------------------ */
-/* HTTP status → category mapping                                     */
+/* HTTP status → category                                             */
 /* ------------------------------------------------------------------ */
 
 export function categoryFromStatus(status: number): ErrorCategory {
@@ -65,84 +156,7 @@ export function categoryFromStatus(status: number): ErrorCategory {
 }
 
 /* ------------------------------------------------------------------ */
-/* Normalize any thrown error → AppError                              */
-/* ------------------------------------------------------------------ */
-
-export function normalizeError(err: unknown, requestId?: string): AppError {
-  const ts = Date.now();
-
-  // Already an AppError
-  if (err && typeof err === "object" && "category" in err && "userMessage" in err) {
-    return err as AppError;
-  }
-
-  // DOMException (fetch abort / network)
-  if (err instanceof DOMException) {
-    if (err.name === "AbortError") {
-      return {
-        category: "timeout",
-        code: "REQUEST_ABORTED",
-        userMessage: USER_MESSAGES.timeout,
-        technicalMessage: err.message,
-        retryable: true,
-        requestId,
-        timestamp: ts,
-      };
-    }
-    return {
-      category: "network",
-      code: "DOM_EXCEPTION",
-      userMessage: USER_MESSAGES.network,
-      technicalMessage: `${err.name}: ${err.message}`,
-      retryable: true,
-      requestId,
-      timestamp: ts,
-    };
-  }
-
-  // TypeError — غالباً فشل شبكة في fetch
-  if (err instanceof TypeError) {
-    return {
-      category: navigator?.onLine === false ? "offline" : "network",
-      code: "NETWORK_ERROR",
-      userMessage:
-        navigator?.onLine === false
-          ? USER_MESSAGES.offline
-          : USER_MESSAGES.network,
-      technicalMessage: err.message,
-      retryable: true,
-      requestId,
-      timestamp: ts,
-    };
-  }
-
-  // Error عادي
-  if (err instanceof Error) {
-    return {
-      category: "unknown",
-      code: "GENERIC_ERROR",
-      userMessage: USER_MESSAGES.unknown,
-      technicalMessage: err.message,
-      retryable: true,
-      requestId,
-      timestamp: ts,
-    };
-  }
-
-  // نص أو أي حاجة تانية
-  return {
-    category: "unknown",
-    code: "UNKNOWN_THROWN",
-    userMessage: USER_MESSAGES.unknown,
-    technicalMessage: String(err),
-    retryable: true,
-    requestId,
-    timestamp: ts,
-  };
-}
-
-/* ------------------------------------------------------------------ */
-/* Factory                                                            */
+/* Create error                                                       */
 /* ------------------------------------------------------------------ */
 
 export function createError(
@@ -155,10 +169,13 @@ export function createError(
     userMessage?: string;
   }
 ): AppError {
+  const meta = CATEGORY_META[category];
   return {
     category,
     code: options?.code ?? category.toUpperCase(),
-    userMessage: options?.userMessage ?? USER_MESSAGES[category],
+    title: meta.title,
+    userMessage: options?.userMessage ?? meta.description,
+    hint: meta.hint,
     technicalMessage: options?.technicalMessage ?? "",
     httpStatus: options?.httpStatus,
     requestId: options?.requestId,
@@ -170,12 +187,71 @@ export function createError(
 }
 
 /* ------------------------------------------------------------------ */
+/* Normalize any thrown error                                         */
+/* ------------------------------------------------------------------ */
+
+export function normalizeError(err: unknown, requestId?: string): AppError {
+  // Already AppError
+  if (
+    err &&
+    typeof err === "object" &&
+    "category" in err &&
+    "title" in err &&
+    "userMessage" in err
+  ) {
+    return err as AppError;
+  }
+
+  // DOMException (abort)
+  if (err instanceof DOMException) {
+    if (err.name === "AbortError") {
+      return createError("timeout", {
+        code: "REQUEST_ABORTED",
+        technicalMessage: err.message,
+        requestId,
+      });
+    }
+    return createError("network", {
+      code: "DOM_EXCEPTION",
+      technicalMessage: `${err.name}: ${err.message}`,
+      requestId,
+    });
+  }
+
+  // TypeError — network error
+  if (err instanceof TypeError) {
+    const offline =
+      typeof navigator !== "undefined" && navigator.onLine === false;
+    return createError(offline ? "offline" : "network", {
+      code: "NETWORK_ERROR",
+      technicalMessage: err.message,
+      requestId,
+    });
+  }
+
+  // Error
+  if (err instanceof Error) {
+    return createError("unknown", {
+      code: "GENERIC_ERROR",
+      technicalMessage: err.message,
+      requestId,
+    });
+  }
+
+  // غير معروف
+  return createError("unknown", {
+    code: "UNKNOWN_THROWN",
+    technicalMessage: String(err),
+    requestId,
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /* Logging                                                            */
 /* ------------------------------------------------------------------ */
 
 export function logError(err: AppError): void {
   if (process.env.NODE_ENV === "production") {
-    // في الإنتاج: ممكن ترسله لخدمة monitoring
     console.error("[app-error]", {
       code: err.code,
       category: err.category,

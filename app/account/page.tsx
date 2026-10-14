@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ProfileTab from "@/components/account/ProfileTab";
+import ProgressDashboard from "@/components/ProgressDashboard";
 import LecturesTab from "@/components/account/LecturesTab";
 import StudyTab from "@/components/account/StudyTab";
 import SettingsTab from "@/components/account/SettingsTab";
@@ -164,6 +165,9 @@ export default function AccountPage() {
             />
           </div>
         )}
+
+        {/* ==================== PROGRESS DASHBOARD ==================== */}
+        {stats && <ProgressDashboard stats={stats} />}
 
         {/* ==================== TABS ==================== */}
         <Tabs defaultValue="profile" className="space-y-6">

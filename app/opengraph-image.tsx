@@ -1,7 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
-export const alt = "CaptionBridge — ترجمة فورية للطلاب الصم";
+export const alt = "CaptionBridge — رفيقك الذكي في المحاضرات الجامعية";
 export const size = {
   width: 1200,
   height: 630,
@@ -33,7 +32,7 @@ export default async function Image() {
             width: "500px",
             height: "500px",
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(168, 85, 247, 0.3) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(132, 112, 255, 0.3) 0%, transparent 70%)",
           }}
         />
         <div
@@ -44,7 +43,7 @@ export default async function Image() {
             width: "500px",
             height: "500px",
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(103, 191, 255, 0.3) 0%, transparent 70%)",
           }}
         />
 
@@ -66,7 +65,7 @@ export default async function Image() {
               justifyContent: "center",
               paddingLeft: "16px",
               borderRadius: "16px",
-              background: "linear-gradient(135deg, #6366f1, #a855f7)",
+              background: "linear-gradient(135deg, #8470ff, #67bfff)",
               border: "2px solid rgba(255,255,255,0.2)",
             }}
           >
@@ -95,7 +94,7 @@ export default async function Image() {
             direction: "rtl",
           }}
         >
-          جسر التواصل للطلاب الصم
+          رفيقك الذكي في المحاضرات الجامعية
         </div>
 
         <div
@@ -118,7 +117,7 @@ export default async function Image() {
             marginTop: "60px",
           }}
         >
-          {["ترجمة فورية", "ذكاء اصطناعي", "للطلاب الصم"].map((tag) => (
+          {["ترجمة فورية", "ذكاء اصطناعي", "للطلاب الجامعيين"].map((tag) => (
             <div
               key={tag}
               style={{

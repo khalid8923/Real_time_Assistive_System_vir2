@@ -4,62 +4,123 @@ import { rateLimit, getClientIp } from "@/lib/rate-limit";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/audio/transcriptions";
-const GROQ_MODEL = "whisper-large-v3-turbo";
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
-
 const EMPTY_RESPONSE = { text: "", topic: "", children: [], terms: [] };
 
 /* ------------------------------------------------------------------ */
-/* Retry helper                                                       */
+/* Multi-key Hakim with round-robin + auto-failover                   */
 /* ------------------------------------------------------------------ */
 
-async function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
+function getHakimKeys(): string[] {
+  return [
+    process.env.HAKIM_API_KEY?.trim(),
+    process.env.HAKIM_API_KEY_2?.trim(),
+    process.env.HAKIM_API_KEY_3?.trim(),
+  ].filter((k): k is string => !!k && k.length > 0);
 }
 
-async function fetchWithRetry(
-  url: string,
-  init: RequestInit,
-  maxAttempts = 3
-): Promise<Response> {
-  let lastResponse: Response | null = null;
-  let lastError: unknown = null;
+// Simple round-robin counter — يتصفّر كل restart
+let hakimRoundRobin = 0;
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+async function transcribeWithHakim(audio: Blob): Promise<string> {
+  const keys = getHakimKeys();
+  if (keys.length === 0) return "";
+
+  // ابدأ من المفتاح التالي في الـ round-robin
+  const startIdx = hakimRoundRobin % keys.length;
+  hakimRoundRobin = (hakimRoundRobin + 1) % keys.length;
+
+  // جرّب كل المفاتيح بالترتيب (يبدأ من الـ round-robin)
+  for (let i = 0; i < keys.length; i++) {
+    const idx = (startIdx + i) % keys.length;
+    const apiKey = keys[idx];
+
+    const formData = new FormData();
+    formData.append("file", audio, "chunk.webm");
+    formData.append("model", "hakim-arab-v2");
+    formData.append("language", "ar");
+    formData.append("response_format", "json");
+
     try {
-      const res = await fetch(url, init);
-      lastResponse = res;
+      const res = await fetch(
+        "https://api.tryhakim.ai/v1/audio/transcriptions",
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}` },
+          body: formData,
+        }
+      );
 
-      // نجاح أو خطأ غير قابل للـ retry
-      if (res.ok) return res;
-      if (res.status !== 429 && res.status < 500) return res;
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`[hakim #${idx + 1}] ${res.status}:`, errText.slice(0, 150));
 
-      // 429 أو 5xx — جرب تاني
-      if (attempt < maxAttempts - 1) {
-        const retryAfter = res.headers.get("retry-after");
-        const delay = retryAfter
-          ? Math.min(parseInt(retryAfter, 10) * 1000, 8000)
-          : 800 * Math.pow(2, attempt); // 800ms, 1600ms, 3200ms
-        console.warn(
-          `[smart] retry ${attempt + 1}/${maxAttempts - 1} after ${delay}ms (status ${res.status})`
-        );
-        await sleep(delay);
-        continue;
+        // 429 أو 401 → جرّب المفتاح التالي
+        if (res.status === 429 || res.status === 401 || res.status === 403) {
+          continue;
+        }
+        // خطأ تاني → اطلع
+        return "";
       }
+
+      const data = (await res.json()) as {
+        text?: string;
+        data?: { text?: string };
+      };
+
+      const text = (data.text ?? data.data?.text ?? "").trim();
+      if (text.length > 0) {
+        console.log(`[smart] Hakim key #${idx + 1} returned ${text.length}c`);
+        return text;
+      }
+
+      // نص فاضي → جرّب المفتاح التالي
+      console.log(`[smart] Hakim key #${idx + 1} returned empty`);
     } catch (err) {
-      lastError = err;
-      if (attempt < maxAttempts - 1) {
-        const delay = 800 * Math.pow(2, attempt);
-        console.warn(`[smart] retry ${attempt + 1} after network error`);
-        await sleep(delay);
-        continue;
-      }
+      console.warn(`[hakim #${idx + 1}] threw:`, err);
+      continue;
     }
   }
 
-  if (lastResponse) return lastResponse;
-  throw lastError ?? new Error("Whisper fetch failed after retries");
+  return "";
+}
+
+/* ------------------------------------------------------------------ */
+/* Groq Whisper (fallback)                                            */
+/* ------------------------------------------------------------------ */
+
+async function transcribeWithGroq(audio: Blob): Promise<string> {
+  const apiKey = process.env.GROQ_API_KEY?.trim();
+  if (!apiKey) return "";
+
+  const formData = new FormData();
+  formData.append("file", audio, "chunk.webm");
+  formData.append("model", "whisper-large-v3-turbo");
+  formData.append("response_format", "json");
+  formData.append("temperature", "0");
+  formData.append("language", "ar");
+  formData.append(
+    "prompt",
+    "دكتور جامعي يشرح بالعربي المصري. احتفظ بالمصطلحات الإنجليزية."
+  );
+
+  const res = await fetch(
+    "https://api.groq.com/openai/v1/audio/transcriptions",
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: formData,
+    }
+  );
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error(`[groq] ${res.status}:`, errText.slice(0, 200));
+    return "";
+  }
+
+  const data = (await res.json()) as { text?: string };
+  return (data.text ?? "").trim();
 }
 
 /* ------------------------------------------------------------------ */
@@ -68,18 +129,10 @@ async function fetchWithRetry(
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 10, 60_000).ok) {
+  if (!rateLimit(ip, 15, 60_000).ok) {
     return NextResponse.json(
       { error: "Too many requests. Try again in a minute." },
       { status: 429 }
-    );
-  }
-
-  const groqKey = process.env.GROQ_API_KEY?.trim();
-  if (!groqKey) {
-    return NextResponse.json(
-      { error: "Server misconfiguration." },
-      { status: 500 }
     );
   }
 
@@ -101,61 +154,42 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Audio too large." }, { status: 413 });
   }
 
-  const whisperForm = new FormData();
-  whisperForm.append("file", audio, "chunk.webm");
-  whisperForm.append("model", GROQ_MODEL);
-  whisperForm.append("response_format", "json");
-  whisperForm.append("temperature", "0");
-  whisperForm.append("language", "ar");
-  whisperForm.append(
-    "prompt",
-    "The speaker is a university professor explaining an academic topic in Arabic (Egyptian or Modern Standard Arabic). Preserve technical terms in English."
-  );
+  let rawText = "";
+  let provider = "";
 
+  // 1. جرّب Hakim (multi-key round-robin + failover)
   try {
-    const res = await fetchWithRetry(GROQ_ENDPOINT, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${groqKey}` },
-      body: whisperForm,
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error(
-        `[smart] Whisper error ${res.status} (final):`,
-        errText.slice(0, 200)
-      );
-      // 429 نهائي — رجّع 429 عشان الفرونت يعرف
-      if (res.status === 429) {
-        return NextResponse.json(
-          { error: "Transcription service busy." },
-          { status: 429 }
-        );
-      }
-      return NextResponse.json(EMPTY_RESPONSE, { status: 200 });
-    }
-
-    const data = (await res.json()) as { text?: string };
-    const rawText = (data.text ?? "").trim();
-
-    if (!rawText) {
-      return NextResponse.json(EMPTY_RESPONSE, { status: 200 });
-    }
-
-    const hasArabic = /[\u0600-\u06FF]/.test(rawText);
-    const hasLatin = /[a-zA-Z]{3,}/.test(rawText);
-    if (!hasArabic && !hasLatin) {
-      return NextResponse.json(EMPTY_RESPONSE, { status: 200 });
-    }
-
-    console.log(`[smart] OK | text=${rawText.length}c`);
-
-    return NextResponse.json(
-      { text: rawText, topic: "", children: [], terms: [] },
-      { status: 200 }
-    );
+    rawText = await transcribeWithHakim(audio);
+    if (rawText) provider = "hakim";
   } catch (err) {
-    console.error("[smart] Threw after retries:", err);
+    console.warn("[smart] hakim threw:", err);
+  }
+
+  // 2. لو فشل، Groq
+  if (!rawText) {
+    console.log("[smart] Hakim empty — falling back to Groq");
+    try {
+      rawText = await transcribeWithGroq(audio);
+      if (rawText) provider = "groq";
+    } catch (err) {
+      console.warn("[smart] groq threw:", err);
+    }
+  }
+
+  if (!rawText) {
     return NextResponse.json(EMPTY_RESPONSE, { status: 200 });
   }
+
+  const hasArabic = /[\u0600-\u06FF]/.test(rawText);
+  const hasLatin = /[a-zA-Z]{3,}/.test(rawText);
+  if (!hasArabic && !hasLatin) {
+    return NextResponse.json(EMPTY_RESPONSE, { status: 200 });
+  }
+
+  console.log(`[smart] OK via "${provider}" | text=${rawText.length}c`);
+
+  return NextResponse.json(
+    { text: rawText, topic: "", children: [], terms: [] },
+    { status: 200 }
+  );
 }

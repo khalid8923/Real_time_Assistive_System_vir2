@@ -13,6 +13,16 @@ import KeywordsPanel from "@/components/KeywordsPanel";
 import FlashcardsPanel from "@/components/FlashcardsPanel";
 import ActionItemsPanel from "@/components/ActionItemsPanel";
 import ClassroomQuestionsPanel from "@/components/ClassroomQuestionsPanel";
+import ComparisonTablePanel from "@/components/ComparisonTablePanel";
+import AnalogyMapPanel from "@/components/AnalogyMapPanel";
+import EquationsPanel from "@/components/EquationsPanel";
+import SystemExplorerPanel from "@/components/SystemExplorerPanel";
+import VisualizeThisPanel from "@/components/VisualizeThisPanel";
+import CausalLoopPanel from "@/components/CausalLoopPanel";
+import ArgumentMapPanel from "@/components/ArgumentMapPanel";
+import LectureTimelinePanel from "@/components/LectureTimelinePanel";
+import FlowDiagramPanel from "@/components/FlowDiagramPanel";
+import InfographicPanel from "@/components/InfographicPanel";
 import FloatingChat from "@/components/FloatingChat";
 import ScrollToTop from "@/components/ScrollToTop";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -57,7 +67,14 @@ export default function Page() {
     if (data.topic && data.topic.trim() !== "") {
       setAllTopics((prev) => {
         if (prev.some((t) => t.topic === data.topic)) return prev;
-        return [...prev, { topic: data.topic, children: data.children }];
+        return [
+          ...prev,
+          {
+            topic: data.topic,
+            children: data.children,
+            firstSeenAt: Date.now(),
+          },
+        ];
       });
     }
 
@@ -105,7 +122,7 @@ export default function Page() {
       }
     }
 
-    setAllTopics(topic ? [{ topic, children }] : []);
+    setAllTopics(topic ? [{ topic, children, firstSeenAt: Date.now() }] : []);
     setAllTerms(terms);
     setActiveFeature("captions");
   }, []);
@@ -177,6 +194,29 @@ export default function Page() {
             onQuestionsChange={setClassroomQuestions}
           />
         );
+      case "argument":
+        return <ArgumentMapPanel transcript={displayTranscript} />;
+      case "causal":
+        return <CausalLoopPanel transcript={displayTranscript} />;
+      case "visualize":
+        return <VisualizeThisPanel transcript={displayTranscript} />;
+      case "system":
+        return <SystemExplorerPanel transcript={displayTranscript} />;
+      case "equations":
+        return <EquationsPanel transcript={displayTranscript} />;
+      case "analogy":
+        return <AnalogyMapPanel transcript={displayTranscript} />;
+      case "timeline":
+        return <LectureTimelinePanel
+          refinedChunks={speech.refinedChunks}
+          currentTranscript={displayTranscript}
+        />;
+      case "comparison":
+        return <ComparisonTablePanel transcript={displayTranscript} />;
+      case "flowDiagram":
+        return <FlowDiagramPanel transcript={displayTranscript} />;
+      case "infographic":
+        return <InfographicPanel transcript={displayTranscript} />;
       default:
         return <ComingSoon featureId={activeFeature} />;
     }

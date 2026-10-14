@@ -1,23 +1,19 @@
 /* ================================================================== */
-/*  API Client — fetch wrapper مع timeout و retry و error handling     */
+/*  API Client — fetch wrapper مع timeout و retry                     */
 /* ================================================================== */
 
 import {
   normalizeError,
   createError,
   categoryFromStatus,
-  USER_MESSAGES,
+  CATEGORY_META,
   type AppError,
 } from "@/lib/errors";
 
 export interface RequestOptions extends RequestInit {
-  /** مهلة بالمللي ثانية (افتراضي 45 ثانية) */
   timeoutMs?: number;
-  /** عدد محاولات إعادة التنفيذ للأخطاء القابلة (افتراضي 2) */
   retries?: number;
-  /** إظهار toast تلقائي عند الفشل (افتراضي true) */
   showToast?: boolean;
-  /** دالة تُنادى عند الفشل */
   onError?: (err: AppError) => void;
 }
 
@@ -36,11 +32,15 @@ function generateRequestId(): string {
 }
 
 function isRetryableStatus(status: number): boolean {
-  return status === 408 || status === 429 || status === 502 || status === 503 || status === 504;
+  return (
+    status === 408 ||
+    status === 429 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504
+  );
 }
 
-/* ------------------------------------------------------------------ */
-/* Main                                                               */
 /* ------------------------------------------------------------------ */
 
 export async function apiRequest<T = unknown>(
@@ -58,7 +58,7 @@ export async function apiRequest<T = unknown>(
   const requestId = generateRequestId();
   let lastError: AppError | null = null;
 
-  // Offline check أول
+  // Offline check
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     const err = createError("offline", { requestId });
     if (showToast) await showErrorToast(err);
@@ -82,7 +82,6 @@ export async function apiRequest<T = unknown>(
 
       clearTimeout(timer);
 
-      // نجاح
       if (response.ok) {
         const contentType = response.headers.get("content-type") ?? "";
         const data = contentType.includes("application/json")
@@ -105,12 +104,11 @@ export async function apiRequest<T = unknown>(
         httpStatus: response.status,
         technicalMessage: errBody.error ?? response.statusText,
         requestId,
-        userMessage: errBody.error || USER_MESSAGES[category],
+        userMessage: errBody.error || CATEGORY_META[category].description,
       });
 
       lastError = err;
 
-      // retry للأخطاء المؤقتة فقط
       if (attempt < retries && isRetryableStatus(response.status)) {
         const delay = RETRY_BASE_DELAY * Math.pow(2, attempt);
         console.warn(
@@ -128,7 +126,6 @@ export async function apiRequest<T = unknown>(
       const err = normalizeError(thrown, requestId);
       lastError = err;
 
-      // retry لأخطاء الشبكة فقط
       if (attempt < retries && err.retryable) {
         const delay = RETRY_BASE_DELAY * Math.pow(2, attempt);
         console.warn(
@@ -151,26 +148,16 @@ export async function apiRequest<T = unknown>(
 }
 
 /* ------------------------------------------------------------------ */
-/* Toast helper (dynamic import — avoids circular dep)                */
-/* ------------------------------------------------------------------ */
 
 async function showErrorToast(err: AppError): Promise<void> {
   try {
-    const { toast } = await import("sonner");
-    toast.error("حصلت مشكلة", {
-      description: err.userMessage,
-      duration: 6000,
-      action: err.retryable
-        ? undefined
-        : undefined,
-    });
+    const { toastError } = await import("@/lib/error-toast");
+    toastError(err);
   } catch {
     /* ignore */
   }
 }
 
-/* ------------------------------------------------------------------ */
-/* Convenience helpers                                                */
 /* ------------------------------------------------------------------ */
 
 export async function apiGet<T = unknown>(url: string, opts?: RequestOptions) {
