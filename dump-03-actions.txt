@@ -1,0 +1,339 @@
+﻿# CaptionBridge Dump :: dump-03-actions.txt
+# Generated: 2026-10-14 23:17:19
+
+========== app\actions\lectures.ts ==========
+"use server";
+
+import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
+import { auth } from "@/lib/auth";
+import {
+  listLectures,
+  saveLecture,
+  deleteLecture,
+  renameLecture,
+  getLecture,
+  type SaveLectureInput,
+} from "@/lib/db/queries";
+import type { SavedLecture } from "@/lib/db";
+
+async function requireUserId(): Promise<string> {
+  const headersList = await headers();
+  const session = await auth.api.getSession({ headers: headersList });
+  const userId = session?.user?.id;
+  if (!userId) throw new Error("UNAUTHORIZED");
+  return userId;
+}
+
+export async function getMyLectures(): Promise<SavedLecture[]> {
+  try {
+    const userId = await requireUserId();
+    return await listLectures(userId);
+  } catch {
+    return [];
+  }
+}
+
+export async function getMyLecture(
+  id: string
+): Promise<SavedLecture | null> {
+  try {
+    const userId = await requireUserId();
+    return await getLecture(userId, id);
+  } catch {
+    return null;
+  }
+}
+
+export async function saveMyLecture(
+  input: SaveLectureInput
+): Promise<
+  { ok: true; lecture: SavedLecture } | { ok: false; error: string }
+> {
+  try {
+    const userId = await requireUserId();
+    const lecture = await saveLecture(userId, input);
+    revalidatePath("/account");
+    revalidatePath("/");
+    return { ok: true, lecture };
+  } catch (err) {
+    console.error("[saveMyLecture]", err);
+    return { ok: false, error: "فشل الحفظ" };
+  }
+}
+
+export async function deleteMyLecture(
+  id: string
+): Promise<{ ok: boolean }> {
+  try {
+    const userId = await requireUserId();
+    const deleted = await deleteLecture(userId, id);
+    revalidatePath("/account");
+    return { ok: deleted };
+  } catch {
+    return { ok: false };
+  }
+}
+
+export async function renameMyLecture(
+  id: string,
+  newName: string
+): Promise<{ ok: boolean }> {
+  try {
+    const userId = await requireUserId();
+    const renamed = await renameLecture(userId, id, newName);
+    revalidatePath("/account");
+    return { ok: renamed };
+  } catch {
+    return { ok: false };
+  }
+}
+========== END ==========
+
+========== app\actions\settings.ts ==========
+"use server";
+
+import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
+import { auth } from "@/lib/auth";
+import { getSettings, updateSettings } from "@/lib/db/queries";
+import type { UserSettings, Theme } from "@/lib/db";
+
+async function requireUserId(): Promise<string> {
+  const headersList = await headers();
+  const session = await auth.api.getSession({ headers: headersList });
+  const userId = session?.user?.id;
+  if (!userId) throw new Error("UNAUTHORIZED");
+  return userId;
+}
+
+export async function getMySettings(): Promise<UserSettings | null> {
+  try {
+    const userId = await requireUserId();
+    return await getSettings(userId);
+  } catch {
+    return null;
+  }
+}
+
+export async function updateMySettings(
+  patch: {
+    theme?: Theme;
+    transcriptFontSize?: number;
+    colorCodingEnabled?: boolean;
+    soundDetectionEnabled?: boolean;
+    soundSensitivityQuiet?: number;
+    soundSensitivityNormal?: number;
+    soundSensitivityLoud?: number;
+    soundSensitivitySpike?: number;
+  }
+): Promise<
+  { ok: true; settings: UserSettings } | { ok: false; error: string }
+> {
+  try {
+    const userId = await requireUserId();
+    const settings = await updateSettings(userId, patch);
+    revalidatePath("/account");
+    return { ok: true, settings };
+  } catch (err) {
+    console.error("[updateMySettings]", err);
+    return { ok: false, error: "فشل التحديث" };
+  }
+}
+========== END ==========
+
+========== app\actions\study.ts ==========
+"use server";
+
+import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
+import { auth } from "@/lib/auth";
+import {
+  listGlossary,
+  saveGlossaryTerm,
+  deleteGlossaryTerm,
+  listFlashcards,
+  saveFlashcard,
+  reviewFlashcard,
+  deleteFlashcard,
+  getUserStats,
+  type UserStats,
+} from "@/lib/db/queries";
+import type { SavedGlossaryItem, FlashcardProgress } from "@/lib/db";
+
+async function requireUserId(): Promise<string> {
+  const headersList = await headers();
+  const session = await auth.api.getSession({ headers: headersList });
+  const userId = session?.user?.id;
+  if (!userId) throw new Error("UNAUTHORIZED");
+  return userId;
+}
+
+/* ---------- GLOSSARY ---------- */
+
+export async function getMyGlossary(): Promise<SavedGlossaryItem[]> {
+  try {
+    const userId = await requireUserId();
+    return await listGlossary(userId);
+  } catch {
+    return [];
+  }
+}
+
+export async function saveGlossary(input: {
+  term: string;
+  definition: string;
+  sourceLectureId?: string;
+}): Promise<
+  { ok: true; item: SavedGlossaryItem } | { ok: false; error: string }
+> {
+  try {
+    const userId = await requireUserId();
+    const item = await saveGlossaryTerm(userId, input);
+    revalidatePath("/account");
+    return { ok: true, item };
+  } catch {
+    return { ok: false, error: "فشل الحفظ" };
+  }
+}
+
+export async function deleteGlossary(
+  id: string
+): Promise<{ ok: boolean }> {
+  try {
+    const userId = await requireUserId();
+    const ok = await deleteGlossaryTerm(userId, id);
+    revalidatePath("/account");
+    return { ok };
+  } catch {
+    return { ok: false };
+  }
+}
+
+/* ---------- FLASHCARDS ---------- */
+
+export async function getMyFlashcards(): Promise<FlashcardProgress[]> {
+  try {
+    const userId = await requireUserId();
+    return await listFlashcards(userId);
+  } catch {
+    return [];
+  }
+}
+
+export async function saveCard(input: {
+  question: string;
+  answer: string;
+  difficulty?: string;
+  sourceLectureId?: string;
+}): Promise<
+  { ok: true; card: FlashcardProgress } | { ok: false; error: string }
+> {
+  try {
+    const userId = await requireUserId();
+    const card = await saveFlashcard(userId, input);
+    revalidatePath("/account");
+    return { ok: true, card };
+  } catch {
+    return { ok: false, error: "فشل الحفظ" };
+  }
+}
+
+export async function reviewCard(
+  id: string,
+  newMastery: number
+): Promise<{ ok: boolean }> {
+  try {
+    const userId = await requireUserId();
+    const ok = await reviewFlashcard(userId, id, newMastery);
+    revalidatePath("/account");
+    return { ok };
+  } catch {
+    return { ok: false };
+  }
+}
+
+export async function deleteCard(
+  id: string
+): Promise<{ ok: boolean }> {
+  try {
+    const userId = await requireUserId();
+    const ok = await deleteFlashcard(userId, id);
+    revalidatePath("/account");
+    return { ok };
+  } catch {
+    return { ok: false };
+  }
+}
+
+/* ---------- STATS ---------- */
+
+export async function getMyStats(): Promise<UserStats> {
+  try {
+    const userId = await requireUserId();
+    return await getUserStats(userId);
+  } catch {
+    return {
+      totalLectures: 0,
+      totalWords: 0,
+      totalGlossary: 0,
+      totalFlashcards: 0,
+      averageMastery: 0,
+    };
+  }
+}
+========== END ==========
+
+========== app\actions\user.ts ==========
+"use server";
+
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { getDb, ensureDbReady } from "@/lib/db";
+
+interface FullUser {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: number;
+  image: string | null;
+  fullName: string | null;
+  university: string | null;
+  studentId: string | null;
+  role: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export async function getFullUser(): Promise<FullUser | null> {
+  try {
+    const headersList = await headers();
+    const session = await auth.api.getSession({ headers: headersList });
+    const userId = session?.user?.id;
+
+    if (!userId) return null;
+
+    await ensureDbReady();
+    const db = getDb();
+
+    const result = await db.execute({
+      sql: `SELECT
+              id, name, email, emailVerified, image,
+              fullName, university, studentId, role,
+              createdAt, updatedAt
+            FROM user
+            WHERE id = ?`,
+      args: [userId],
+    });
+
+    const row = result.rows[0];
+    if (!row) return null;
+
+    return row as unknown as FullUser;
+  } catch (err) {
+    console.error("[getFullUser]", err);
+    return null;
+  }
+}
+========== END ==========
+

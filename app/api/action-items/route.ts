@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { generateText, parseJsonResponse } from "@/lib/ai/provider";
 
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     messages: [{ role: "user", content: `Text:\n\n${trimmed}` }],
     temperature: 0.1,
     maxTokens: 2048,
-    prefer: "groq",
+    prefer: "groq", jsonMode: true,
   });
 
   if (!result.ok || !result.text) {
@@ -97,3 +97,4 @@ export async function POST(request: NextRequest) {
   );
   return NextResponse.json({ items }, { status: 200 });
 }
+

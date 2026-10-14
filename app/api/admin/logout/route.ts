@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+
 export const runtime = "nodejs";
 
 export async function POST() {

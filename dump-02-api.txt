@@ -1,0 +1,1536 @@
+﻿# CaptionBridge Dump :: dump-02-api.txt
+# Generated: 2026-10-14 23:17:19
+
+========== app\api\action-items\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { generateText, parseJsonResponse } from "@/lib/ai/provider";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const SYSTEM_PROMPT = `You are an academic action-item radar. You receive a lecture transcript and extract academic hints.
+
+Look for:
+- Exams and midterms
+- Assignments and homework
+- Deadlines
+- Important pages/chapters
+- Focus points ("this is very important")
+
+For each item:
+- type: "exam" | "assignment" | "deadline" | "page" | "important" | "note"
+- title: Short title (5-10 words)
+- details: Details
+- urgency: "high" | "medium" | "low"
+
+Rules:
+- If no hints -> items: []
+- Reply with JSON only:
+{
+  "items": [
+    { "type": "exam", "title": "...", "details": "...", "urgency": "high" }
+  ]
+}`;
+
+import type { ActionItem } from "@/lib/ai-types";
+
+interface ErrorResponse {
+  error: string;
+}
+
+function jsonError(
+  message: string,
+  status: number,
+): NextResponse<ErrorResponse> {
+  return NextResponse.json({ error: message }, { status });
+}
+
+export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 10, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 },
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Invalid JSON.", 400);
+  }
+
+  const rawText = (body as Record<string, unknown>)?.text;
+  if (typeof rawText !== "string" || rawText.trim().length === 0) {
+    return jsonError("Text is required.", 400);
+  }
+
+  const text = rawText.trim();
+  const trimmed = text.length > 8000 ? text.slice(0, 8000) : text;
+
+  const result = await generateText({
+    systemPrompt: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: `Text:\n\n${trimmed}` }],
+    temperature: 0.1,
+    maxTokens: 2048,
+    prefer: "groq",
+  });
+
+  if (!result.ok || !result.text) {
+    return jsonError(result.error || "Scan failed.", 502);
+  }
+
+  const parsed = parseJsonResponse<{
+    items?: Omit<ActionItem, "id" | "detectedAt">[];
+  }>(result.text);
+
+  if (!parsed) {
+    return jsonError("Response does not match schema.", 502);
+  }
+
+  const items: ActionItem[] = (parsed.items ?? []).map((item) => ({
+    ...item,
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    detectedAt: Date.now(),
+  }));
+
+  console.log(
+    `[action-items] OK via "${result.provider}" | found=${items.length}`,
+  );
+  return NextResponse.json({ items }, { status: 200 });
+}
+
+========== END ==========
+
+========== app\api\admin\change-password\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { verifyAdminPassword, setAdminPassword } from "@/lib/db/queries";
+
+export const runtime = "nodejs";
+
+function isAdmin(request: NextRequest): boolean {
+  return request.cookies.get("admin_mode")?.value === "true";
+}
+
+export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 5, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
+  if (!isAdmin(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: {
+    currentPassword?: string;
+    newPassword?: string;
+    confirmPassword?: string;
+  };
+
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
+
+  const { currentPassword, newPassword, confirmPassword } = body;
+
+  if (
+    typeof currentPassword !== "string" ||
+    typeof newPassword !== "string" ||
+    typeof confirmPassword !== "string"
+  ) {
+    return NextResponse.json(
+      { error: "All fields are required." },
+      { status: 400 }
+    );
+  }
+
+  if (!(await verifyAdminPassword(currentPassword.trim()))) {
+    return NextResponse.json(
+      { error: "Current password is incorrect." },
+      { status: 401 }
+    );
+  }
+
+  if (newPassword.length < 8) {
+    return NextResponse.json(
+      { error: "New password must be at least 8 characters." },
+      { status: 400 }
+    );
+  }
+
+  if (newPassword !== confirmPassword) {
+    return NextResponse.json(
+      { error: "Passwords do not match." },
+      { status: 400 }
+    );
+  }
+
+  if (newPassword === currentPassword) {
+    return NextResponse.json(
+      { error: "New password must be different from current." },
+      { status: 400 }
+    );
+  }
+
+  await setAdminPassword(newPassword.trim());
+
+  console.log(`[admin/change-password] Password updated`);
+
+  return NextResponse.json({ ok: true });
+}
+========== END ==========
+
+========== app\api\admin\login\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminPassword } from "@/lib/db/queries";
+
+export const runtime = "nodejs";
+
+interface LoginBody {
+  password: string;
+}
+
+const attempts = new Map<string, { count: number; lockedUntil: number }>();
+const MAX_ATTEMPTS = 5;
+const LOCK_MS = 5 * 60 * 1000;
+
+function getClientKey(request: NextRequest): string {
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
+  return ip;
+}
+
+export async function POST(request: NextRequest) {
+  const adminPassword = process.env.ADMIN_PASSWORD?.trim();
+  if (!adminPassword) {
+    console.error("[admin/login] ADMIN_PASSWORD is not set");
+    return NextResponse.json(
+      { error: "Server misconfiguration." },
+      { status: 500 }
+    );
+  }
+
+  const clientKey = getClientKey(request);
+  const record = attempts.get(clientKey);
+
+  if (record && record.lockedUntil > Date.now()) {
+    const secondsLeft = Math.ceil((record.lockedUntil - Date.now()) / 1000);
+    return NextResponse.json(
+      { error: `محاولات كثيرة. حاول بعد ${secondsLeft} ثانية.` },
+      { status: 429 }
+    );
+  }
+
+  let body: LoginBody;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "طلب غير صالح." }, { status: 400 });
+  }
+
+  const { password } = body;
+  if (typeof password !== "string" || password.trim().length === 0) {
+    return NextResponse.json({ error: "الباسورد مطلوب." }, { status: 400 });
+  }
+
+  const isValid = await verifyAdminPassword(password.trim());
+
+  if (!isValid) {
+    const current = attempts.get(clientKey) ?? { count: 0, lockedUntil: 0 };
+    current.count += 1;
+
+    if (current.count >= MAX_ATTEMPTS) {
+      current.lockedUntil = Date.now() + LOCK_MS;
+      current.count = 0;
+      attempts.set(clientKey, current);
+      console.warn(`[admin/login] ✗ ${clientKey} locked`);
+
+      return NextResponse.json(
+        { error: "محاولات كثيرة. تم القفل مؤقتاً لـ 5 دقايق." },
+        { status: 429 }
+      );
+    }
+
+    attempts.set(clientKey, current);
+    console.warn(
+      `[admin/login] ✗ ${clientKey} wrong password (${current.count}/${MAX_ATTEMPTS})`
+    );
+
+    return NextResponse.json({ error: "باسورد خاطئ." }, { status: 401 });
+  }
+
+  attempts.delete(clientKey);
+
+  const response = NextResponse.json({ ok: true });
+  response.cookies.set("admin_mode", "true", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 12,
+  });
+
+  console.log(`[admin/login] ✓ ${clientKey} logged in`);
+  return response;
+}
+========== END ==========
+
+========== app\api\admin\logout\route.ts ==========
+import { NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+export const runtime = "nodejs";
+
+export async function POST() {
+  const response = NextResponse.json({ ok: true });
+  response.cookies.set("admin_mode", "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  });
+  return response;
+}
+========== END ==========
+
+========== app\api\admin\users\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { getDb, ensureDbReady } from "@/lib/db";
+
+export const runtime = "nodejs";
+
+function isAdmin(request: NextRequest): boolean {
+  return request.cookies.get("admin_mode")?.value === "true";
+}
+
+interface UserRow {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: number;
+  image: string | null;
+  fullName: string | null;
+  university: string | null;
+  studentId: string | null;
+  role: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export async function GET(request: NextRequest) {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 30, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
+  if (!isAdmin(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    await ensureDbReady();
+    const db = getDb();
+
+    const result = await db.execute({
+      sql: `SELECT 
+              id, name, email, emailVerified, image,
+              fullName, university, studentId, role,
+              createdAt, updatedAt
+            FROM user
+            ORDER BY createdAt DESC`,
+    });
+
+    const users = result.rows as unknown as UserRow[];
+    return NextResponse.json({ users });
+  } catch (err) {
+    console.error("[admin/users]", err);
+    return NextResponse.json({ error: "Load failed" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 30, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
+  if (!isAdmin(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("id");
+
+    if (!userId) {
+      return NextResponse.json({ error: "ID required" }, { status: 400 });
+    }
+
+    await ensureDbReady();
+    const db = getDb();
+
+    await db.execute({
+      sql: "DELETE FROM session WHERE userId = ?",
+      args: [userId],
+    });
+    await db.execute({
+      sql: "DELETE FROM account WHERE userId = ?",
+      args: [userId],
+    });
+    await db.execute({
+      sql: "DELETE FROM user WHERE id = ?",
+      args: [userId],
+    });
+
+    console.log(`[admin/users] Deleted user ${userId}`);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("[admin/users:delete]", err);
+    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  }
+}
+========== END ==========
+
+========== app\api\analyze\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { generateText, parseJsonResponse } from "@/lib/ai/provider";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const MAX_TEXT_LENGTH = 8000;
+
+const SYSTEM_PROMPT = `You are an academic analyst inside a real-time captioning tool for deaf students. You receive a lecture transcript chunk in Arabic (may contain English technical terms).
+
+Extract:
+
+1. topic: Main topic in Arabic (3-6 words)
+   - Always extract if text has any useful idea
+   - Example: "البرمجة بلغة JavaScript", "أساسيات قواعد البيانات"
+   - topic = "" only if text is pure filler, silence, or non-Arabic
+
+2. children: 2-4 subtopics
+   - Each 2-5 words in Arabic
+
+3. terms: Academic or technical terms with brief definitions
+   - One line each
+   - English term stays English (Array, API, React)
+   - Definition in Arabic
+   - Extract 2-6 terms if present
+
+Rules:
+- Do not invent content not present in the text
+- Rely on core meaning even if phrasing is incomplete
+- Reply with JSON only:
+{
+  "topic": "...",
+  "children": ["...", "..."],
+  "terms": [
+    { "term": "...", "definition": "..." }
+  ]
+}`;
+
+interface AnalysisResult {
+  topic: string;
+  children: string[];
+  terms: { term: string; definition: string }[];
+}
+
+interface ErrorResponse {
+  error: string;
+}
+
+function jsonError(
+  message: string,
+  status: number
+): NextResponse<ErrorResponse> {
+  return NextResponse.json({ error: message }, { status });
+}
+
+function isValidResult(data: unknown): data is AnalysisResult {
+  if (typeof data !== "object" || data === null) return false;
+  const obj = data as Record<string, unknown>;
+  if (typeof obj.topic !== "string") return false;
+  if (!Array.isArray(obj.children)) return false;
+  if (!obj.children.every((c) => typeof c === "string")) return false;
+  if (!Array.isArray(obj.terms)) return false;
+  for (const t of obj.terms) {
+    if (typeof t !== "object" || t === null) return false;
+    const term = t as Record<string, unknown>;
+    if (typeof term.term !== "string") return false;
+    if (typeof term.definition !== "string") return false;
+  }
+  return true;
+}
+
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse<AnalysisResult | ErrorResponse>> {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 15, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Request body must be valid JSON.", 400);
+  }
+
+  const rawText = (body as Record<string, unknown>)?.text;
+  if (typeof rawText !== "string" || rawText.trim().length === 0) {
+    return jsonError("Text is required.", 400);
+  }
+
+  const text = rawText.trim();
+  const trimmed =
+    text.length > MAX_TEXT_LENGTH ? text.slice(0, MAX_TEXT_LENGTH) : text;
+
+  const result = await generateText({
+    systemPrompt: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: `Text:\n\n${trimmed}` }],
+    temperature: 0.2,
+    maxTokens: 2048,
+    prefer: "groq",
+  });
+
+  if (!result.ok || !result.text) {
+    console.error("[analyze] Failed:", result.error);
+    return jsonError(result.error || "Analysis failed.", 502);
+  }
+
+  const parsed = parseJsonResponse(result.text);
+  if (!parsed || !isValidResult(parsed)) {
+    console.error("[analyze] Invalid response:", result.text.slice(0, 300));
+    return jsonError("Response does not match schema.", 502);
+  }
+
+  console.log(
+    `[analyze] OK via "${result.provider}/${result.model}" | topic="${parsed.topic}" | terms=${parsed.terms.length}`
+  );
+
+  return NextResponse.json(parsed, { status: 200 });
+}
+========== END ==========
+
+========== app\api\auth\[...all]\route.ts ==========
+import { auth } from "@/lib/auth";
+import { toNextJsHandler } from "better-auth/next-js";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+
+export const runtime = "nodejs";
+
+export const { GET, POST } = toNextJsHandler(auth);
+========== END ==========
+
+========== app\api\chat\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { generateText, type ChatMessage } from "@/lib/ai/provider";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const MAX_CONTEXT_LENGTH = 8000;
+const MAX_MESSAGES = 20;
+const MAX_QUESTION_LENGTH = 500;
+
+const SYSTEM_PROMPT = `You are a smart academic assistant for deaf students in CaptionBridge. You help them understand a recorded university lecture.
+
+You have:
+- The full lecture transcript (context)
+- The student's question
+
+Your task:
+- Answer the question based on the lecture content
+- If the question is unrelated, politely say it is out of scope
+- Answer in clear Modern Standard Arabic
+- Be concise and clear
+- Keep English terms as-is (Array, API, React)
+- If info is not in the lecture, say "هذه المعلومة غير موجودة في المحاضرة"
+- Never invent information
+
+Style:
+- Direct without long introductions
+- Explain with example when possible
+- Use bullet points for multiple items`;
+
+interface RequestBody {
+  question: string;
+  context: string;
+  history?: ChatMessage[];
+}
+
+interface ErrorResponse {
+  error: string;
+}
+
+interface SuccessResponse {
+  answer: string;
+  provider: string;
+  model: string;
+}
+
+function jsonError(
+  message: string,
+  status: number
+): NextResponse<ErrorResponse> {
+  return NextResponse.json({ error: message }, { status });
+}
+
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 20, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Request body must be valid JSON.", 400);
+  }
+
+  if (typeof body !== "object" || body === null) {
+    return jsonError("Invalid request body.", 400);
+  }
+
+  const { question, context, history } = body as Partial<RequestBody>;
+
+  if (typeof question !== "string" || question.trim().length === 0) {
+    return jsonError("Question is required.", 400);
+  }
+
+  if (question.length > MAX_QUESTION_LENGTH) {
+    return jsonError(
+      `Question too long (max ${MAX_QUESTION_LENGTH} characters).`,
+      413
+    );
+  }
+
+  if (typeof context !== "string" || context.trim().length === 0) {
+    return jsonError("Context (lecture) is required.", 400);
+  }
+
+  const trimmedContext =
+    context.length > MAX_CONTEXT_LENGTH
+      ? context.slice(0, MAX_CONTEXT_LENGTH)
+      : context;
+
+  const safeHistory: ChatMessage[] = Array.isArray(history)
+    ? history
+        .filter(
+          (m): m is ChatMessage =>
+            typeof m === "object" &&
+            m !== null &&
+            (m.role === "user" || m.role === "assistant") &&
+            typeof m.content === "string"
+        )
+        .slice(-MAX_MESSAGES)
+    : [];
+
+  const systemPromptWithContext = `${SYSTEM_PROMPT}
+
+---
+
+Lecture text (context):
+${trimmedContext}
+
+---`;
+
+  const messages: ChatMessage[] = [
+    ...safeHistory,
+    { role: "user", content: question.trim() },
+  ];
+
+  const result = await generateText({
+    systemPrompt: systemPromptWithContext,
+    messages,
+    temperature: 0.5,
+    maxTokens: 1024,
+  });
+
+  if (!result.ok || !result.text) {
+    console.error("[chat] Failed:", result.error);
+    return jsonError(result.error || "Failed to generate response.", 502);
+  }
+
+  console.log(
+    `[chat] OK via "${result.provider}/${result.model}" | q=${question.length}c | a=${result.text.length}c`
+  );
+
+  return NextResponse.json(
+    {
+      answer: result.text.trim(),
+      provider: result.provider ?? "unknown",
+      model: result.model ?? "unknown",
+    },
+    { status: 200 }
+  );
+}
+========== END ==========
+
+========== app\api\classroom-questions\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { generateText, parseJsonResponse } from "@/lib/ai/provider";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const SYSTEM_PROMPT = `You are a smart analyzer in a university classroom. Distant students' questions are not caught by the mic. The professor replies to them.
+
+Your task: infer the hidden question from the professor's answer.
+
+Look for professor replies to classroom questions:
+- "سؤال ممتاز"
+- "زي ما زميلكم سأل"
+- "بالنسبة لسؤالك"
+- "في حد سأل عن..."
+
+For each pair:
+- inferredQuestion: The likely question (5-15 words)
+- answer: Summary of professor's answer (10-40 words)
+- confidence: "high" | "medium" | "low"
+
+Rules:
+- Infer from the answer content, not imagination
+- If unsure -> confidence: "low"
+- Reply with JSON only:
+{
+  "questions": [
+    { "inferredQuestion": "...", "answer": "...", "confidence": "high" }
+  ]
+}`;
+
+import type { ClassroomQuestion } from "@/lib/ai-types";
+
+interface ErrorResponse {
+  error: string;
+}
+
+function jsonError(
+  message: string,
+  status: number,
+): NextResponse<ErrorResponse> {
+  return NextResponse.json({ error: message }, { status });
+}
+
+export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 10, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 },
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Invalid JSON.", 400);
+  }
+
+  const rawText = (body as Record<string, unknown>)?.text;
+  if (typeof rawText !== "string" || rawText.trim().length === 0) {
+    return jsonError("Text is required.", 400);
+  }
+
+  const text = rawText.trim();
+  const trimmed = text.length > 8000 ? text.slice(0, 8000) : text;
+
+  const result = await generateText({
+    systemPrompt: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: `Text:\n\n${trimmed}` }],
+    temperature: 0.3,
+    maxTokens: 2048,
+    prefer: "groq",
+  });
+
+  if (!result.ok || !result.text) {
+    return jsonError(result.error || "Inference failed.", 502);
+  }
+
+  const parsed = parseJsonResponse<{
+    questions?: Omit<ClassroomQuestion, "id" | "detectedAt">[];
+  }>(result.text);
+
+  if (!parsed) {
+    return jsonError("Response does not match schema.", 502);
+  }
+
+  const questions: ClassroomQuestion[] = (parsed.questions ?? []).map((q) => ({
+    ...q,
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    detectedAt: Date.now(),
+  }));
+
+  console.log(
+    `[classroom-questions] OK via "${result.provider}" | found=${questions.length}`,
+  );
+  return NextResponse.json({ questions }, { status: 200 });
+}
+
+========== END ==========
+
+========== app\api\flashcards\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { generateText, parseJsonResponse } from "@/lib/ai/provider";
+import type { Flashcard, FlashcardDifficulty } from "@/lib/ai-types";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const MAX_TEXT_LENGTH = 8000;
+
+const SYSTEM_PROMPT = `You are a study-card generator for deaf university students. You receive a lecture transcript in Arabic (may contain English technical terms) and generate study flashcards.
+
+Your task: create 4-8 high-quality flashcards that test understanding of the lecture.
+
+For each card:
+- question: Clear question in Modern Standard Arabic (5-15 words)
+- answer: Concise answer in Arabic (10-40 words), keep English terms as-is (Array, API, React)
+- difficulty: "easy" | "medium" | "hard"
+
+Rules:
+- Questions should test understanding, not memorization of random facts
+- Cover the most important concepts from the lecture
+- If the text is too short or unclear, generate fewer cards (minimum 3)
+- If no useful content at all, return cards: []
+- Rely ONLY on the transcript content — never invent information
+- Reply with JSON only:
+{
+  "cards": [
+    { "question": "...", "answer": "...", "difficulty": "medium" }
+  ]
+}`;
+
+interface SuccessResponse {
+  cards: Flashcard[];
+}
+
+interface ErrorResponse {
+  error: string;
+}
+
+function jsonError(
+  message: string,
+  status: number
+): NextResponse<ErrorResponse> {
+  return NextResponse.json({ error: message }, { status });
+}
+
+function isValidCard(card: unknown): card is Flashcard {
+  if (typeof card !== "object" || card === null) return false;
+  const c = card as Record<string, unknown>;
+  if (typeof c.question !== "string" || c.question.trim().length === 0)
+    return false;
+  if (typeof c.answer !== "string" || c.answer.trim().length === 0)
+    return false;
+  if (
+    c.difficulty !== "easy" &&
+    c.difficulty !== "medium" &&
+    c.difficulty !== "hard"
+  )
+    return false;
+  return true;
+}
+
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 10, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Invalid JSON.", 400);
+  }
+
+  const rawText = (body as Record<string, unknown>)?.text;
+  if (typeof rawText !== "string" || rawText.trim().length === 0) {
+    return jsonError("Text is required.", 400);
+  }
+
+  const text = rawText.trim();
+  const trimmed =
+    text.length > MAX_TEXT_LENGTH ? text.slice(0, MAX_TEXT_LENGTH) : text;
+
+  const result = await generateText({
+    systemPrompt: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: `Text:\n\n${trimmed}` }],
+    temperature: 0.4,
+    maxTokens: 2048,
+    prefer: "groq",
+  });
+
+  if (!result.ok || !result.text) {
+    return jsonError(result.error || "Generation failed.", 502);
+  }
+
+  const parsed = parseJsonResponse<{ cards?: unknown[] }>(result.text);
+  if (!parsed || !Array.isArray(parsed.cards)) {
+    return jsonError("Response does not match schema.", 502);
+  }
+
+  const cards: Flashcard[] = parsed.cards
+    .filter(isValidCard)
+    .map((c) => ({
+      question: c.question.trim(),
+      answer: c.answer.trim(),
+      difficulty: c.difficulty as FlashcardDifficulty,
+    }));
+
+  console.log(
+    `[flashcards] OK via "${result.provider}" | count=${cards.length}`
+  );
+  return NextResponse.json({ cards }, { status: 200 });
+}
+========== END ==========
+
+========== app\api\keywords\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { generateText, parseJsonResponse } from "@/lib/ai/provider";
+import type { Keyword, KeywordCategory } from "@/lib/ai-types";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const MAX_TEXT_LENGTH = 8000;
+
+const SYSTEM_PROMPT = `You are a keyword extractor for deaf university students. You receive a lecture transcript in Arabic (may contain English technical terms) and extract the most important keywords.
+
+For each keyword:
+- word: The exact word or short phrase from the text (keep English as-is: React, API)
+- category: One of:
+  - "term" (academic/technical term)
+  - "concept" (abstract idea)
+  - "person" (name of person)
+  - "place" (location)
+  - "number" (important number, date, percentage)
+  - "tool" (software, library, instrument)
+- importance: Integer 1-5 (5 = very important, 1 = low)
+- context: Short sentence from the text showing how the word was used (max 15 words)
+
+Rules:
+- Extract 5-12 keywords per lecture
+- Prioritize academic and technical terms
+- Skip filler words (the, is, was, هذا, كان)
+- If text is too short, extract fewer keywords
+- If no meaningful keywords, return keywords: []
+- Rely ONLY on the transcript — never invent
+- Reply with JSON only:
+{
+  "keywords": [
+    { "word": "Array", "category": "term", "importance": 5, "context": "..." }
+  ]
+}`;
+
+interface SuccessResponse {
+  keywords: Keyword[];
+}
+
+interface ErrorResponse {
+  error: string;
+}
+
+const VALID_CATEGORIES: KeywordCategory[] = [
+  "term",
+  "concept",
+  "person",
+  "place",
+  "number",
+  "tool",
+];
+
+function jsonError(
+  message: string,
+  status: number
+): NextResponse<ErrorResponse> {
+  return NextResponse.json({ error: message }, { status });
+}
+
+function isValidKeyword(kw: unknown): kw is Keyword {
+  if (typeof kw !== "object" || kw === null) return false;
+  const k = kw as Record<string, unknown>;
+  if (typeof k.word !== "string" || k.word.trim().length === 0) return false;
+  if (
+    typeof k.category !== "string" ||
+    !VALID_CATEGORIES.includes(k.category as KeywordCategory)
+  )
+    return false;
+  if (typeof k.importance !== "number") return false;
+  if (typeof k.context !== "string") return false;
+  return true;
+}
+
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 15, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Invalid JSON.", 400);
+  }
+
+  const rawText = (body as Record<string, unknown>)?.text;
+  if (typeof rawText !== "string" || rawText.trim().length === 0) {
+    return jsonError("Text is required.", 400);
+  }
+
+  const text = rawText.trim();
+  const trimmed =
+    text.length > MAX_TEXT_LENGTH ? text.slice(0, MAX_TEXT_LENGTH) : text;
+
+  const result = await generateText({
+    systemPrompt: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: `Text:\n\n${trimmed}` }],
+    temperature: 0.2,
+    maxTokens: 2048,
+    prefer: "groq",
+  });
+
+  if (!result.ok || !result.text) {
+    return jsonError(result.error || "Extraction failed.", 502);
+  }
+
+  const parsed = parseJsonResponse<{ keywords?: unknown[] }>(result.text);
+  if (!parsed || !Array.isArray(parsed.keywords)) {
+    return jsonError("Response does not match schema.", 502);
+  }
+
+  const keywords: Keyword[] = parsed.keywords
+    .filter(isValidKeyword)
+    .map((k) => ({
+      word: k.word.trim(),
+      category: k.category as KeywordCategory,
+      importance: Math.max(1, Math.min(5, Math.round(k.importance))),
+      context: k.context.trim(),
+    }));
+
+  console.log(
+    `[keywords] OK via "${result.provider}" | count=${keywords.length}`
+  );
+  return NextResponse.json({ keywords }, { status: 200 });
+}
+========== END ==========
+
+========== app\api\smart\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/audio/transcriptions";
+const GROQ_MODEL = "whisper-large-v3-turbo";
+
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
+
+export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 10, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
+  const groqKey = process.env.GROQ_API_KEY?.trim();
+  if (!groqKey) {
+    return NextResponse.json(
+      { error: "Server misconfiguration." },
+      { status: 500 }
+    );
+  }
+
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json(
+      { error: "Request must be multipart/form-data." },
+      { status: 400 }
+    );
+  }
+
+  const audio = formData.get("audio");
+  if (!(audio instanceof Blob) || audio.size === 0) {
+    return NextResponse.json({ error: "Audio missing." }, { status: 400 });
+  }
+  if (audio.size > MAX_FILE_SIZE) {
+    return NextResponse.json({ error: "Audio too large." }, { status: 413 });
+  }
+
+  const whisperForm = new FormData();
+  whisperForm.append("file", audio, "chunk.webm");
+  whisperForm.append("model", GROQ_MODEL);
+  whisperForm.append("response_format", "json");
+  whisperForm.append("temperature", "0");
+
+  try {
+    const res = await fetch(GROQ_ENDPOINT, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${groqKey}` },
+      body: whisperForm,
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(
+        `[smart] Whisper error ${res.status}:`,
+        errText.slice(0, 200)
+      );
+      return NextResponse.json(
+        { text: "", topic: "", children: [], terms: [] },
+        { status: 200 }
+      );
+    }
+
+    const data = (await res.json()) as { text?: string };
+    const rawText = (data.text ?? "").trim();
+
+    if (!rawText) {
+      return NextResponse.json(
+        { text: "", topic: "", children: [], terms: [] },
+        { status: 200 }
+      );
+    }
+
+    const hasArabic = /[\u0600-\u06FF]/.test(rawText);
+    const hasLatin = /[a-zA-Z]{3,}/.test(rawText);
+    if (!hasArabic && !hasLatin) {
+      return NextResponse.json(
+        { text: "", topic: "", children: [], terms: [] },
+        { status: 200 }
+      );
+    }
+
+    console.log(`[smart] OK | text=${rawText.length}c`);
+
+    return NextResponse.json(
+      {
+        text: rawText,
+        topic: "",
+        children: [],
+        terms: [],
+      },
+      { status: 200 }
+    );
+  } catch (err) {
+    console.error("[smart] Threw:", err);
+    return NextResponse.json(
+      { text: "", topic: "", children: [], terms: [] },
+      { status: 200 }
+    );
+  }
+}
+========== END ==========
+
+========== app\api\summarize\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { generateText, parseJsonResponse } from "@/lib/ai/provider";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const MAX_TEXT_LENGTH = 10000;
+
+const SYSTEM_PROMPT = `You are an academic assistant for deaf students. You receive a lecture transcript and summarize it.
+
+Your task: summarize the lecture in an organized form:
+
+1. title: Short Arabic title (3-7 words)
+2. overview: Short paragraph (2-4 sentences) explaining the main idea
+3. keyPoints: 4-7 main points, each a complete sentence
+4. conclusion: One sentence summarizing the takeaway
+
+Rules:
+- Rely only on the original text - never invent information
+- Keep English terms as-is (JavaScript, API)
+- Language: clear simple Modern Standard Arabic
+- Reply with JSON only:
+{
+  "title": "...",
+  "overview": "...",
+  "keyPoints": ["...", "..."],
+  "conclusion": "..."
+}`;
+
+interface SummaryResult {
+  title: string;
+  overview: string;
+  keyPoints: string[];
+  conclusion: string;
+}
+
+interface ErrorResponse {
+  error: string;
+}
+
+function jsonError(
+  message: string,
+  status: number
+): NextResponse<ErrorResponse> {
+  return NextResponse.json({ error: message }, { status });
+}
+
+function isValidSummary(data: unknown): data is SummaryResult {
+  if (typeof data !== "object" || data === null) return false;
+  const obj = data as Record<string, unknown>;
+  if (typeof obj.title !== "string") return false;
+  if (typeof obj.overview !== "string") return false;
+  if (!Array.isArray(obj.keyPoints)) return false;
+  if (!obj.keyPoints.every((p) => typeof p === "string")) return false;
+  if (typeof obj.conclusion !== "string") return false;
+  return true;
+}
+
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse<SummaryResult | ErrorResponse>> {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 10, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Invalid JSON.", 400);
+  }
+
+  const rawText = (body as Record<string, unknown>)?.text;
+  if (typeof rawText !== "string" || rawText.trim().length === 0) {
+    return jsonError("Text is required.", 400);
+  }
+
+  const text = rawText.trim();
+  const trimmed =
+    text.length > MAX_TEXT_LENGTH ? text.slice(0, MAX_TEXT_LENGTH) : text;
+
+  const result = await generateText({
+    systemPrompt: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: `Text:\n\n${trimmed}` }],
+    temperature: 0.3,
+    maxTokens: 2048,
+    prefer: "groq",
+  });
+
+  if (!result.ok || !result.text) {
+    return jsonError(result.error || "Summarization failed.", 502);
+  }
+
+  const parsed = parseJsonResponse(result.text);
+  if (!parsed || !isValidSummary(parsed)) {
+    return jsonError("Response does not match schema.", 502);
+  }
+
+  console.log(`[summarize] OK via "${result.provider}"`);
+  return NextResponse.json(parsed, { status: 200 });
+}
+========== END ==========
+
+========== app\api\transcribe\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+
+export const runtime = "nodejs";
+export const maxDuration = 30;
+
+const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/audio/transcriptions";
+const GROQ_MODEL = "whisper-large-v3-turbo";
+
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
+
+interface ErrorResponse {
+  error: string;
+}
+interface SuccessResponse {
+  text: string;
+}
+interface GroqResponse {
+  text?: string;
+}
+
+function jsonError(
+  message: string,
+  status: number
+): NextResponse<ErrorResponse> {
+  return NextResponse.json({ error: message }, { status });
+}
+
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 15, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
+  const apiKey = process.env.GROQ_API_KEY?.trim();
+  if (!apiKey) {
+    return jsonError("Server misconfiguration.", 500);
+  }
+
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return jsonError("Request must be multipart/form-data.", 400);
+  }
+
+  const audio = formData.get("audio");
+  if (!(audio instanceof Blob))
+    return jsonError('Missing "audio" field.', 400);
+  if (audio.size === 0) return jsonError("Audio file is empty.", 400);
+  if (audio.size > MAX_FILE_SIZE)
+    return jsonError("Audio file is too large.", 413);
+
+  const groqForm = new FormData();
+  groqForm.append("file", audio, "chunk.webm");
+  groqForm.append("model", GROQ_MODEL);
+  groqForm.append("response_format", "json");
+  groqForm.append("temperature", "0");
+
+  try {
+    const res = await fetch(GROQ_ENDPOINT, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: groqForm,
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(
+        `[transcribe] Groq error ${res.status}:`,
+        errText.slice(0, 200)
+      );
+      if (res.status === 401 || res.status === 403) {
+        return jsonError("Server misconfiguration.", 500);
+      }
+      if (res.status === 429) {
+        return jsonError("Transcription service busy.", 429);
+      }
+      return jsonError("Transcription failed.", 502);
+    }
+
+    const data = (await res.json()) as GroqResponse;
+    const text = (data.text ?? "").trim();
+
+    const hasArabic = /[\u0600-\u06FF]/.test(text);
+    const hasLatin = /[a-zA-Z]{3,}/.test(text);
+    if (!hasArabic && !hasLatin && text.length > 0) {
+      console.log("[transcribe] No meaningful content, discarding");
+      return NextResponse.json({ text: "" }, { status: 200 });
+    }
+
+    return NextResponse.json({ text }, { status: 200 });
+  } catch (err) {
+    console.error("[transcribe] Threw:", err);
+    return jsonError("Transcription service unreachable.", 502);
+  }
+}
+========== END ==========
+
+========== app\api\translate\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { generateText, parseJsonResponse } from "@/lib/ai/provider";
+import type { Translation } from "@/lib/ai-types";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const MAX_TEXT_LENGTH = 8000;
+
+const SYSTEM_PROMPT = `You are a translator specialized in academic content. You receive an Arabic lecture text containing English terms.
+
+Your task: extract all English terms and translate them to Arabic.
+
+For each term:
+- original: English text
+- translated: Arabic translation
+- type: "technical" | "concept" | "tool" | "framework" | "general"
+- context: Short sentence from the text
+- pronunciation: Arabic pronunciation (optional)
+
+Rules:
+- Extract only English terms
+- Translation must be academic-contextual
+- If no English -> translations: []
+- Reply with JSON only:
+{
+  "translations": [
+    { "original": "API", "translated": "واجهة برمجية", "type": "technical", "context": "..." }
+  ]
+}`;
+
+interface ErrorResponse {
+  error: string;
+}
+
+function jsonError(
+  message: string,
+  status: number,
+): NextResponse<ErrorResponse> {
+  return NextResponse.json({ error: message }, { status });
+}
+
+export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  if (!rateLimit(ip, 15, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 },
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Invalid JSON.", 400);
+  }
+
+  const rawText = (body as Record<string, unknown>)?.text;
+  if (typeof rawText !== "string" || rawText.trim().length === 0) {
+    return jsonError("Text is required.", 400);
+  }
+
+  const text = rawText.trim();
+  const trimmed =
+    text.length > MAX_TEXT_LENGTH ? text.slice(0, MAX_TEXT_LENGTH) : text;
+
+  const result = await generateText({
+    systemPrompt: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: `Text:\n\n${trimmed}` }],
+    temperature: 0.2,
+    maxTokens: 2048,
+    prefer: "groq",
+  });
+
+  if (!result.ok || !result.text) {
+    return jsonError(result.error || "Translation failed.", 502);
+  }
+
+  const parsed = parseJsonResponse<{ translations?: Translation[] }>(
+    result.text,
+  );
+  if (!parsed) {
+    return jsonError("Response does not match schema.", 502);
+  }
+
+  console.log(
+    `[translate] OK via "${result.provider}" | count=${(parsed.translations ?? []).length}`,
+  );
+  return NextResponse.json(
+    { translations: parsed.translations ?? [] },
+    { status: 200 },
+  );
+}
+
+========== END ==========
+
+========== app\api\user\profile\route.ts ==========
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { getDb, ensureDbReady, now } from "@/lib/db";
+
+export const runtime = "nodejs";
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    const userId = session?.user?.id;
+    if (!userId) {
+      return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { fullName, university, studentId } = body;
+
+    if (
+      typeof fullName !== "string" ||
+      typeof university !== "string" ||
+      typeof studentId !== "string"
+    ) {
+      return NextResponse.json(
+        { error: "بيانات غير صالحة" },
+        { status: 400 }
+      );
+    }
+
+    await ensureDbReady();
+    const db = getDb();
+
+    await db.execute({
+      sql: `UPDATE user
+            SET fullName = ?, university = ?, studentId = ?, updatedAt = ?
+            WHERE id = ?`,
+      args: [fullName, university, studentId, now(), userId],
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("[api/user/profile]", err);
+    return NextResponse.json({ error: "فشل التحديث" }, { status: 500 });
+  }
+}
+========== END ==========
+

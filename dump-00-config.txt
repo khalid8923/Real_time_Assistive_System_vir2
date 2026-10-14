@@ -1,0 +1,413 @@
+﻿# CaptionBridge Dump :: dump-00-config.txt
+# Generated: 2026-10-14 23:17:19
+
+========== package.json ==========
+{
+  "name": "my-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
+    "@base-ui/react": "^1.8.0",
+    "@google/genai": "^2.22.0",
+    "@huggingface/transformers": "^4.2.0",
+    "@libsql/client": "^0.18.0",
+    "@libsql/kysely-libsql": "^0.4.1",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.116.0",
+    "better-auth": "^1.7.5",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "kysely": "^0.29.6",
+    "lucide-react": "^1.46.0",
+    "motion": "^11.18.2",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "reactflow": "^11.11.4",
+    "sonner": "^2.0.8",
+    "tailwind-merge": "^3.7.0",
+    "tw-animate-css": "^1.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.5",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+
+========== END ==========
+
+========== tsconfig.json ==========
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+
+========== END ==========
+
+========== next.config.ts ==========
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  allowedDevOrigins: ["192.168.0.185", "192.168.0.*", "localhost"],
+};
+
+export default nextConfig;
+========== END ==========
+
+========== postcss.config.mjs ==========
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+
+========== END ==========
+
+========== eslint.config.mjs ==========
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+
+========== END ==========
+
+========== components.json ==========
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-nova",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "app/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "iconLibrary": "lucide",
+  "rtl": false,
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components/ui",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
+  },
+  "menuColor": "default",
+  "menuAccent": "subtle",
+  "registries": {}
+}
+
+========== END ==========
+
+========== proxy.ts ==========
+import { NextResponse, type NextRequest } from "next/server";
+import { getSessionCookie } from "better-auth/cookies";
+
+function addSecurityHeaders(response: NextResponse): NextResponse {
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(self), geolocation=(), interest-cohort=()"
+  );
+  response.headers.set("X-DNS-Prefetch-Control", "on");
+  response.headers.set(
+    "Strict-Transport-Security",
+    "max-age=31536000; includeSubDomains"
+  );
+  return response;
+}
+
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // All API routes handle their own auth
+  if (pathname.startsWith("/api/")) {
+    return addSecurityHeaders(NextResponse.next({ request }));
+  }
+
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isAdminLoginRoute = pathname === "/admin/login";
+  const isAdminCookie = request.cookies.get("admin_mode")?.value === "true";
+
+  // ============ ADMIN PROTECTION ============
+  if (isAdminRoute) {
+    if (isAdminLoginRoute) {
+      if (isAdminCookie) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/admin/users";
+        return addSecurityHeaders(NextResponse.redirect(url));
+      }
+      return addSecurityHeaders(NextResponse.next({ request }));
+    }
+
+    if (!isAdminCookie) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin/login";
+      return addSecurityHeaders(NextResponse.redirect(url));
+    }
+
+    return addSecurityHeaders(NextResponse.next({ request }));
+  }
+
+  // ============ USER AUTH ============
+  const publicRoutes = ["/login", "/signup"];
+  const isPublicRoute = publicRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  const sessionCookie = getSessionCookie(request);
+  const isGuest = request.cookies.get("guest_mode")?.value === "true";
+
+  if (!sessionCookie && !isGuest && !isPublicRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return addSecurityHeaders(NextResponse.redirect(url));
+  }
+
+  if (sessionCookie && (pathname === "/login" || pathname === "/signup")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return addSecurityHeaders(NextResponse.redirect(url));
+  }
+
+  return addSecurityHeaders(NextResponse.next({ request }));
+}
+
+export const config = {
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
+};
+========== END ==========
+
+========== settings.json ==========
+{
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore",
+  "files.associations": {
+    "*.css": "tailwindcss"
+  }
+}
+========== END ==========
+
+========== AGENTS.md ==========
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
+
+========== END ==========
+
+========== CLAUDE.md ==========
+@AGENTS.md
+
+========== END ==========
+
+========== README.md ==========
+<div align="center">
+
+# 🌉 CaptionBridge
+
+### جسر التواصل للطلاب الصم
+
+**Real-time AI-powered lecture transcription & analysis for deaf and hard-of-hearing university students**
+
+[![Next.js](https://img.shields.io/badge/Next.js-16.3-black?logo=next.js)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org)
+[![Tailwind](https://img.shields.io/badge/Tailwind-v4-06B6D4?logo=tailwindcss)](https://tailwindcss.com)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](#-license)
+
+**🌍 Live Demo** · **📸 Screenshots** · **🏗️ Architecture**
+
+</div>
+
+---
+
+## 🎯 المشكلة
+
+في مصر والوطن العربي، أكثر من **2 مليون طالب أصم** يدرسون في جامعات نظامية. المشكلة:
+
+> **الدكتور يشرح لمدة ساعتين، الطالب الأصم يخرج من المحاضرة بدون أي فكرة عما تم شرحه.**
+
+الوسائل الحالية (مترجم إشارة، تدوين يدوي) **غير كافية**:
+- ❌ المترجم متاح لطالب واحد فقط في الصف
+- ❌ التدوين اليدوي بطيء وضائع
+- ❌ التطبيقات الأجنبية (Otter.ai, Live Transcribe) **لا تفهم العربي جيداً**
+- ❌ غالية جداً (اشتراكات شهرية)
+
+---
+
+## 🎨 الحل
+
+**CaptionBridge** — جسر ذكي بين الطالب الأصم والمحاضرة.
+
+يعمل كـ **"أذن ذكية"** تحول كلام الدكتور إلى:
+- 📝 **نص مكتوب** في الوقت الفعلي
+- 🗺️ **خريطة ذهنية** تفاعلية
+- 📚 **معجم مصطلحات** مع شرح
+- 📄 **ملخص ذكي** للمراجعة
+- 🎴 **كروت مراجعة** تفاعلية
+- 🎯 **رادار مهام** يلتقط تلميحات الامتحانات
+- ❓ **أسئلة القاعة** المستنتجة من ردود الدكتور
+
+---
+
+## ✨ الفيتشرات (12 فيتشر)
+
+### 🎙️ التسجيل الحي (Core)
+
+| الفيتشر | الوصف |
+|---------|-------|
+| 🎤 الكلام المباشر | تحويل صوت الدكتور لنص فوري عبر Whisper |
+| 🧠 الشرح الذكي | استخراج الموضوع + الفروع + المصطلحات |
+| 🗺️ الخريطة الذهنية | رسم تفاعلي شجري للموضوعات |
+| 📚 المعجم الأكاديمي | كروت ملونة بكل مصطلح وتعريفه |
+
+### 🚀 الفيتشرات الذكية (AI)
+
+| الفيتشر | الوصف |
+|---------|-------|
+| 📝 ملخص المحاضرة | ملخص منظم (عنوان + نظرة + نقاط + خلاصة) |
+| 🔑 الكلمات المهمة | استخراج الكلمات + تصنيف + أهمية |
+| 🎴 كروت المراجعة | أسئلة وأجوبة تفاعلية مع صعوبة |
+| 🎯 رادار المهام | التقاط تلميحات الامتحانات والتكليفات مع تنبيه فوري |
+| ❓ أسئلة القاعة | استنتاج أسئلة الطلاب البعيدين من ردود الدكتور |
+| 💬 المساعد العائم | شات ذكي قابل للسحب يجاوب من محتوى المحاضرة |
+
+### 🔊 إمكانية الوصول
+
+| الفيتشر | الوصف |
+|---------|-------|
+| 🔔 التنبيهات الصوتية | كشف الأصوات المفاجئة (باب، جرس) مع مؤشر عمودي |
+| ✨ تمييز ذكي | تلوين تلقائي للإنجليزي والأرقام والكلمات المفتاحية |
+
+### 👤 إدارة الحساب
+
+| الفيتشر | الوصف |
+|---------|-------|
+| 👤 صفحة الحساب | بروفايل + إحصائيات + 4 تابات |
+| 📚 المحاضرات المحفوظة | حفظ وفتح وحذف المحاضرات في DB |
+| ⚙️ الإعدادات | ثيم + حجم خط + حساسية صوت |
+| 🛡️ لوحة الأدمن | إدارة المستخدمين + تغيير الباسورد |
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+flowchart TB
+    subgraph Client["Client (Browser)"]
+        Mic["Microphone Recorder"]
+        React["Next.js Frontend"]
+        Audio["Web Audio API"]
+    end
+
+    subgraph API["Next.js API Routes"]
+        Smart["/api/smart"]
+        Analyze["/api/analyze"]
+        Features["/api/keywords"]
+        Advanced["/api/action-items"]
+        AdminAPI["/api/admin/*"]
+    end
+
+    subgraph AI["AI Services"]
+        Whisper["Groq Whisper"]
+        Gemini["Google Gemini"]
+        Llama["Llama 3.3 70B"]
+    end
+
+    subgraph DB["Database"]
+        SQLite["SQLite"]
+    end
+
+    Mic --> Smart
+    React --> Analyze
+    React --> Features
+    React --> Advanced
+    Audio --> React
+
+    Smart --> Whisper
+    Smart --> Llama
+    Analyze --> Gemini
+    Analyze --> Llama
+    Features --> Gemini
+    Features --> Llama
+    Advanced --> Gemini
+    Advanced --> Llama
+    AdminAPI --> SQLite
+
+    style Client fill:#8470ff,color:#fff
+    style API fill:#67bfff,color:#fff
+    style AI fill:#3ec972,color:#fff
+    style DB fill:#f0bb33,color:#000
+========== END ==========
+

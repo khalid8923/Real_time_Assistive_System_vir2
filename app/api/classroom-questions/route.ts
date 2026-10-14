@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { generateText, parseJsonResponse } from "@/lib/ai/provider";
 
@@ -10,10 +10,10 @@ const SYSTEM_PROMPT = `You are a smart analyzer in a university classroom. Dista
 Your task: infer the hidden question from the professor's answer.
 
 Look for professor replies to classroom questions:
-- "سؤال ممتاز"
-- "زي ما زميلكم سأل"
-- "بالنسبة لسؤالك"
-- "في حد سأل عن..."
+- "Ø³Ø¤Ø§Ù„ Ù…Ù…ØªØ§Ø²"
+- "Ø²ÙŠ Ù…Ø§ Ø²Ù…ÙŠÙ„ÙƒÙ… Ø³Ø£Ù„"
+- "Ø¨Ø§Ù„Ù†Ø³Ø¨Ø© Ù„Ø³Ø¤Ø§Ù„Ùƒ"
+- "ÙÙŠ Ø­Ø¯ Ø³Ø£Ù„ Ø¹Ù†..."
 
 For each pair:
 - inferredQuestion: The likely question (5-15 words)
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     messages: [{ role: "user", content: `Text:\n\n${trimmed}` }],
     temperature: 0.3,
     maxTokens: 2048,
-    prefer: "groq",
+    prefer: "groq", jsonMode: true,
   });
 
   if (!result.ok || !result.text) {
@@ -98,3 +98,4 @@ export async function POST(request: NextRequest) {
   );
   return NextResponse.json({ questions }, { status: 200 });
 }
+

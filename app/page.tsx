@@ -16,6 +16,7 @@ import ClassroomQuestionsPanel from "@/components/ClassroomQuestionsPanel";
 import FloatingChat from "@/components/FloatingChat";
 import ScrollToTop from "@/components/ScrollToTop";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import LecturesDrawer from "@/components/LecturesDrawer";
 import { getFeature, type FeatureId } from "@/lib/features";
 import { useSpeechTranscription } from "@/hooks/useSpeechTranscription";

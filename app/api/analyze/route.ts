@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { generateText, parseJsonResponse } from "@/lib/ai/provider";
 
@@ -13,7 +13,7 @@ Extract:
 
 1. topic: Main topic in Arabic (3-6 words)
    - Always extract if text has any useful idea
-   - Example: "البرمجة بلغة JavaScript", "أساسيات قواعد البيانات"
+   - Example: "Ø§Ù„Ø¨Ø±Ù…Ø¬Ø© Ø¨Ù„ØºØ© JavaScript", "Ø£Ø³Ø§Ø³ÙŠØ§Øª Ù‚ÙˆØ§Ø¹Ø¯ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª"
    - topic = "" only if text is pure filler, silence, or non-Arabic
 
 2. children: 2-4 subtopics
@@ -102,7 +102,7 @@ export async function POST(
     messages: [{ role: "user", content: `Text:\n\n${trimmed}` }],
     temperature: 0.2,
     maxTokens: 2048,
-    prefer: "groq",
+    prefer: "groq", jsonMode: true,
   });
 
   if (!result.ok || !result.text) {

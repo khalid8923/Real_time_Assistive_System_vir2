@@ -22,7 +22,8 @@ export interface UseSpeechTranscriptionReturn {
   isSupported: boolean;
 }
 
-const CHUNK_DURATION_MS = 15000;
+/** 25 ثانية (كانت 15) — يوفر ~40% من استدعاءات Whisper */
+const CHUNK_DURATION_MS = 25_000;
 const MIN_BLOB_SIZE = 5000;
 
 export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
@@ -36,9 +37,11 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const rotationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isStoppingRef = useRef(false);
+  const isStartingRef = useRef(false);
 
   const chunkQueueRef = useRef<Blob[]>([]);
   const isProcessingQueueRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const processQueue = useCallback(async () => {
     if (isProcessingQueueRef.current || chunkQueueRef.current.length === 0) return;
@@ -48,6 +51,8 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
       const blob = chunkQueueRef.current.shift();
       if (!blob) continue;
 
+      abortControllerRef.current = new AbortController();
+
       try {
         const formData = new FormData();
         formData.append("audio", blob, "chunk.webm");
@@ -55,6 +60,7 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
         const response = await fetch("/api/smart", {
           method: "POST",
           body: formData,
+          signal: abortControllerRef.current.signal,
         });
 
         const data: {
@@ -89,8 +95,14 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
         );
         setRefinedChunks((prev) => [...prev, refined]);
       } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          // إلغاء طبيعي — تجاهل
+          return;
+        }
         console.error("[smart] Request failed:", err);
         setError("تعذّر الاتصال بخدمة المعالجة.");
+      } finally {
+        abortControllerRef.current = null;
       }
     }
 
@@ -124,10 +136,7 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
     recorder.onstop = () => {
       const blob = new Blob(localChunks, { type: mimeType });
       processBlob(blob);
-
-      if (!isStoppingRef.current && streamRef.current) {
-        startRecording();
-      }
+      if (!isStoppingRef.current && streamRef.current) startRecording();
     };
 
     recorder.start();
@@ -140,7 +149,8 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
   }, [processBlob]);
 
   const startListening = useCallback(async () => {
-    if (isListening) return;
+    if (isListening || isStartingRef.current) return;
+    isStartingRef.current = true;
 
     setError(null);
     isStoppingRef.current = false;
@@ -148,6 +158,7 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
     if (typeof navigator === "undefined" || !navigator.mediaDevices) {
       setError("متصفحك لا يدعم الميكروفون.");
       setIsSupported(false);
+      isStartingRef.current = false;
       return;
     }
 
@@ -173,12 +184,20 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
         setError("تعذّر تشغيل الميكروفون.");
       }
       setIsListening(false);
+    } finally {
+      isStartingRef.current = false;
     }
   }, [isListening, startRecording]);
 
   const stopListening = useCallback(() => {
     isStoppingRef.current = true;
     if (rotationTimerRef.current) clearTimeout(rotationTimerRef.current);
+
+    // إلغاء أي طلب جاري
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
 
     if (recorderRef.current && recorderRef.current.state === "recording") {
       recorderRef.current.stop();
@@ -191,7 +210,8 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
     }
     setIsListening(false);
   }, []);
-    const clearTranscript = useCallback(() => {
+
+  const clearTranscript = useCallback(() => {
     setCurrentTranscript("");
     setRefinedChunks([]);
     setError(null);
@@ -201,6 +221,7 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
     return () => {
       isStoppingRef.current = true;
       if (rotationTimerRef.current) clearTimeout(rotationTimerRef.current);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
       if (recorderRef.current && recorderRef.current.state === "recording") {
         recorderRef.current.stop();
       }

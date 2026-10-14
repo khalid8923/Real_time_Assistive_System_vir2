@@ -1,9 +1,11 @@
-import type { Metadata, Viewport } from "next";
+﻿import type { Metadata, Viewport } from "next";
 import { Cairo, Amiri } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import OfflineIndicator from "@/components/OfflineIndicator";
+import ConnectionBanner from "@/components/ConnectionBanner";
+import GlobalErrorCatcher from "@/components/GlobalErrorCatcher";
 import TopProgressBar from "@/components/TopProgressBar";
 import AuthSessionWatcher from "@/components/AuthSessionWatcher";
 import SkipToContent from "@/components/SkipToContent";
@@ -26,31 +28,31 @@ const amiri = Amiri({
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 const SITE_NAME = "CaptionBridge";
 const SITE_DESCRIPTION =
-  "تطبيق ويب مساعد في الوقت الفعلي للطلاب الصم — ترجمة الكلام، خريطة ذهنية، ومعجم مصطلحات أكاديمية.";
+  "ØªØ·Ø¨ÙŠÙ‚ ÙˆÙŠØ¨ Ù…Ø³Ø§Ø¹Ø¯ ÙÙŠ Ø§Ù„ÙˆÙ‚Øª Ø§Ù„ÙØ¹Ù„ÙŠ Ù„Ù„Ø·Ù„Ø§Ø¨ Ø§Ù„ØµÙ… â€” ØªØ±Ø¬Ù…Ø© Ø§Ù„ÙƒÙ„Ø§Ù…ØŒ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©ØŒ ÙˆÙ…Ø¹Ø¬Ù… Ù…ØµØ·Ù„Ø­Ø§Øª Ø£ÙƒØ§Ø¯ÙŠÙ…ÙŠØ©.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} | ترجمة فورية للطلاب الصم`,
+    default: `${SITE_NAME} | ØªØ±Ø¬Ù…Ø© ÙÙˆØ±ÙŠØ© Ù„Ù„Ø·Ù„Ø§Ø¨ Ø§Ù„ØµÙ…`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
-  keywords: ["CaptionBridge", "ترجمة فورية", "طلاب الصم", "محاضرات جامعية", "ذكاء اصطناعي"],
+  keywords: ["CaptionBridge", "ØªØ±Ø¬Ù…Ø© ÙÙˆØ±ÙŠØ©", "Ø·Ù„Ø§Ø¨ Ø§Ù„ØµÙ…", "Ù…Ø­Ø§Ø¶Ø±Ø§Øª Ø¬Ø§Ù…Ø¹ÙŠØ©", "Ø°ÙƒØ§Ø¡ Ø§ØµØ·Ù†Ø§Ø¹ÙŠ"],
   openGraph: {
     type: "website",
     locale: "ar_EG",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: `${SITE_NAME} | جسر التواصل للطلاب الصم`,
+    title: `${SITE_NAME} | Ø¬Ø³Ø± Ø§Ù„ØªÙˆØ§ØµÙ„ Ù„Ù„Ø·Ù„Ø§Ø¨ Ø§Ù„ØµÙ…`,
     description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} | ترجمة فورية للطلاب الصم`,
+    title: `${SITE_NAME} | ØªØ±Ø¬Ù…Ø© ÙÙˆØ±ÙŠØ© Ù„Ù„Ø·Ù„Ø§Ø¨ Ø§Ù„ØµÙ…`,
     description: SITE_DESCRIPTION,
   },
-  icons: { icon: "/favicon.ico" },
+  
 };
 
 export const viewport: Viewport = {
@@ -111,3 +113,4 @@ export default function RootLayout({
     </html>
   );
 }
+

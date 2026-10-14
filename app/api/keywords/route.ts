@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { generateText, parseJsonResponse } from "@/lib/ai/provider";
 import type { Keyword, KeywordCategory } from "@/lib/ai-types";
@@ -25,10 +25,10 @@ For each keyword:
 Rules:
 - Extract 5-12 keywords per lecture
 - Prioritize academic and technical terms
-- Skip filler words (the, is, was, هذا, كان)
+- Skip filler words (the, is, was, Ù‡Ø°Ø§, ÙƒØ§Ù†)
 - If text is too short, extract fewer keywords
 - If no meaningful keywords, return keywords: []
-- Rely ONLY on the transcript — never invent
+- Rely ONLY on the transcript â€” never invent
 - Reply with JSON only:
 {
   "keywords": [
@@ -106,7 +106,7 @@ export async function POST(
     messages: [{ role: "user", content: `Text:\n\n${trimmed}` }],
     temperature: 0.2,
     maxTokens: 2048,
-    prefer: "groq",
+    prefer: "groq", jsonMode: true,
   });
 
   if (!result.ok || !result.text) {

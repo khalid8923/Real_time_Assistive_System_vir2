@@ -3,7 +3,6 @@ import { nextCookies } from "better-auth/next-js";
 import { Kysely } from "kysely";
 import { LibsqlDialect } from "@libsql/kysely-libsql";
 
-export const runtime = "nodejs";
 
 const db = new Kysely({
   dialect: new LibsqlDialect({

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { generateText, parseJsonResponse } from "@/lib/ai/provider";
 import type { Flashcard, FlashcardDifficulty } from "@/lib/ai-types";
@@ -22,7 +22,7 @@ Rules:
 - Cover the most important concepts from the lecture
 - If the text is too short or unclear, generate fewer cards (minimum 3)
 - If no useful content at all, return cards: []
-- Rely ONLY on the transcript content — never invent information
+- Rely ONLY on the transcript content â€” never invent information
 - Reply with JSON only:
 {
   "cards": [
@@ -93,7 +93,7 @@ export async function POST(
     messages: [{ role: "user", content: `Text:\n\n${trimmed}` }],
     temperature: 0.4,
     maxTokens: 2048,
-    prefer: "groq",
+    prefer: "groq", jsonMode: true,
   });
 
   if (!result.ok || !result.text) {

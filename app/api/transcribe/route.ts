@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -61,6 +61,11 @@ export async function POST(
   groqForm.append("model", GROQ_MODEL);
   groqForm.append("response_format", "json");
   groqForm.append("temperature", "0");
+  groqForm.append("language", "ar");
+  groqForm.append(
+    "prompt",
+    "The speaker is a university professor explaining an academic topic in Arabic (Egyptian or Modern Standard Arabic). Preserve technical terms in English."
+  );
 
   try {
     const res = await fetch(GROQ_ENDPOINT, {
@@ -100,3 +105,4 @@ export async function POST(
     return jsonError("Transcription service unreachable.", 502);
   }
 }
+

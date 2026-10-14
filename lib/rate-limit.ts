@@ -1,13 +1,16 @@
 const cache = new Map<string, { count: number; resetAt: number }>();
 
-// ✅ Cleanup قديم كل 5 دقايق عشان الذاكرة متتملاش
+// ✅ Cleanup كل 5 دقايق (unref عشان مش يمنع الخروج)
 if (typeof setInterval !== "undefined") {
-  setInterval(() => {
+  const timer = setInterval(() => {
     const now = Date.now();
     for (const [key, record] of cache.entries()) {
       if (record.resetAt < now) cache.delete(key);
     }
   }, 5 * 60 * 1000);
+  if (typeof timer === "object" && "unref" in timer) {
+    (timer as { unref: () => void }).unref();
+  }
 }
 
 export function rateLimit(
@@ -24,11 +27,7 @@ export function rateLimit(
   }
 
   if (record.count >= max) {
-    return {
-      ok: false,
-      remaining: 0,
-      resetIn: record.resetAt - now,
-    };
+    return { ok: false, remaining: 0, resetIn: record.resetAt - now };
   }
 
   record.count++;

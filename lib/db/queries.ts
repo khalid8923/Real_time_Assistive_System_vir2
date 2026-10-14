@@ -10,6 +10,7 @@ import {
   type Theme,
 } from "@/lib/db";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
+import { safeExecute } from "@/lib/db";
 
 const SCRYPT_KEYLEN = 64;
 

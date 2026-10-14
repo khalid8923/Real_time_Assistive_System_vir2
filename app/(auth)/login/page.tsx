@@ -223,15 +223,6 @@ export default function LoginPage() {
         </Button>
       </AuthForm>
 
-      <div className="mb-4 mt-6 text-center">
-        <Link
-          href="/login/magic-link"
-          className="text-xs font-medium text-primary hover:underline"
-        >
-          ✨ أو سجّل دخول بدون باسورد (Magic Link)
-        </Link>
-      </div>
-
       <p className="mt-4 text-center text-sm text-muted-foreground">
         ليس لديك حساب؟{" "}
         <Link href="/signup" className="font-bold text-primary hover:underline">

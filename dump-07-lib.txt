@@ -1,0 +1,1421 @@
+﻿# CaptionBridge Dump :: dump-07-lib.txt
+# Generated: 2026-10-14 23:17:20
+
+========== lib\ai-types.ts ==========
+/* ============ Keywords ============ */
+
+export type KeywordCategory =
+  | "term"
+  | "concept"
+  | "person"
+  | "place"
+  | "number"
+  | "tool";
+
+export interface Keyword {
+  word: string;
+  category: KeywordCategory;
+  importance: number;
+  context: string;
+}
+
+/* ============ Flashcards ============ */
+
+export type FlashcardDifficulty = "easy" | "medium" | "hard";
+
+export interface Flashcard {
+  question: string;
+  answer: string;
+  difficulty: FlashcardDifficulty;
+}
+
+/* ============ Action Items ============ */
+
+export interface ActionItem {
+  id: string;
+  type: "exam" | "assignment" | "deadline" | "page" | "important" | "note";
+  title: string;
+  details: string;
+  urgency: "high" | "medium" | "low";
+  detectedAt: number;
+}
+
+/* ============ Classroom Questions ============ */
+
+export interface ClassroomQuestion {
+  id: string;
+  inferredQuestion: string;
+  answer: string;
+  confidence: "high" | "medium" | "low";
+  detectedAt: number;
+}
+
+/* ============ Translation ============ */
+
+export type TranslationType =
+  | "technical"
+  | "concept"
+  | "tool"
+  | "framework"
+  | "general";
+
+export interface Translation {
+  original: string;
+  translated: string;
+  type: TranslationType;
+  context: string;
+  pronunciation?: string;
+}
+========== END ==========
+
+========== lib\auth-client.ts ==========
+import { createAuthClient } from "better-auth/react";
+
+export const authClient = createAuthClient({
+  baseURL:
+    typeof window !== "undefined"
+      ? window.location.origin
+      : process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+});
+
+export const {
+  signIn,
+  signUp,
+  signOut,
+  useSession,
+  getSession,
+} = authClient;
+========== END ==========
+
+========== lib\auth.ts ==========
+import { betterAuth } from "better-auth";
+import { nextCookies } from "better-auth/next-js";
+import { Kysely } from "kysely";
+import { LibsqlDialect } from "@libsql/kysely-libsql";
+
+export const runtime = "nodejs";
+
+const db = new Kysely({
+  dialect: new LibsqlDialect({
+    url: process.env.TURSO_DATABASE_URL!,
+    authToken: process.env.TURSO_AUTH_TOKEN!,
+  }),
+});
+
+export const auth = betterAuth({
+  database: {
+    db,
+    type: "sqlite",
+  },
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: false,
+    minPasswordLength: 6,
+  },
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    },
+  },
+  session: {
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60,
+    },
+  },
+  user: {
+    additionalFields: {
+      fullName: {
+        type: "string",
+        required: false,
+      },
+      university: {
+        type: "string",
+        required: false,
+      },
+      studentId: {
+        type: "string",
+        required: false,
+      },
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: "student",
+      },
+    },
+  },
+  plugins: [nextCookies()],
+});
+
+export type Session = typeof auth.$Infer.Session;
+export type User = typeof auth.$Infer.Session.user;
+========== END ==========
+
+========== lib\features.ts ==========
+import type { LucideIcon } from "lucide-react";
+import {
+  AlertTriangle,
+  BookOpen,
+  Brain,
+  FileText,
+  Languages,
+  Layers,
+  Mic,
+  Target,
+  Users,
+  HelpCircle,
+} from "lucide-react";
+
+export type FeatureId =
+  | "captions"
+  | "mindmap"
+  | "glossary"
+  | "keywords"
+  | "translation"
+  | "summary"
+  | "flashcards"
+  | "actionItems"
+  | "classroomQuestions"
+  | "qa"
+  | "sounds"
+  | "teacher";
+
+export type FeatureCategory = "core" | "accessibility" | "ai" | "teacher";
+
+export interface Feature {
+  id: FeatureId;
+  label: string;
+  shortLabel: string;
+  description: string;
+  icon: LucideIcon;
+  category: FeatureCategory;
+  badge?: "جديد" | "قريباً";
+}
+
+export const STUDENT_FEATURES: Feature[] = [
+  {
+    id: "captions",
+    label: "الكلام المباشر",
+    shortLabel: "الكلام",
+    description: "تحويل كلام الدكتور إلى نص مكتوب في الوقت الفعلي",
+    icon: Mic,
+    category: "core",
+  },
+  {
+    id: "mindmap",
+    label: "الخريطة الذهنية",
+    shortLabel: "الخريطة",
+    description: "رسم تلقائي لشجرة الموضوعات والفروع",
+    icon: Brain,
+    category: "core",
+  },
+  {
+    id: "glossary",
+    label: "المعجم الأكاديمي",
+    shortLabel: "المعجم",
+    description: "شرح مبسط لكل مصطلح أكاديمي",
+    icon: BookOpen,
+    category: "core",
+  },
+  {
+    id: "keywords",
+    label: "الكلمات المهمة",
+    shortLabel: "الكلمات",
+    description: "تنبيه فوري عند ذكر كلمات مفتاحية مهمة",
+    icon: AlertTriangle,
+    category: "accessibility",
+  },
+  {
+    id: "actionItems",
+    label: "رادار المهام",
+    shortLabel: "المهام",
+    description: "استخراج تكليفات ومواعيد الامتحانات من المحاضرة",
+    icon: Target,
+    category: "ai",
+  },
+  {
+    id: "classroomQuestions",
+    label: "أسئلة القاعة",
+    shortLabel: "أسئلة",
+    description: "استنتاج أسئلة الطلاب من ردود الدكتور",
+    icon: HelpCircle,
+    category: "ai",
+  },
+  {
+    id: "translation",
+    label: "الترجمة الفورية",
+    shortLabel: "ترجمة",
+    description: "ترجمة المصطلحات الإنجليزية إلى العربية",
+    icon: Languages,
+    category: "ai",
+  },
+  {
+    id: "summary",
+    label: "ملخص المحاضرة",
+    shortLabel: "الملخص",
+    description: "ملخص ذكي لأهم النقاط",
+    icon: FileText,
+    category: "ai",
+  },
+  {
+    id: "flashcards",
+    label: "كروت المراجعة",
+    shortLabel: "كروت",
+    description: "توليد كروت مراجعة من المحتوى",
+    icon: Layers,
+    category: "ai",
+  },
+  {
+    id: "qa",
+    label: "أسئلة AI",
+    shortLabel: "أسئلة AI",
+    description: "شات بوت ذكي",
+    icon: Mic,
+    category: "ai",
+  },
+  {
+    id: "sounds",
+    label: "التنبيهات الصوتية",
+    shortLabel: "الأصوات",
+    description: "كشف الأصوات المهمة",
+    icon: AlertTriangle,
+    category: "accessibility",
+  },
+];
+
+export const TEACHER_FEATURES: Feature[] = [
+  {
+    id: "teacher",
+    label: "لوحة الدكتور",
+    shortLabel: "الدكتور",
+    description: "استقبال أسئلة واستفسارات الطلاب",
+    icon: Users,
+    category: "teacher",
+  },
+];
+
+export const ALL_FEATURES: Feature[] = [
+  ...STUDENT_FEATURES,
+  ...TEACHER_FEATURES,
+];
+
+export const HIDDEN_FROM_SIDEBAR: FeatureId[] = [
+  "qa",
+  "sounds",
+  "translation",
+];
+
+export function getFeature(id: FeatureId): Feature {
+  return ALL_FEATURES.find((f) => f.id === id) ?? STUDENT_FEATURES[0];
+}
+
+export const CATEGORY_LABELS: Record<FeatureCategory, string> = {
+  core: "الأساسيات",
+  accessibility: "إمكانية الوصول",
+  ai: "الميزات الذكية",
+  teacher: "لوحة الدكتور",
+};
+========== END ==========
+
+========== lib\rate-limit.ts ==========
+const cache = new Map<string, { count: number; resetAt: number }>();
+
+// ✅ Cleanup قديم كل 5 دقايق عشان الذاكرة متتملاش
+if (typeof setInterval !== "undefined") {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, record] of cache.entries()) {
+      if (record.resetAt < now) cache.delete(key);
+    }
+  }, 5 * 60 * 1000);
+}
+
+export function rateLimit(
+  key: string,
+  max: number = 30,
+  windowMs: number = 60_000
+): { ok: boolean; remaining: number; resetIn: number } {
+  const now = Date.now();
+  const record = cache.get(key);
+
+  if (!record || record.resetAt < now) {
+    cache.set(key, { count: 1, resetAt: now + windowMs });
+    return { ok: true, remaining: max - 1, resetIn: windowMs };
+  }
+
+  if (record.count >= max) {
+    return {
+      ok: false,
+      remaining: 0,
+      resetIn: record.resetAt - now,
+    };
+  }
+
+  record.count++;
+  return {
+    ok: true,
+    remaining: max - record.count,
+    resetIn: record.resetAt - now,
+  };
+}
+
+export function getClientIp(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return request.headers.get("x-real-ip") || "unknown";
+}
+========== END ==========
+
+========== lib\themes.ts ==========
+export type Theme = "light" | "dark" | "focus";
+
+export interface ThemeMeta {
+  id: Theme;
+  label: string;
+  tagline: string;
+  description: string;
+  emoji: string;
+  previewGradient: string;
+  accentColor: string;
+}
+
+export const DEFAULT_THEME: Theme = "dark";
+export const THEME_STORAGE_KEY = "cb-theme";
+
+export const THEMES: ThemeMeta[] = [
+  {
+    id: "light",
+    label: "فاتح",
+    tagline: "نظيف ومشرق",
+    description: "تصميم فاتح بألوان بنفسجية هادئة، مثالي للاستخدام النهاري والقراءة الطويلة.",
+    emoji: "☀️",
+    previewGradient: "from-gray-100 via-white to-violet-50",
+    accentColor: "#8470ff",
+  },
+  {
+    id: "dark",
+    label: "داكن",
+    tagline: "مريح للعين",
+    description: "تصميم داكن بألوان بنفسجية — تجربة عصرية ومريحة للعين في أي وقت.",
+    emoji: "🌙",
+    previewGradient: "from-gray-900 via-gray-800 to-violet-900",
+    accentColor: "#8470ff",
+  },
+  {
+    id: "focus",
+    label: "التركيز",
+    tagline: "تباين عالي",
+    description: "بدون ألوان صارخة — مصمم للطلاب اللي عايزين يركزوا 100%.",
+    emoji: "📚",
+    previewGradient: "from-zinc-100 via-white to-zinc-50",
+    accentColor: "#0a0a0a",
+  },
+];
+
+export function isTheme(value: unknown): value is Theme {
+  return typeof value === "string" && THEMES.some((t) => t.id === value);
+}
+
+export function getThemeMeta(id: Theme): ThemeMeta {
+  return THEMES.find((t) => t.id === id) ?? THEMES[0];
+}
+
+// Legacy support — all old "classic" maps to "light", old "immersive" to "dark"
+export function normalizeTheme(value: unknown): Theme {
+  if (value === "classic") return "light";
+  if (value === "immersive") return "dark";
+  return isTheme(value) ? value : DEFAULT_THEME;
+}
+========== END ==========
+
+========== lib\utils.ts ==========
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+========== END ==========
+
+========== lib\ai\provider.ts ==========
+import { GoogleGenAI } from "@google/genai";
+
+/* ------------------------------------------------------------------ */
+/* Config                                                             */
+/* ------------------------------------------------------------------ */
+
+const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
+
+// Groq model fallbacks (tries in order)
+const GROQ_MODELS = [
+  "llama-3.1-8b-instant",
+  "llama-3.2-3b-preview",
+  "gemma2-9b-it",
+  "mixtral-8x7b-32768",
+];
+
+// Gemini model fallbacks
+const GEMINI_MODELS = [
+  "gemini-3.6-flash",
+  "gemini-flash-latest",
+  "gemini-2.0-flash",
+];
+
+/* ------------------------------------------------------------------ */
+/* Types                                                              */
+/* ------------------------------------------------------------------ */
+
+export type AIProvider = "gemini" | "groq";
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface GenerateOptions {
+  systemPrompt: string;
+  messages: ChatMessage[];
+  temperature?: number;
+  maxTokens?: number;
+  prefer?: AIProvider;
+}
+
+export interface GenerateResult {
+  ok: boolean;
+  text?: string;
+  provider?: AIProvider;
+  model?: string;
+  error?: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* Gemini (with multi-key rotation)                                   */
+/* ------------------------------------------------------------------ */
+
+function getGeminiApiKeys(): string[] {
+  const keys = [
+    process.env.GEMINI_API_KEY?.trim(),
+    process.env.GEMINI_API_KEY_2?.trim(),
+    process.env.GEMINI_API_KEY_3?.trim(),
+  ].filter((k): k is string => !!k && k.length > 0);
+
+  return Array.from(new Set(keys));
+}
+
+async function tryGemini(
+  options: GenerateOptions
+): Promise<GenerateResult> {
+  const apiKeys = getGeminiApiKeys();
+
+  if (apiKeys.length === 0) {
+    return { ok: false, error: "No GEMINI_API_KEY set" };
+  }
+
+  const contents = options.messages.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content }],
+  }));
+
+  let lastError = "";
+
+  for (let keyIndex = 0; keyIndex < apiKeys.length; keyIndex++) {
+    const apiKey = apiKeys[keyIndex];
+    const ai = new GoogleGenAI({ apiKey });
+    let keyQuotaExhausted = false;
+
+    for (const model of GEMINI_MODELS) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents,
+          config: {
+            systemInstruction: options.systemPrompt,
+            temperature: options.temperature ?? 0.5,
+            maxOutputTokens: options.maxTokens ?? 2048,
+          },
+        });
+
+        const text = response.text ?? "";
+        if (text.trim()) {
+          console.log(
+            `[ai] Gemini OK | key #${keyIndex + 1} | model "${model}"`
+          );
+          return {
+            ok: true,
+            text,
+            provider: "gemini",
+            model: `${model} (key #${keyIndex + 1})`,
+          };
+        }
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        lastError = errMsg;
+
+        const isQuota =
+          errMsg.includes("429") ||
+          errMsg.toLowerCase().includes("quota") ||
+          errMsg.toLowerCase().includes("resource_exhausted");
+        const isHighDemand = errMsg.includes("503");
+        const isNotFound =
+          errMsg.includes("404") || errMsg.toLowerCase().includes("not_found");
+
+        if (isQuota) {
+          console.warn(
+            `[ai] Gemini key #${keyIndex + 1} quota exhausted — trying next key`
+          );
+          keyQuotaExhausted = true;
+          break;
+        }
+
+        if (isHighDemand) {
+          console.warn(
+            `[ai] Gemini model "${model}" high demand — trying next model`
+          );
+          continue;
+        }
+
+        if (isNotFound) {
+          continue;
+        }
+
+        return { ok: false, error: errMsg };
+      }
+    }
+
+    if (keyQuotaExhausted) continue;
+  }
+
+  return { ok: false, error: lastError || "All Gemini keys/models failed" };
+}
+
+/* ------------------------------------------------------------------ */
+/* Groq (with model fallbacks)                                        */
+/* ------------------------------------------------------------------ */
+
+async function tryGroq(
+  options: GenerateOptions
+): Promise<GenerateResult> {
+  const apiKey = process.env.GROQ_API_KEY?.trim();
+  if (!apiKey) return { ok: false, error: "GROQ_API_KEY missing" };
+
+  const messages = [
+    { role: "system", content: options.systemPrompt },
+    ...options.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    })),
+  ];
+
+  let lastError = "";
+
+  for (const model of GROQ_MODELS) {
+    try {
+      const res = await fetch(GROQ_ENDPOINT, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: options.temperature ?? 0.5,
+          max_tokens: options.maxTokens ?? 2048,
+          response_format: { type: "json_object" },
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        lastError = `Groq ${res.status} (${model}): ${errText.slice(0, 150)}`;
+
+        if (res.status === 404 || res.status === 400) {
+          console.warn(`[ai] Groq model "${model}" unavailable — trying next`);
+          continue;
+        }
+
+        if (res.status === 429) {
+          console.warn(`[ai] Groq rate limit hit`);
+          return { ok: false, error: lastError };
+        }
+
+        return { ok: false, error: lastError };
+      }
+
+      const data: {
+        choices?: Array<{ message?: { content?: string } }>;
+      } = await res.json();
+
+      const text = data.choices?.[0]?.message?.content ?? "";
+      if (text.trim()) {
+        console.log(`[ai] Groq OK | model "${model}"`);
+        return { ok: true, text, provider: "groq", model };
+      }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      lastError = errMsg;
+      console.warn(`[ai] Groq model "${model}" threw — trying next`);
+      continue;
+    }
+  }
+
+  return { ok: false, error: lastError || "All Groq models failed" };
+}
+
+/* ------------------------------------------------------------------ */
+/* Public API                                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Generate text using Gemini or Groq.
+ * Default order: Groq → Gemini (faster first).
+ * Set `prefer: "gemini"` to try Gemini first.
+ */
+export async function generateText(
+  options: GenerateOptions
+): Promise<GenerateResult> {
+  const order: AIProvider[] =
+    options.prefer === "gemini" ? ["gemini", "groq"] : ["groq", "gemini"];
+
+  let lastError = "";
+
+  for (const provider of order) {
+    const result =
+      provider === "gemini"
+        ? await tryGemini(options)
+        : await tryGroq(options);
+
+    if (result.ok) return result;
+
+    lastError = result.error ?? "Unknown error";
+    console.warn(
+      `[ai] ${provider} failed:`,
+      lastError.slice(0, 150)
+    );
+  }
+
+  return {
+    ok: false,
+    error: lastError || "كل الخدمات مشغولة حالياً. حاول بعد لحظات.",
+  };
+}
+
+/**
+ * Parse JSON from AI response (strips markdown fences if present).
+ */
+export function parseJsonResponse<T = unknown>(raw: string): T | null {
+  try {
+    const cleaned = raw
+      .trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+    return JSON.parse(cleaned) as T;
+  } catch {
+    return null;
+  }
+}
+========== END ==========
+
+========== lib\db\index.ts ==========
+import { createClient, type Client } from "@libsql/client";
+
+/* ------------------------------------------------------------------ */
+/* Types                                                              */
+/* ------------------------------------------------------------------ */
+
+export type Theme = "light" | "dark" | "focus";
+
+export interface UserSettings {
+  id: string;
+  userId: string;
+  theme: Theme;
+  transcriptFontSize: number;
+  colorCodingEnabled: boolean;
+  soundDetectionEnabled: boolean;
+  soundSensitivityQuiet: number;
+  soundSensitivityNormal: number;
+  soundSensitivityLoud: number;
+  soundSensitivitySpike: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SavedLecture {
+  id: string;
+  userId: string;
+  name: string;
+  transcript: string;
+  summary: string | null;
+  mindMapJson: string | null;
+  glossaryJson: string | null;
+  wordCount: number;
+  durationMs: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SavedGlossaryItem {
+  id: string;
+  userId: string;
+  term: string;
+  definition: string;
+  sourceLectureId: string | null;
+  starred: boolean;
+  createdAt: number;
+}
+
+export interface FlashcardProgress {
+  id: string;
+  userId: string;
+  question: string;
+  answer: string;
+  difficulty: string;
+  sourceLectureId: string | null;
+  masteryLevel: number;
+  reviewCount: number;
+  lastReviewedAt: number | null;
+  createdAt: number;
+}
+
+/* ------------------------------------------------------------------ */
+/* Connection (Singleton)                                             */
+/* ------------------------------------------------------------------ */
+
+const globalForDb = globalThis as unknown as {
+  __cb_db?: Client;
+  __cb_db_ready?: Promise<Client>;
+};
+
+function createDbClient(): Client {
+  const url = process.env.TURSO_DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+
+  if (!url) {
+    throw new Error(
+      "TURSO_DATABASE_URL is not set. Add it to .env.local"
+    );
+  }
+
+  return createClient({ url, authToken });
+}
+
+export function getDb(): Client {
+  if (globalForDb.__cb_db) return globalForDb.__cb_db;
+  const db = createDbClient();
+  globalForDb.__cb_db = db;
+  return db;
+}
+
+/* ------------------------------------------------------------------ */
+/* Migrations                                                         */
+/* ------------------------------------------------------------------ */
+
+const MIGRATIONS: string[] = [
+  `CREATE TABLE IF NOT EXISTS user_settings (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL UNIQUE,
+    theme TEXT NOT NULL DEFAULT 'dark',
+    transcriptFontSize INTEGER NOT NULL DEFAULT 16,
+    colorCodingEnabled INTEGER NOT NULL DEFAULT 1,
+    soundDetectionEnabled INTEGER NOT NULL DEFAULT 0,
+    soundSensitivityQuiet INTEGER NOT NULL DEFAULT 15,
+    soundSensitivityNormal INTEGER NOT NULL DEFAULT 45,
+    soundSensitivityLoud INTEGER NOT NULL DEFAULT 70,
+    soundSensitivitySpike INTEGER NOT NULL DEFAULT 30,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+  )`,
+
+  `CREATE TABLE IF NOT EXISTS saved_lectures (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL,
+    name TEXT NOT NULL,
+    transcript TEXT NOT NULL,
+    summary TEXT,
+    mindMapJson TEXT,
+    glossaryJson TEXT,
+    wordCount INTEGER NOT NULL DEFAULT 0,
+    durationMs INTEGER NOT NULL DEFAULT 0,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+  )`,
+
+  `CREATE INDEX IF NOT EXISTS idx_lectures_user
+    ON saved_lectures(userId, createdAt DESC)`,
+
+  `CREATE TABLE IF NOT EXISTS saved_glossary (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL,
+    term TEXT NOT NULL,
+    definition TEXT NOT NULL,
+    sourceLectureId TEXT,
+    starred INTEGER NOT NULL DEFAULT 1,
+    createdAt INTEGER NOT NULL
+  )`,
+
+  `CREATE INDEX IF NOT EXISTS idx_glossary_user
+    ON saved_glossary(userId, createdAt DESC)`,
+
+  `CREATE TABLE IF NOT EXISTS flashcards_progress (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    difficulty TEXT NOT NULL DEFAULT 'medium',
+    sourceLectureId TEXT,
+    masteryLevel INTEGER NOT NULL DEFAULT 0,
+    reviewCount INTEGER NOT NULL DEFAULT 0,
+    lastReviewedAt INTEGER,
+    createdAt INTEGER NOT NULL
+  )`,
+
+  `CREATE INDEX IF NOT EXISTS idx_flashcards_user
+    ON flashcards_progress(userId, createdAt DESC)`,
+
+  `CREATE TABLE IF NOT EXISTS admin_settings (
+    id TEXT PRIMARY KEY,
+    passwordHash TEXT NOT NULL,
+    passwordSalt TEXT NOT NULL,
+    updatedAt INTEGER NOT NULL
+  )`,
+];
+
+export async function ensureDbReady(): Promise<Client> {
+  if (globalForDb.__cb_db_ready) {
+    return globalForDb.__cb_db_ready;
+  }
+
+  const db = getDb();
+
+  const readyPromise = (async () => {
+    await db.batch(MIGRATIONS, "write");
+    return db;
+  })();
+
+  globalForDb.__cb_db_ready = readyPromise;
+  return readyPromise;
+}
+
+/* ------------------------------------------------------------------ */
+/* Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+export function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function now(): number {
+  return Date.now();
+}
+========== END ==========
+
+========== lib\db\queries.ts ==========
+import {
+  getDb,
+  ensureDbReady,
+  generateId,
+  now,
+  type UserSettings,
+  type SavedLecture,
+  type SavedGlossaryItem,
+  type FlashcardProgress,
+  type Theme,
+} from "@/lib/db";
+import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
+
+const SCRYPT_KEYLEN = 64;
+
+/* ------------------------------------------------------------------ */
+/* HELPERS                                                            */
+/* ------------------------------------------------------------------ */
+
+async function exec(query: string, args: unknown[] = []) {
+  await ensureDbReady();
+  const db = getDb();
+  return db.execute({ sql: query, args: args as never });
+}
+
+async function firstRow<T>(query: string, args: unknown[] = []): Promise<T | null> {
+  const result = await exec(query, args);
+  const row = result.rows[0];
+  return (row as T) ?? null;
+}
+
+async function allRows<T>(query: string, args: unknown[] = []): Promise<T[]> {
+  const result = await exec(query, args);
+  return result.rows as unknown as T[];
+}
+
+/* ------------------------------------------------------------------ */
+/* USER SETTINGS                                                      */
+/* ------------------------------------------------------------------ */
+
+interface RawSettings {
+  id: string;
+  userId: string;
+  theme: string;
+  transcriptFontSize: number;
+  colorCodingEnabled: number;
+  soundDetectionEnabled: number;
+  soundSensitivityQuiet: number;
+  soundSensitivityNormal: number;
+  soundSensitivityLoud: number;
+  soundSensitivitySpike: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+function mapSettings(row: RawSettings): UserSettings {
+  return {
+    ...row,
+    theme: row.theme as Theme,
+    colorCodingEnabled: row.colorCodingEnabled === 1,
+    soundDetectionEnabled: row.soundDetectionEnabled === 1,
+  };
+}
+
+export async function getSettings(userId: string): Promise<UserSettings> {
+  const row = await firstRow<RawSettings>(
+    "SELECT * FROM user_settings WHERE userId = ?",
+    [userId]
+  );
+
+  if (row) return mapSettings(row);
+
+  const id = generateId();
+  const ts = now();
+
+  await exec(
+    `INSERT INTO user_settings (id, userId, createdAt, updatedAt)
+     VALUES (?, ?, ?, ?)`,
+    [id, userId, ts, ts]
+  );
+
+  return {
+    id,
+    userId,
+    theme: "dark",
+    transcriptFontSize: 16,
+    colorCodingEnabled: true,
+    soundDetectionEnabled: false,
+    soundSensitivityQuiet: 15,
+    soundSensitivityNormal: 45,
+    soundSensitivityLoud: 70,
+    soundSensitivitySpike: 30,
+    createdAt: ts,
+    updatedAt: ts,
+  };
+}
+
+export async function updateSettings(
+  userId: string,
+  patch: Partial<Omit<UserSettings, "id" | "userId" | "createdAt">>
+): Promise<UserSettings> {
+  const current = await getSettings(userId);
+
+  const updated = {
+    theme: patch.theme ?? current.theme,
+    transcriptFontSize: patch.transcriptFontSize ?? current.transcriptFontSize,
+    colorCodingEnabled: patch.colorCodingEnabled ?? current.colorCodingEnabled,
+    soundDetectionEnabled:
+      patch.soundDetectionEnabled ?? current.soundDetectionEnabled,
+    soundSensitivityQuiet:
+      patch.soundSensitivityQuiet ?? current.soundSensitivityQuiet,
+    soundSensitivityNormal:
+      patch.soundSensitivityNormal ?? current.soundSensitivityNormal,
+    soundSensitivityLoud:
+      patch.soundSensitivityLoud ?? current.soundSensitivityLoud,
+    soundSensitivitySpike:
+      patch.soundSensitivitySpike ?? current.soundSensitivitySpike,
+  };
+
+  await exec(
+    `UPDATE user_settings
+     SET theme = ?,
+         transcriptFontSize = ?,
+         colorCodingEnabled = ?,
+         soundDetectionEnabled = ?,
+         soundSensitivityQuiet = ?,
+         soundSensitivityNormal = ?,
+         soundSensitivityLoud = ?,
+         soundSensitivitySpike = ?,
+         updatedAt = ?
+     WHERE userId = ?`,
+    [
+      updated.theme,
+      updated.transcriptFontSize,
+      updated.colorCodingEnabled ? 1 : 0,
+      updated.soundDetectionEnabled ? 1 : 0,
+      updated.soundSensitivityQuiet,
+      updated.soundSensitivityNormal,
+      updated.soundSensitivityLoud,
+      updated.soundSensitivitySpike,
+      now(),
+      userId,
+    ]
+  );
+
+  return getSettings(userId);
+}
+
+/* ------------------------------------------------------------------ */
+/* LECTURES                                                           */
+/* ------------------------------------------------------------------ */
+
+export async function listLectures(userId: string): Promise<SavedLecture[]> {
+  return allRows<SavedLecture>(
+    `SELECT * FROM saved_lectures
+     WHERE userId = ?
+     ORDER BY createdAt DESC`,
+    [userId]
+  );
+}
+
+export async function getLecture(
+  userId: string,
+  id: string
+): Promise<SavedLecture | null> {
+  return firstRow<SavedLecture>(
+    "SELECT * FROM saved_lectures WHERE id = ? AND userId = ?",
+    [id, userId]
+  );
+}
+
+export interface SaveLectureInput {
+  name: string;
+  transcript: string;
+  summary?: string;
+  mindMapJson?: string;
+  glossaryJson?: string;
+  wordCount?: number;
+  durationMs?: number;
+}
+
+export async function saveLecture(
+  userId: string,
+  input: SaveLectureInput
+): Promise<SavedLecture> {
+  const id = generateId();
+  const ts = now();
+  const wordCount =
+    input.wordCount ?? input.transcript.split(/\s+/).filter(Boolean).length;
+
+  await exec(
+    `INSERT INTO saved_lectures
+     (id, userId, name, transcript, summary, mindMapJson, glossaryJson,
+      wordCount, durationMs, createdAt, updatedAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id,
+      userId,
+      input.name,
+      input.transcript,
+      input.summary ?? null,
+      input.mindMapJson ?? null,
+      input.glossaryJson ?? null,
+      wordCount,
+      input.durationMs ?? 0,
+      ts,
+      ts,
+    ]
+  );
+
+  const lecture = await getLecture(userId, id);
+  return lecture!;
+}
+
+export async function deleteLecture(
+  userId: string,
+  id: string
+): Promise<boolean> {
+  const result = await exec(
+    "DELETE FROM saved_lectures WHERE id = ? AND userId = ?",
+    [id, userId]
+  );
+  return (result.rowsAffected ?? 0) > 0;
+}
+
+export async function renameLecture(
+  userId: string,
+  id: string,
+  newName: string
+): Promise<boolean> {
+  const result = await exec(
+    "UPDATE saved_lectures SET name = ?, updatedAt = ? WHERE id = ? AND userId = ?",
+    [newName, now(), id, userId]
+  );
+  return (result.rowsAffected ?? 0) > 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* GLOSSARY                                                           */
+/* ------------------------------------------------------------------ */
+
+interface RawGlossary {
+  id: string;
+  userId: string;
+  term: string;
+  definition: string;
+  sourceLectureId: string | null;
+  starred: number;
+  createdAt: number;
+}
+
+function mapGlossary(row: RawGlossary): SavedGlossaryItem {
+  return { ...row, starred: row.starred === 1 };
+}
+
+export async function listGlossary(
+  userId: string
+): Promise<SavedGlossaryItem[]> {
+  const rows = await allRows<RawGlossary>(
+    `SELECT * FROM saved_glossary
+     WHERE userId = ?
+     ORDER BY createdAt DESC`,
+    [userId]
+  );
+  return rows.map(mapGlossary);
+}
+
+export async function saveGlossaryTerm(
+  userId: string,
+  input: {
+    term: string;
+    definition: string;
+    sourceLectureId?: string;
+  }
+): Promise<SavedGlossaryItem> {
+  const id = generateId();
+  const ts = now();
+
+  await exec(
+    `INSERT INTO saved_glossary
+     (id, userId, term, definition, sourceLectureId, starred, createdAt)
+     VALUES (?, ?, ?, ?, ?, 1, ?)`,
+    [
+      id,
+      userId,
+      input.term,
+      input.definition,
+      input.sourceLectureId ?? null,
+      ts,
+    ]
+  );
+
+  const row = await firstRow<RawGlossary>(
+    "SELECT * FROM saved_glossary WHERE id = ?",
+    [id]
+  );
+  return mapGlossary(row!);
+}
+
+export async function deleteGlossaryTerm(
+  userId: string,
+  id: string
+): Promise<boolean> {
+  const result = await exec(
+    "DELETE FROM saved_glossary WHERE id = ? AND userId = ?",
+    [id, userId]
+  );
+  return (result.rowsAffected ?? 0) > 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* FLASHCARDS                                                         */
+/* ------------------------------------------------------------------ */
+
+export async function listFlashcards(
+  userId: string
+): Promise<FlashcardProgress[]> {
+  return allRows<FlashcardProgress>(
+    `SELECT * FROM flashcards_progress
+     WHERE userId = ?
+     ORDER BY createdAt DESC`,
+    [userId]
+  );
+}
+
+export async function saveFlashcard(
+  userId: string,
+  input: {
+    question: string;
+    answer: string;
+    difficulty?: string;
+    sourceLectureId?: string;
+  }
+): Promise<FlashcardProgress> {
+  const id = generateId();
+  const ts = now();
+
+  await exec(
+    `INSERT INTO flashcards_progress
+     (id, userId, question, answer, difficulty, sourceLectureId,
+      masteryLevel, reviewCount, lastReviewedAt, createdAt)
+     VALUES (?, ?, ?, ?, ?, ?, 0, 0, NULL, ?)`,
+    [
+      id,
+      userId,
+      input.question,
+      input.answer,
+      input.difficulty ?? "medium",
+      input.sourceLectureId ?? null,
+      ts,
+    ]
+  );
+
+  const row = await firstRow<FlashcardProgress>(
+    "SELECT * FROM flashcards_progress WHERE id = ?",
+    [id]
+  );
+  return row!;
+}
+
+export async function reviewFlashcard(
+  userId: string,
+  id: string,
+  newMastery: number
+): Promise<boolean> {
+  const clamped = Math.max(0, Math.min(100, newMastery));
+  const result = await exec(
+    `UPDATE flashcards_progress
+     SET masteryLevel = ?,
+         reviewCount = reviewCount + 1,
+         lastReviewedAt = ?
+     WHERE id = ? AND userId = ?`,
+    [clamped, now(), id, userId]
+  );
+  return (result.rowsAffected ?? 0) > 0;
+}
+
+export async function deleteFlashcard(
+  userId: string,
+  id: string
+): Promise<boolean> {
+  const result = await exec(
+    "DELETE FROM flashcards_progress WHERE id = ? AND userId = ?",
+    [id, userId]
+  );
+  return (result.rowsAffected ?? 0) > 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* STATS                                                              */
+/* ------------------------------------------------------------------ */
+
+export interface UserStats {
+  totalLectures: number;
+  totalWords: number;
+  totalGlossary: number;
+  totalFlashcards: number;
+  averageMastery: number;
+}
+
+export async function getUserStats(userId: string): Promise<UserStats> {
+  const lectures = await firstRow<{ count: number; words: number }>(
+    "SELECT COUNT(*) as count, COALESCE(SUM(wordCount), 0) as words FROM saved_lectures WHERE userId = ?",
+    [userId]
+  );
+
+  const glossary = await firstRow<{ count: number }>(
+    "SELECT COUNT(*) as count FROM saved_glossary WHERE userId = ?",
+    [userId]
+  );
+
+  const flashcards = await firstRow<{ count: number; avg: number }>(
+    "SELECT COUNT(*) as count, COALESCE(AVG(masteryLevel), 0) as avg FROM flashcards_progress WHERE userId = ?",
+    [userId]
+  );
+
+  return {
+    totalLectures: Number(lectures?.count ?? 0),
+    totalWords: Number(lectures?.words ?? 0),
+    totalGlossary: Number(glossary?.count ?? 0),
+    totalFlashcards: Number(flashcards?.count ?? 0),
+    averageMastery: Math.round(Number(flashcards?.avg ?? 0)),
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* ADMIN SETTINGS                                                     */
+/* ------------------------------------------------------------------ */
+
+function hashPassword(password: string): { hash: string; salt: string } {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, SCRYPT_KEYLEN).toString("hex");
+  return { hash, salt };
+}
+
+function verifyPasswordHash(
+  password: string,
+  hash: string,
+  salt: string
+): boolean {
+  try {
+    const derived = scryptSync(password, salt, SCRYPT_KEYLEN);
+    const stored = Buffer.from(hash, "hex");
+    if (derived.length !== stored.length) return false;
+    return timingSafeEqual(derived, stored);
+  } catch {
+    return false;
+  }
+}
+
+export async function getAdminPassword(): Promise<{
+  hash: string;
+  salt: string;
+} | null> {
+  const row = await firstRow<{ passwordHash: string; passwordSalt: string }>(
+    "SELECT passwordHash, passwordSalt FROM admin_settings LIMIT 1"
+  );
+
+  if (!row) return null;
+  return { hash: row.passwordHash, salt: row.passwordSalt };
+}
+
+export async function setAdminPassword(password: string): Promise<void> {
+  const { hash, salt } = hashPassword(password);
+  const ts = now();
+
+  const existing = await firstRow<{ id: string }>(
+    "SELECT id FROM admin_settings LIMIT 1"
+  );
+
+  if (existing) {
+    await exec(
+      `UPDATE admin_settings
+       SET passwordHash = ?, passwordSalt = ?, updatedAt = ?
+       WHERE id = ?`,
+      [hash, salt, ts, existing.id]
+    );
+  } else {
+    await exec(
+      `INSERT INTO admin_settings (id, passwordHash, passwordSalt, updatedAt)
+       VALUES (?, ?, ?, ?)`,
+      [generateId(), hash, salt, ts]
+    );
+  }
+}
+
+export async function verifyAdminPassword(password: string): Promise<boolean> {
+  const stored = await getAdminPassword();
+
+  if (!stored) {
+    const envPassword = process.env.ADMIN_PASSWORD?.trim();
+    return !!envPassword && password === envPassword;
+  }
+
+  return verifyPasswordHash(password, stored.hash, stored.salt);
+}
+
+export async function hasCustomAdminPassword(): Promise<boolean> {
+  const row = await firstRow<{ id: string }>(
+    "SELECT id FROM admin_settings LIMIT 1"
+  );
+  return !!row;
+}
+========== END ==========
+
