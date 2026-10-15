@@ -1,10 +1,5 @@
 import { Resend } from "resend";
 
-/* ------------------------------------------------------------------ */
-/* Lazy Resend client — created on first use, not at module load.    */
-/* This prevents build-time crashes when RESEND_API_KEY is missing.  */
-/* ------------------------------------------------------------------ */
-
 let resendClient: Resend | null = null;
 
 function getResend(): Resend | null {
@@ -17,15 +12,8 @@ function getResend(): Resend | null {
 }
 
 function getFrom(): string {
-  return (
-    process.env.EMAIL_FROM ||
-    "CaptionBridge <onboarding@resend.dev>"
-  );
+  return process.env.EMAIL_FROM || "CaptionBridge <onboarding@resend.dev>";
 }
-
-/* ------------------------------------------------------------------ */
-/* HTML templates                                                     */
-/* ------------------------------------------------------------------ */
 
 function emailShell(title: string, body: string): string {
   return `<!DOCTYPE html>
@@ -43,7 +31,7 @@ function emailShell(title: string, body: string): string {
     ${body}
     <hr style="border:none;border-top:1px solid #cdd0d6;margin:32px 0 20px;">
     <p style="font-size:12px;line-height:1.7;color:#575a62;margin:0;">لو ما طلبتش الرسالة دي، تجاهلها بأمان.</p>
-    <p style="font-size:11px;color:#80848e;margin:12px 0 0;">© ${new Date().getFullYear()} CaptionBridge — رفيقك الذكي في المحاضرات الجامعية</p>
+    <p style="font-size:11px;color:#80848e;margin:12px 0 0;">© ${new Date().getFullYear()} CaptionBridge</p>
   </div>
 </body>
 </html>`;
@@ -78,10 +66,6 @@ export function resetPasswordEmailHtml(name: string, url: string): string {
   return emailShell("إعادة تعيين كلمة المرور", body);
 }
 
-/* ------------------------------------------------------------------ */
-/* Send helpers — gracefully skip if key is missing                   */
-/* ------------------------------------------------------------------ */
-
 export async function sendVerificationEmail(opts: {
   to: string;
   name: string;
@@ -89,13 +73,9 @@ export async function sendVerificationEmail(opts: {
 }): Promise<void> {
   const client = getResend();
   if (!client) {
-    console.warn(
-      `[email] RESEND_API_KEY missing — skipping verification email to ${opts.to}`
-    );
-    console.warn(`[email] Verification URL: ${opts.url}`);
+    console.warn(`[email] RESEND_API_KEY missing — URL: ${opts.url}`);
     return;
   }
-
   try {
     const result = await client.emails.send({
       from: getFrom(),
@@ -104,7 +84,7 @@ export async function sendVerificationEmail(opts: {
       html: verificationEmailHtml(opts.name || "صديقنا", opts.url),
     });
     if (result.error) {
-      console.error("[email] verify send failed:", result.error.message);
+      console.error("[email] verify failed:", result.error.message);
       return;
     }
     console.log(`[email] verify sent to ${opts.to}`);
@@ -120,13 +100,9 @@ export async function sendResetPasswordEmail(opts: {
 }): Promise<void> {
   const client = getResend();
   if (!client) {
-    console.warn(
-      `[email] RESEND_API_KEY missing — skipping reset email to ${opts.to}`
-    );
-    console.warn(`[email] Reset URL: ${opts.url}`);
+    console.warn(`[email] RESEND_API_KEY missing — URL: ${opts.url}`);
     return;
   }
-
   try {
     const result = await client.emails.send({
       from: getFrom(),
@@ -135,7 +111,7 @@ export async function sendResetPasswordEmail(opts: {
       html: resetPasswordEmailHtml(opts.name || "صديقنا", opts.url),
     });
     if (result.error) {
-      console.error("[email] reset send failed:", result.error.message);
+      console.error("[email] reset failed:", result.error.message);
       return;
     }
     console.log(`[email] reset sent to ${opts.to}`);
