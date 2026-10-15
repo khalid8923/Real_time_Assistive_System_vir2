@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -106,15 +106,15 @@ export default function LoginPage() {
     setError(null);
 
     if (rateLimit.isLocked) {
-      setError(`محاولات كثيرة. حاول تاني بعد ${rateLimit.secondsLeft} ثانية.`);
+      setError(`Ù…Ø­Ø§ÙˆÙ„Ø§Øª ÙƒØ«ÙŠØ±Ø©. Ø­Ø§ÙˆÙ„ ØªØ§Ù†ÙŠ Ø¨Ø¹Ø¯ ${rateLimit.secondsLeft} Ø«Ø§Ù†ÙŠØ©.`);
       return;
     }
     if (!EMAIL_REGEX.test(email.trim())) {
-      setError("من فضلك اكتب إيميل صحيح.");
+      setError("Ù…Ù† ÙØ¶Ù„Ùƒ Ø§ÙƒØªØ¨ Ø¥ÙŠÙ…ÙŠÙ„ ØµØ­ÙŠØ­.");
       return;
     }
     if (password.length < 6) {
-      setError("كلمة المرور لازم تكون 6 أحرف على الأقل.");
+      setError("ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ù„Ø§Ø²Ù… ØªÙƒÙˆÙ† 6 Ø£Ø­Ø±Ù Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„.");
       return;
     }
 
@@ -142,11 +142,11 @@ export default function LoginPage() {
         } else if (msg.includes("invalid") || msg.includes("credential")) {
           setError(
             remaining > 0
-              ? `الإيميل أو كلمة المرور غير صحيحة. فاضل ${remaining} محاولة.`
-              : "تم قفل الحساب مؤقتاً لمدة دقيقة."
+              ? `Ø§Ù„Ø¥ÙŠÙ…ÙŠÙ„ Ø£Ùˆ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± ØµØ­ÙŠØ­Ø©. ÙØ§Ø¶Ù„ ${remaining} Ù…Ø­Ø§ÙˆÙ„Ø©.`
+              : "ØªÙ… Ù‚ÙÙ„ Ø§Ù„Ø­Ø³Ø§Ø¨ Ù…Ø¤Ù‚ØªØ§Ù‹ Ù„Ù…Ø¯Ø© Ø¯Ù‚ÙŠÙ‚Ø©."
           );
         } else {
-          setError(signInError.message || "حصل خطأ أثناء تسجيل الدخول.");
+          setError(signInError.message || "Ø­ØµÙ„ Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„.");
         }
         setLoading(false);
         return;
@@ -156,14 +156,14 @@ export default function LoginPage() {
       document.cookie =
         "guest_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       setSuccess(true);
-      toast.success("تم تسجيل الدخول بنجاح");
+      toast.success("ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨Ù†Ø¬Ø§Ø­");
       window.setTimeout(() => {
         router.push("/");
         router.refresh();
       }, 550);
     } catch (err) {
       console.error("[login] failed:", err);
-      setError("تعذّر الاتصال بالسيرفر. حاول تاني.");
+      setError("ØªØ¹Ø°Ù‘Ø± Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø³ÙŠØ±ÙØ±. Ø­Ø§ÙˆÙ„ ØªØ§Ù†ÙŠ.");
       setLoading(false);
     }
   };
@@ -189,26 +189,22 @@ export default function LoginPage() {
           priority
         />
         <h2 className="text-xl font-bold text-foreground">
-          أهلاً بيك تاني 👋
+          Ø£Ù‡Ù„Ø§Ù‹ Ø¨ÙŠÙƒ ØªØ§Ù†ÙŠ ðŸ‘‹
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          سجّل دخولك عشان تكمل المحاضرة
+          Ø³Ø¬Ù‘Ù„ Ø¯Ø®ÙˆÙ„Ùƒ Ø¹Ø´Ø§Ù† ØªÙƒÙ…Ù„ Ø§Ù„Ù…Ø­Ø§Ø¶Ø±Ø©
         </p>
       </header>
-
-      <GoogleButton mode="login" />
-
-      <AuthDivider label="أو بالبريد الإلكتروني" />
 
       {locked && (
         <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
           <div>
             <p className="font-bold text-amber-700 dark:text-amber-400">
-              الحساب مقفول مؤقتاً
+              Ø§Ù„Ø­Ø³Ø§Ø¨ Ù…Ù‚ÙÙˆÙ„ Ù…Ø¤Ù‚ØªØ§Ù‹
             </p>
             <p className="mt-0.5 text-xs text-amber-700/80 dark:text-amber-400/80">
-              حاول تاني بعد {rateLimit.secondsLeft} ثانية
+              Ø­Ø§ÙˆÙ„ ØªØ§Ù†ÙŠ Ø¨Ø¹Ø¯ {rateLimit.secondsLeft} Ø«Ø§Ù†ÙŠØ©
             </p>
           </div>
         </div>
@@ -217,16 +213,16 @@ export default function LoginPage() {
       {needsVerification && (
         <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
           <p className="mb-2 text-sm font-bold text-amber-700 dark:text-amber-400">
-            ✉️ إيميلك لسه مش متأكد
+            âœ‰ï¸ Ø¥ÙŠÙ…ÙŠÙ„Ùƒ Ù„Ø³Ù‡ Ù…Ø´ Ù…ØªØ£ÙƒØ¯
           </p>
           <p className="mb-3 text-xs text-amber-700/80 dark:text-amber-400/80">
-            لازم تأكد إيميلك الأول قبل ما تقدر تسجل دخول.
+            Ù„Ø§Ø²Ù… ØªØ£ÙƒØ¯ Ø¥ÙŠÙ…ÙŠÙ„Ùƒ Ø§Ù„Ø£ÙˆÙ„ Ù‚Ø¨Ù„ Ù…Ø§ ØªÙ‚Ø¯Ø± ØªØ³Ø¬Ù„ Ø¯Ø®ÙˆÙ„.
           </p>
           <Link
             href={`/check-email?email=${encodeURIComponent(needsVerification)}`}
             className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-bold text-white hover:bg-amber-600"
           >
-            ابعتلي لينك جديد
+            Ø§Ø¨Ø¹ØªÙ„ÙŠ Ù„ÙŠÙ†Ùƒ Ø¬Ø¯ÙŠØ¯
           </Link>
         </div>
       )}
@@ -236,7 +232,7 @@ export default function LoginPage() {
 
         <AuthInput
           ref={emailRef}
-          label="الإيميل"
+          label="Ø§Ù„Ø¥ÙŠÙ…ÙŠÙ„"
           name="email"
           type="email"
           value={email}
@@ -245,9 +241,9 @@ export default function LoginPage() {
           onBlur={() => setEmailFocused(false)}
           icon={<Mail className="h-4 w-4" />}
           validationState={emailState}
-          successMessage="الإيميل شكله صح"
+          successMessage="Ø§Ù„Ø¥ÙŠÙ…ÙŠÙ„ Ø´ÙƒÙ„Ù‡ ØµØ­"
           error={
-            emailState === "invalid" ? "صيغة الإيميل غير صحيحة" : undefined
+            emailState === "invalid" ? "ØµÙŠØºØ© Ø§Ù„Ø¥ÙŠÙ…ÙŠÙ„ ØºÙŠØ± ØµØ­ÙŠØ­Ø©" : undefined
           }
           required
           autoComplete="email"
@@ -255,9 +251,9 @@ export default function LoginPage() {
         />
 
         <AuthPasswordInput
-          label="كلمة المرور"
+          label="ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±"
           name="password"
-          placeholder="••••••••"
+          placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onFocus={() => setPasswordFocused(true)}
@@ -265,10 +261,10 @@ export default function LoginPage() {
           onVisibilityChange={setPasswordVisible}
           icon={<Lock className="h-4 w-4" />}
           validationState={passwordState}
-          successMessage="كلمة المرور جاهزة"
+          successMessage="ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø¬Ø§Ù‡Ø²Ø©"
           error={
             passwordState === "invalid"
-              ? "كلمة المرور لازم 6 أحرف على الأقل"
+              ? "ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ù„Ø§Ø²Ù… 6 Ø£Ø­Ø±Ù Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„"
               : undefined
           }
           required
@@ -285,31 +281,31 @@ export default function LoginPage() {
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              جارٍ تسجيل الدخول...
+              Ø¬Ø§Ø±Ù ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„...
             </>
           ) : success ? (
             <>
               <CheckCircle2 className="h-4 w-4" />
-              تم الدخول
+              ØªÙ… Ø§Ù„Ø¯Ø®ÙˆÙ„
             </>
           ) : locked ? (
             <>
               <ShieldAlert className="h-4 w-4" />
-              مقفول ({rateLimit.secondsLeft}s)
+              Ù…Ù‚ÙÙˆÙ„ ({rateLimit.secondsLeft}s)
             </>
           ) : (
             <>
               <LogIn className="h-4 w-4" />
-              تسجيل الدخول
+              ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„
             </>
           )}
         </Button>
       </AuthForm>
 
       <p className="mt-4 text-center text-sm text-muted-foreground">
-        ليس لديك حساب؟{" "}
+        Ù„ÙŠØ³ Ù„Ø¯ÙŠÙƒ Ø­Ø³Ø§Ø¨ØŸ{" "}
         <Link href="/signup" className="font-bold text-primary hover:underline">
-          أنشئ حساباً جديداً
+          Ø£Ù†Ø´Ø¦ Ø­Ø³Ø§Ø¨Ø§Ù‹ Ø¬Ø¯ÙŠØ¯Ø§Ù‹
         </Link>
       </p>
 
@@ -322,7 +318,7 @@ export default function LoginPage() {
           }}
           className="w-full text-center text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
         >
-          🚀 الدخول التجريبي (بدون حساب)
+          ðŸš€ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø§Ù„ØªØ¬Ø±ÙŠØ¨ÙŠ (Ø¨Ø¯ÙˆÙ† Ø­Ø³Ø§Ø¨)
         </button>
 
         <button
@@ -332,7 +328,7 @@ export default function LoginPage() {
           }}
           className="w-full text-center text-[10px] font-medium text-muted-foreground/60 transition-colors hover:text-violet-500"
         >
-          🛡️ دخول الأدمن
+          ðŸ›¡ï¸ Ø¯Ø®ÙˆÙ„ Ø§Ù„Ø£Ø¯Ù…Ù†
         </button>
       </div>
     </div>

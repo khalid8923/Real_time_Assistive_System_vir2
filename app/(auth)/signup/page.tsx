@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -115,27 +115,27 @@ export default function SignupPage() {
     setError(null);
 
     if (name.trim().length < 2) {
-      setError("من فضلك اكتب اسمك (حرفين على الأقل).");
+      setError("Ù…Ù† ÙØ¶Ù„Ùƒ Ø§ÙƒØªØ¨ Ø§Ø³Ù…Ùƒ (Ø­Ø±ÙÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„).");
       return;
     }
     if (university.trim().length < 2) {
-      setError("من فضلك اكتب اسم الجامعة.");
+      setError("Ù…Ù† ÙØ¶Ù„Ùƒ Ø§ÙƒØªØ¨ Ø§Ø³Ù… Ø§Ù„Ø¬Ø§Ù…Ø¹Ø©.");
       return;
     }
     if (studentId.trim().length < 3) {
-      setError("من فضلك اكتب الرقم الجامعي.");
+      setError("Ù…Ù† ÙØ¶Ù„Ùƒ Ø§ÙƒØªØ¨ Ø§Ù„Ø±Ù‚Ù… Ø§Ù„Ø¬Ø§Ù…Ø¹ÙŠ.");
       return;
     }
     if (!EMAIL_REGEX.test(email.trim())) {
-      setError("من فضلك اكتب إيميل صحيح.");
+      setError("Ù…Ù† ÙØ¶Ù„Ùƒ Ø§ÙƒØªØ¨ Ø¥ÙŠÙ…ÙŠÙ„ ØµØ­ÙŠØ­.");
       return;
     }
     if (password.length < 6) {
-      setError("كلمة المرور لازم تكون 6 أحرف على الأقل.");
+      setError("ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ù„Ø§Ø²Ù… ØªÙƒÙˆÙ† 6 Ø£Ø­Ø±Ù Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„.");
       return;
     }
     if (password !== confirm) {
-      setError("كلمتا المرور مش متطابقتين.");
+      setError("ÙƒÙ„Ù…ØªØ§ Ø§Ù„Ù…Ø±ÙˆØ± Ù…Ø´ Ù…ØªØ·Ø§Ø¨Ù‚ØªÙŠÙ†.");
       return;
     }
 
@@ -158,11 +158,11 @@ export default function SignupPage() {
         console.error("[signup error]", signUpError.message);
         const msg = signUpError.message?.toLowerCase() || "";
         if (msg.includes("already") || msg.includes("exists")) {
-          setError("الإيميل ده مسجل بالفعل. جرّب تسجل دخول.");
+          setError("Ø§Ù„Ø¥ÙŠÙ…ÙŠÙ„ Ø¯Ù‡ Ù…Ø³Ø¬Ù„ Ø¨Ø§Ù„ÙØ¹Ù„. Ø¬Ø±Ù‘Ø¨ ØªØ³Ø¬Ù„ Ø¯Ø®ÙˆÙ„.");
         } else if (msg.includes("password")) {
-          setError("كلمة المرور ضعيفة. جرّب كلمة أقوى.");
+          setError("ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø¶Ø¹ÙŠÙØ©. Ø¬Ø±Ù‘Ø¨ ÙƒÙ„Ù…Ø© Ø£Ù‚ÙˆÙ‰.");
         } else {
-          setError(`خطأ: ${signUpError.message}`);
+          setError(`Ø®Ø·Ø£: ${signUpError.message}`);
         }
         setLoading(false);
         return;
@@ -171,7 +171,7 @@ export default function SignupPage() {
       document.cookie =
         "guest_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       setSuccess(true);
-      toast.success("تم إنشاء الحساب! اتفضل اتفقد إيميلك للتحقق.", {
+      toast.success("ØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø­Ø³Ø§Ø¨! Ø§ØªÙØ¶Ù„ Ø§ØªÙÙ‚Ø¯ Ø¥ÙŠÙ…ÙŠÙ„Ùƒ Ù„Ù„ØªØ­Ù‚Ù‚.", {
         duration: 6000,
       });
       window.setTimeout(() => {
@@ -179,7 +179,7 @@ export default function SignupPage() {
       }, 900);
     } catch (err) {
       console.error("[signup] failed:", err);
-      setError("تعذّر الاتصال بالسيرفر. حاول تاني.");
+      setError("ØªØ¹Ø°Ù‘Ø± Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø³ÙŠØ±ÙØ±. Ø­Ø§ÙˆÙ„ ØªØ§Ù†ÙŠ.");
       setLoading(false);
     }
   };
@@ -207,22 +207,18 @@ export default function SignupPage() {
           className="mx-auto mb-3 h-12 w-12 rounded-xl shadow-lg shadow-primary/20"
           priority
         />
-        <h2 className="text-xl font-bold text-foreground">أهلاً بيك! 👋</h2>
+        <h2 className="text-xl font-bold text-foreground">Ø£Ù‡Ù„Ø§Ù‹ Ø¨ÙŠÙƒ! ðŸ‘‹</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          أنشئ حسابك عشان تبدأ
+          Ø£Ù†Ø´Ø¦ Ø­Ø³Ø§Ø¨Ùƒ Ø¹Ø´Ø§Ù† ØªØ¨Ø¯Ø£
         </p>
       </header>
-
-      <GoogleButton mode="signup" />
-
-      <AuthDivider label="أو بالبريد الإلكتروني" />
 
       <AuthForm onSubmit={handleSubmit}>
         <AuthError message={error} />
 
         <AuthInput
           ref={nameRef}
-          label="الاسم الكامل"
+          label="Ø§Ù„Ø§Ø³Ù… Ø§Ù„ÙƒØ§Ù…Ù„"
           name="name"
           type="text"
           value={name}
@@ -236,7 +232,7 @@ export default function SignupPage() {
         />
 
         <AuthInput
-          label="الجامعة"
+          label="Ø§Ù„Ø¬Ø§Ù…Ø¹Ø©"
           name="university"
           type="text"
           value={university}
@@ -249,7 +245,7 @@ export default function SignupPage() {
         />
 
         <AuthInput
-          label="الرقم الجامعي"
+          label="Ø§Ù„Ø±Ù‚Ù… Ø§Ù„Ø¬Ø§Ù…Ø¹ÙŠ"
           name="studentId"
           type="text"
           value={studentId}
@@ -262,16 +258,16 @@ export default function SignupPage() {
         />
 
         <AuthInput
-          label="الإيميل"
+          label="Ø§Ù„Ø¥ÙŠÙ…ÙŠÙ„"
           name="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           icon={<Mail className="h-4 w-4" />}
           validationState={emailState}
-          successMessage="الإيميل شكله صح"
+          successMessage="Ø§Ù„Ø¥ÙŠÙ…ÙŠÙ„ Ø´ÙƒÙ„Ù‡ ØµØ­"
           error={
-            emailState === "invalid" ? "صيغة الإيميل غير صحيحة" : undefined
+            emailState === "invalid" ? "ØµÙŠØºØ© Ø§Ù„Ø¥ÙŠÙ…ÙŠÙ„ ØºÙŠØ± ØµØ­ÙŠØ­Ø©" : undefined
           }
           required
           autoComplete="email"
@@ -280,18 +276,18 @@ export default function SignupPage() {
         />
 
         <AuthPasswordInput
-          label="كلمة المرور"
+          label="ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±"
           name="password"
-          placeholder="••••••••"
+          placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onVisibilityChange={setPasswordVisible}
           icon={<Lock className="h-4 w-4" />}
           validationState={passwordState}
-          successMessage="كلمة المرور جاهزة"
+          successMessage="ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø¬Ø§Ù‡Ø²Ø©"
           error={
             passwordState === "invalid"
-              ? "كلمة المرور لازم 6 أحرف على الأقل"
+              ? "ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ù„Ø§Ø²Ù… 6 Ø£Ø­Ø±Ù Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„"
               : undefined
           }
           required
@@ -302,16 +298,16 @@ export default function SignupPage() {
         />
 
         <AuthPasswordInput
-          label="تأكيد كلمة المرور"
+          label="ØªØ£ÙƒÙŠØ¯ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±"
           name="confirm"
-          placeholder="••••••••"
+          placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           icon={<Lock className="h-4 w-4" />}
           validationState={confirmState}
-          successMessage="كلمتا المرور متطابقتين"
+          successMessage="ÙƒÙ„Ù…ØªØ§ Ø§Ù„Ù…Ø±ÙˆØ± Ù…ØªØ·Ø§Ø¨Ù‚ØªÙŠÙ†"
           error={
-            confirmState === "invalid" ? "كلمتا المرور مش متطابقتين" : undefined
+            confirmState === "invalid" ? "ÙƒÙ„Ù…ØªØ§ Ø§Ù„Ù…Ø±ÙˆØ± Ù…Ø´ Ù…ØªØ·Ø§Ø¨Ù‚ØªÙŠÙ†" : undefined
           }
           required
           autoComplete="new-password"
@@ -328,26 +324,26 @@ export default function SignupPage() {
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              جارٍ إنشاء الحساب...
+              Ø¬Ø§Ø±Ù Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø­Ø³Ø§Ø¨...
             </>
           ) : success ? (
             <>
               <CheckCircle2 className="h-4 w-4" />
-              تم الإنشاء
+              ØªÙ… Ø§Ù„Ø¥Ù†Ø´Ø§Ø¡
             </>
           ) : (
             <>
               <UserPlus className="h-4 w-4" />
-              إنشاء الحساب
+              Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø­Ø³Ø§Ø¨
             </>
           )}
         </Button>
       </AuthForm>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        لديك حساب بالفعل؟{" "}
+        Ù„Ø¯ÙŠÙƒ Ø­Ø³Ø§Ø¨ Ø¨Ø§Ù„ÙØ¹Ù„ØŸ{" "}
         <Link href="/login" className="font-bold text-primary hover:underline">
-          تسجيل الدخول
+          ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„
         </Link>
       </p>
     </div>
