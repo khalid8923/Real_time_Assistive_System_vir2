@@ -4,14 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {
-  Mail,
-  Lock,
-  Loader2,
-  LogIn,
-  ShieldAlert,
-  CheckCircle2,
-} from "lucide-react";
+import { Mail, Lock, Loader2, LogIn, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
@@ -20,16 +13,14 @@ import {
   AuthInput,
   AuthPasswordInput,
   AuthError,
-  AuthDivider,
   type ValidationState,
 } from "@/components/auth/AuthForm";
-import GoogleButton from "@/components/auth/GoogleButton";
 import AuthCompanion, {
   type AuthCompanionState,
 } from "@/components/auth/AuthCompanion";
 import { useLoginRateLimit } from "@/hooks/useLoginRateLimit";
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_REGEX = /^[^s@]+@[^s@]+.[^s@]+$/;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,8 +34,7 @@ export default function LoginPage() {
   const [needsVerification, setNeedsVerification] = React.useState<string | null>(null);
 
   const [emailState, setEmailState] = React.useState<ValidationState>("idle");
-  const [passwordState, setPasswordState] =
-    React.useState<ValidationState>("idle");
+  const [passwordState, setPasswordState] = React.useState<ValidationState>("idle");
 
   const [emailFocused, setEmailFocused] = React.useState(false);
   const [passwordFocused, setPasswordFocused] = React.useState(false);
@@ -91,15 +81,7 @@ export default function LoginPage() {
       return passwordVisible ? "password-visible" : "password-focus";
     if (emailFocused || email.length > 0) return "email-focus";
     return "idle";
-  }, [
-    success,
-    loading,
-    error,
-    passwordFocused,
-    passwordVisible,
-    emailFocused,
-    email.length,
-  ]);
+  }, [success, loading, error, passwordFocused, passwordVisible, emailFocused, email.length]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,37 +155,10 @@ export default function LoginPage() {
   return (
     <div>
       <div className="mb-5 flex justify-center">
-        <AuthCompanion
-          state={companionState}
-          className="w-24 sm:w-28 md:w-32"
-        />
+        <AuthCompanion state={companionState} className="w-24 sm:w-28 md:w-32" />
       </div>
 
-      <header className="mb-6 text-center">
-        <Image
-          src="/logo.png"
-          alt="CaptionBridge"
-          width={48}
-          height={48}
-          className="mx-auto mb-3 h-12 w-12 rounded-xl shadow-lg shadow-primary/20"
-          priority
-        />
-        <h2 className="text-xl font-bold text-foreground">
-          أهلاً بيك تاني 👋
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          سجّل دخولك عشان تكمل المحاضرة
-        </p>
-      </header>
-      {locked && (
-        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm">
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-          <div>
-            <p className="font-bold text-amber-700 dark:text-amber-400">
-              الحساب مقفول مؤقتاً
-            </p>
-            <p className="mt-0.5 text-xs text-amber-700/80 dark:text-amber-400/80">
-              حاول تاني بعد {rateLimit.secondsLeft} ثانية
+      <header className="m         حاول تاني بعد {rateLimit.secondsLeft} ثانية
             </p>
           </div>
         </div>
@@ -241,9 +196,7 @@ export default function LoginPage() {
           icon={<Mail className="h-4 w-4" />}
           validationState={emailState}
           successMessage="الإيميل شكله صح"
-          error={
-            emailState === "invalid" ? "صيغة الإيميل غير صحيحة" : undefined
-          }
+          error={emailState === "invalid" ? "صيغة الإيميل غير صحيحة" : undefined}
           required
           autoComplete="email"
           disabled={loading || locked}
