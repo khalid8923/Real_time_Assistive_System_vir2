@@ -4,11 +4,11 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { PanelLeft, User } from "lucide-react";
+import { User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import AppSidebar from "@/components/AppSidebar";
+import FloatingSoundWidget from "@/components/FloatingSoundWidget";
 import { STUDENT_FEATURES, type FeatureId } from "@/lib/features";
 import { useSession } from "@/lib/auth-client";
 
@@ -21,9 +21,12 @@ interface AppShellProps {
   view: ViewMode;
   onViewChange: (view: ViewMode) => void;
   isLive?: boolean;
-  sidebarOpen: boolean;
-  onToggleSidebar: () => void;
+  /** @deprecated kept for compatibility; unused */
+  sidebarOpen?: boolean;
+  /** @deprecated kept for compatibility; unused */
+  onToggleSidebar?: () => void;
   onOpenLectures?: () => void;
+  footer?: React.ReactNode;
 }
 
 export default function AppShell({
@@ -33,33 +36,16 @@ export default function AppShell({
   view,
   onViewChange,
   isLive = true,
-  sidebarOpen,
-  onToggleSidebar,
   onOpenLectures,
+  footer,
 }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
-  const [headerHidden, setHeaderHidden] = React.useState(false);
-  const [lastY, setLastY] = React.useState(0);
   const [mounted, setMounted] = React.useState(false);
-
   const { data: session } = useSession();
 
-  // ✅ Avoid hydration mismatch — only render user UI after mount
   React.useEffect(() => {
     setMounted(true);
   }, []);
-
-  React.useEffect(() => {
-    const onScroll = () => {
-      const y = window.scrollY;
-      const goingDown = y > lastY;
-      if (goingDown && y > 120) setHeaderHidden(true);
-      else setHeaderHidden(false);
-      setLastY(y);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [lastY]);
 
   const user = session?.user as { name?: string } | undefined;
   const mobileFeatures = STUDENT_FEATURES.slice(0, 6);
@@ -67,84 +53,55 @@ export default function AppShell({
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
       {/* HEADER */}
-      <motion.header
-        initial={{ y: -24, opacity: 0 }}
-        animate={{ y: headerHidden ? -100 : 0, opacity: 1 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl"
-      >
-        <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onToggleSidebar}
-              aria-label="القائمة"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
-            >
-              <PanelLeft className="h-4 w-4" />
-            </button>
-
-            <div className="flex items-center gap-2">
+      <header className="sticky top-0 z-50 w-full border-b bg-chrome/95 backdrop-blur-md">
+        <div className="mx-auto flex h-11 w-full max-w-[1600px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2.5">
+            <Link href="/" className="flex items-center gap-2">
               <Image
                 src="/logo.png"
                 alt="CaptionBridge"
-                width={36}
-                height={36}
-                className="h-9 w-9 rounded-xl shadow-sm"
+                width={28}
+                height={28}
+                className="size-7 rounded-md"
                 priority
               />
-              <div className="hidden leading-tight sm:flex sm:flex-col">
-                <span className="text-sm font-bold tracking-tight">
-                  CaptionBridge
-                </span>
-                <span className="text-[10px] text-muted-foreground">
-                  رفيقك الذكي في المحاضرات الجامعية
-                </span>
-              </div>
-            </div>
+              <span className="font-serif text-base font-bold leading-none" dir="ltr">
+                CaptionBridge
+              </span>
+            </Link>
           </div>
 
           <div className="flex items-center gap-2">
-            <Badge
-              variant="outline"
-              aria-live="polite"
-              className={cn(
-                "hidden items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium sm:flex",
-                isLive
-                  ? "border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                  : "border-border bg-muted text-muted-foreground"
-              )}
+            <div
+              role="status"
+              className="hidden items-center gap-1.5 text-xs sm:flex"
             >
-              <span className="relative flex h-2 w-2">
-                {isLive && (
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-75" />
+              <span
+                aria-hidden
+                className={cn(
+                  "size-2 rounded-[2px]",
+                  isLive ? "bg-destructive" : "bg-muted-foreground"
                 )}
-                <span
-                  className={cn(
-                    "relative inline-flex h-2 w-2 rounded-full",
-                    isLive ? "bg-rose-500" : "bg-muted-foreground/50"
-                  )}
-                />
-              </span>
-              {isLive ? "مباشر" : "متوقف"}
-            </Badge>
+              />
+              <span>{isLive ? "مباشر" : "متوقف"}</span>
+            </div>
 
             <ThemeSwitcher />
 
             <div
               role="group"
               aria-label="تبديل واجهة التطبيق"
-              className="flex items-center gap-0.5 rounded-full border border-border bg-muted/40 p-0.5"
+              className="flex items-center overflow-hidden rounded-md border border-input"
             >
               <button
                 type="button"
                 onClick={() => onViewChange("student")}
                 aria-pressed={view === "student"}
                 className={cn(
-                  "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                  "h-7 px-2.5 text-xs font-medium transition-colors",
                   view === "student"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-wash text-primary"
+                    : "text-muted-foreground hover:bg-hover hover:text-foreground"
                 )}
               >
                 طالب
@@ -154,38 +111,48 @@ export default function AppShell({
                 onClick={() => onViewChange("teacher")}
                 aria-pressed={view === "teacher"}
                 className={cn(
-                  "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                  "h-7 border-s border-input px-2.5 text-xs font-medium transition-colors",
                   view === "teacher"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-wash text-primary"
+                    : "text-muted-foreground hover:bg-hover hover:text-foreground"
                 )}
               >
                 دكتور
               </button>
             </div>
 
-            {/* ✅ Account button — render only after mount to avoid hydration mismatch */}
             {mounted && user && (
               <Link
                 href="/account"
                 aria-label="حسابي"
                 title="حسابي"
-                className="group flex items-center gap-2 rounded-full border border-border bg-background p-0.5 pl-3 transition-colors hover:border-primary/40 hover:bg-muted"
+                className="flex items-center gap-2 rounded-md border border-input bg-card p-0.5 pl-2.5 transition-colors hover:bg-hover"
               >
-                <span className="hidden text-xs font-bold text-foreground sm:block">
+                <span className="hidden text-xs font-medium sm:block">
                   {user.name?.split(" ")[0] || "حسابي"}
                 </span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-primary to-accent-1 text-xs font-black text-white shadow-sm">
+                <span className="flex size-6 items-center justify-center rounded-[4px] bg-primary text-[10px] font-bold text-primary-foreground">
                   {(user.name || "؟").charAt(0).toUpperCase()}
                 </span>
               </Link>
             )}
+
+            {mounted && !user && (
+              <Link
+                href="/login"
+                aria-label="حسابي"
+                title="تسجيل الدخول"
+                className="flex size-7 items-center justify-center rounded-md border border-input bg-card text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
+              >
+                <User className="size-3.5" strokeWidth={1.5} />
+              </Link>
+            )}
           </div>
         </div>
-      </motion.header>
+      </header>
 
       {/* BODY */}
-      <div className="mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-4 py-5 sm:px-6 lg:px-8">
         {view === "student" && (
           <AppSidebar
             activeFeature={activeFeature}
@@ -196,25 +163,34 @@ export default function AppShell({
           />
         )}
 
-        <main className="flex-1 min-w-0">
+        <main className="min-w-0 flex-1">
           <motion.div
             key={`${view}-${activeFeature}`}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15 }}
           >
             {children}
           </motion.div>
         </main>
       </div>
 
+      {/* QUICK ACTIONS DOCK */}
+      {footer && (
+        <div className="sticky bottom-0 z-40 border-t bg-chrome/95 backdrop-blur-md">
+          {footer}
+        </div>
+      )}
+
+      <FloatingSoundWidget />
+
       {/* MOBILE NAV */}
       {view === "student" && (
         <nav
           dir="rtl"
-          className="sticky bottom-0 z-40 w-full border-t border-border bg-background/95 backdrop-blur-xl lg:hidden"
+          className="sticky bottom-0 z-30 w-full border-t bg-chrome/95 backdrop-blur-md lg:hidden"
         >
-          <div className="flex items-center gap-1 overflow-x-auto px-2 py-2 no-scrollbar">
+          <div className="no-scrollbar flex items-center gap-1 overflow-x-auto px-2 py-1.5">
             {mobileFeatures.map((feature) => {
               const Icon = feature.icon;
               const active = feature.id === activeFeature;
@@ -224,13 +200,13 @@ export default function AppShell({
                   type="button"
                   onClick={() => onFeatureChange(feature.id)}
                   className={cn(
-                    "flex shrink-0 flex-col items-center gap-1 rounded-xl px-3 py-1.5 transition-colors",
+                    "flex shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1 transition-colors",
                     active
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted/60"
+                      ? "bg-wash text-primary"
+                      : "text-muted-foreground hover:bg-hover"
                   )}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="size-4" strokeWidth={1.5} />
                   <span className="text-[10px] font-medium">
                     {feature.shortLabel}
                   </span>

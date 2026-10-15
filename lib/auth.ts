@@ -2,7 +2,10 @@ import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { Kysely } from "kysely";
 import { LibsqlDialect } from "@libsql/kysely-libsql";
-
+import {
+  sendVerificationEmail,
+  sendResetPasswordEmail,
+} from "@/lib/email";
 
 const db = new Kysely({
   dialect: new LibsqlDialect({
@@ -18,8 +21,27 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
+    requireEmailVerification: true,
     minPasswordLength: 6,
+    sendResetPassword: async ({ user, url }) => {
+      await sendResetPasswordEmail({
+        to: user.email,
+        name: user.name ?? "صديقنا",
+        url,
+      });
+    },
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    expiresIn: 60 * 60, // 1 hour
+    sendVerificationEmail: async ({ user, url }) => {
+      await sendVerificationEmail({
+        to: user.email,
+        name: user.name ?? "صديقنا",
+        url,
+      });
+    },
   },
   socialProviders: {
     google: {
@@ -37,23 +59,10 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      fullName: {
-        type: "string",
-        required: false,
-      },
-      university: {
-        type: "string",
-        required: false,
-      },
-      studentId: {
-        type: "string",
-        required: false,
-      },
-      role: {
-        type: "string",
-        required: false,
-        defaultValue: "student",
-      },
+      fullName: { type: "string", required: false },
+      university: { type: "string", required: false },
+      studentId: { type: "string", required: false },
+      role: { type: "string", required: false, defaultValue: "student" },
     },
   },
   plugins: [nextCookies()],

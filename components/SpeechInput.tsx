@@ -37,6 +37,8 @@ interface SpeechInputProps {
   onAnalyze: (data: AnalysisData) => void;
   onClearTranscript?: () => void;
   error: string | null;
+  flashMode?: "ask" | "repeat" | null;
+  flashKey?: number;
 }
 
 export default function SpeechInput({
@@ -47,6 +49,8 @@ export default function SpeechInput({
   onAnalyze,
   onClearTranscript,
   error,
+  flashMode = null,
+  flashKey = 0,
 }: SpeechInputProps) {
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -197,7 +201,12 @@ export default function SpeechInput({
         <div className="p-4">
           {showHighlight ? (
             <div
-              className="min-h-44 w-full overflow-y-auto rounded-xl border border-border bg-muted/30 p-4"
+              key={`flash-${flashKey}`}
+              className={cn(
+                "min-h-44 w-full overflow-y-auto rounded-xl border border-border bg-muted/30 p-4",
+                flashMode === "ask" && "hl-sweep",
+                flashMode === "repeat" && "rl-underline"
+              )}
               style={{ maxHeight: "280px" }}
             >
               {currentTranscript ? (

@@ -1,10 +1,9 @@
-﻿import type { Metadata, Viewport } from "next";
-import { Cairo, Amiri } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Cairo, Amiri, IBM_Plex_Mono, STIX_Two_Text } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import OfflineIndicator from "@/components/OfflineIndicator";
-import ConnectionBanner from "@/components/ConnectionBanner";
 import GlobalErrorCatcher from "@/components/GlobalErrorCatcher";
 import TopProgressBar from "@/components/TopProgressBar";
 import AuthSessionWatcher from "@/components/AuthSessionWatcher";
@@ -13,78 +12,70 @@ import { DEFAULT_THEME, THEME_STORAGE_KEY } from "@/lib/themes";
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
-  variable: "--font-sans",
+  variable: "--font-cairo",
   display: "swap",
 });
 
 const amiri = Amiri({
   subsets: ["arabic", "latin"],
   weight: ["400", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-serif",
+  variable: "--font-amiri",
+  display: "swap",
+});
+
+const stix = STIX_Two_Text({
+  subsets: ["latin"],
+  variable: "--font-stix",
+  display: "swap",
+});
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-plex-mono",
   display: "swap",
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 const SITE_NAME = "CaptionBridge";
 const SITE_DESCRIPTION =
-  "ØªØ·Ø¨ÙŠÙ‚ ÙˆÙŠØ¨ Ù…Ø³Ø§Ø¹Ø¯ ÙÙŠ Ø§Ù„ÙˆÙ‚Øª Ø§Ù„ÙØ¹Ù„ÙŠ Ù„Ù„Ø·Ù„Ø§Ø¨ Ø§Ù„ØµÙ… â€” ØªØ±Ø¬Ù…Ø© Ø§Ù„ÙƒÙ„Ø§Ù…ØŒ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©ØŒ ÙˆÙ…Ø¹Ø¬Ù… Ù…ØµØ·Ù„Ø­Ø§Øª Ø£ÙƒØ§Ø¯ÙŠÙ…ÙŠØ©.";
+  "مساعد المحاضرات الفوري لطلاب العلوم والهندسة — تفريغ نصي، ملخص ذكي، ومعجم مصطلحات أكاديمي.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} | ØªØ±Ø¬Ù…Ø© ÙÙˆØ±ÙŠØ© Ù„Ù„Ø·Ù„Ø§Ø¨ Ø§Ù„ØµÙ…`,
+    default: `${SITE_NAME} | مساعد المحاضرات الذكي`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
-  keywords: ["CaptionBridge", "ØªØ±Ø¬Ù…Ø© ÙÙˆØ±ÙŠØ©", "Ø·Ù„Ø§Ø¨ Ø§Ù„ØµÙ…", "Ù…Ø­Ø§Ø¶Ø±Ø§Øª Ø¬Ø§Ù…Ø¹ÙŠØ©", "Ø°ÙƒØ§Ø¡ Ø§ØµØ·Ù†Ø§Ø¹ÙŠ"],
+  keywords: ["CaptionBridge", "مساعد محاضرات", "طلاب جامعيين", "ذكاء اصطناعي"],
   openGraph: {
     type: "website",
     locale: "ar_EG",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: `${SITE_NAME} | Ø¬Ø³Ø± Ø§Ù„ØªÙˆØ§ØµÙ„ Ù„Ù„Ø·Ù„Ø§Ø¨ Ø§Ù„ØµÙ…`,
+    title: `${SITE_NAME} | مساعد المحاضرات الذكي`,
     description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} | ØªØ±Ø¬Ù…Ø© ÙÙˆØ±ÙŠØ© Ù„Ù„Ø·Ù„Ø§Ø¨ Ø§Ù„ØµÙ…`,
+    title: `${SITE_NAME} | مساعد المحاضرات الذكي`,
     description: SITE_DESCRIPTION,
   },
-  
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3f4f6" },
-    { media: "(prefers-color-scheme: dark)", color: "#111827" },
+    { media: "(prefers-color-scheme: light)", color: "#dfe2e6" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f0f0f" },
   ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
 };
 
-const themeInitScript = `
-(function() {
-  try {
-    var stored = localStorage.getItem('${THEME_STORAGE_KEY}');
-    var valid = ['light', 'dark', 'focus'];
-    var legacy = { 'classic': 'light', 'immersive': 'dark' };
-    if (legacy[stored]) stored = legacy[stored];
-    var theme = valid.indexOf(stored) !== -1 ? stored : '${DEFAULT_THEME}';
-    document.documentElement.setAttribute('data-theme', theme);
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.style.colorScheme = 'dark';
-    } else {
-      document.documentElement.style.colorScheme = 'light';
-    }
-  } catch (e) {
-    document.documentElement.setAttribute('data-theme', '${DEFAULT_THEME}');
-  }
-})();
-`;
+const themeInitScript = `(function(){try{var t=localStorage.getItem("${THEME_STORAGE_KEY}");var valid=["light","dark","focus"];var legacy={"classic":"light","immersive":"dark"};if(legacy[t])t=legacy[t];if(valid.indexOf(t)===-1)t="${DEFAULT_THEME}";var r=document.documentElement;r.setAttribute("data-theme",t);r.classList.remove("light","dark","focus");r.classList.add(t);r.style.colorScheme=t==="light"?"light":"dark"}catch(e){document.documentElement.setAttribute("data-theme","${DEFAULT_THEME}")}})();`;
 
 export default function RootLayout({
   children,
@@ -94,16 +85,17 @@ export default function RootLayout({
       lang="ar"
       dir="rtl"
       data-theme={DEFAULT_THEME}
-      className={`${cairo.variable} ${amiri.variable} dark`}
+      className={`${cairo.variable} ${amiri.variable} ${stix.variable} ${plexMono.variable} ${DEFAULT_THEME}`}
       suppressHydrationWarning
     >
-      <body
-        className={`${cairo.className} min-h-screen bg-background text-foreground antialiased`}
-      >
+      <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className="min-h-dvh antialiased">
         <SkipToContent />
         <TopProgressBar />
         <ThemeProvider>
+          <GlobalErrorCatcher />
           {children}
           <Toaster />
           <OfflineIndicator />
@@ -113,4 +105,3 @@ export default function RootLayout({
     </html>
   );
 }
-

@@ -42,7 +42,11 @@ export async function getFullUser(): Promise<FullUser | null> {
     const row = result.rows[0];
     if (!row) return null;
 
-    return row as unknown as FullUser;
+    const out: Record<string, unknown> = {};
+    for (const k of Object.keys(row as object)) {
+      out[k] = (row as Record<string, unknown>)[k];
+    }
+    return out as unknown as FullUser;
   } catch (err) {
     console.error("[getFullUser]", err);
     return null;

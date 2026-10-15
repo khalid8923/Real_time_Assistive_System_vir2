@@ -27,12 +27,23 @@ async function exec(query: string, args: unknown[] = []) {
 async function firstRow<T>(query: string, args: unknown[] = []): Promise<T | null> {
   const result = await exec(query, args);
   const row = result.rows[0];
-  return (row as T) ?? null;
+  if (!row) return null;
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(row as object)) {
+    out[k] = (row as Record<string, unknown>)[k];
+  }
+  return out as T;
 }
 
 async function allRows<T>(query: string, args: unknown[] = []): Promise<T[]> {
   const result = await exec(query, args);
-  return result.rows as unknown as T[];
+  return result.rows.map((r) => {
+    const out: Record<string, unknown> = {};
+    for (const k of Object.keys(r as object)) {
+      out[k] = (r as Record<string, unknown>)[k];
+    }
+    return out as T;
+  });
 }
 
 /* ------------------------------------------------------------------ */

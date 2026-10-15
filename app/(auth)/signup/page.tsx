@@ -21,8 +21,10 @@ import {
   AuthInput,
   AuthPasswordInput,
   AuthError,
+  AuthDivider,
   type ValidationState,
 } from "@/components/auth/AuthForm";
+import GoogleButton from "@/components/auth/GoogleButton";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -142,8 +144,10 @@ export default function SignupPage() {
 
       document.cookie =
         "guest_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      toast.success("تم إنشاء الحساب بنجاح!");
-      window.location.href = "/";
+      toast.success(
+        "تم إنشاء الحساب! اتحقق من بريدك الإلكتروني لتنشيط الحساب."
+      );
+      router.push("/login?verify=email");
     } catch (err) {
       console.error("[signup] failed:", err);
       setError("تعذّر الاتصال بالسيرفر. حاول تاني.");
@@ -169,9 +173,8 @@ export default function SignupPage() {
         </p>
       </header>
 
-      {/* ✅ Google signup مخفي مؤقتاً (سايبه في الباك اند) */}
-      {/* <GoogleButton mode="signup" /> */}
-      {/* <AuthDivider label="أو بالإيميل" /> */}
+      <GoogleButton mode="signup" />
+      <AuthDivider label="أو بالإيميل" />
 
       <AuthForm onSubmit={handleSubmit}>
         <AuthError message={error} />

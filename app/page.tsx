@@ -24,6 +24,7 @@ import LectureTimelinePanel from "@/components/LectureTimelinePanel";
 import FlowDiagramPanel from "@/components/FlowDiagramPanel";
 import InfographicPanel from "@/components/InfographicPanel";
 import FloatingChat from "@/components/FloatingChat";
+import QuickActions from "@/components/QuickActions";
 import ScrollToTop from "@/components/ScrollToTop";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -61,6 +62,7 @@ export default function Page() {
     at: number;
   } | null>(null);
   const [studentKey, setStudentKey] = useState<string>("");
+  const [flash, setFlash] = useState<{ mode: "ask" | "repeat"; key: number } | null>(null);
 
   useEffect(() => {
     try {
@@ -192,6 +194,9 @@ export default function Page() {
       };
       setNotifications((prev) => [newNotif, ...prev]);
 
+      // Trigger the highlighter sweep animation
+      setFlash({ mode: action === "ask" ? "ask" : "repeat", key: Date.now() });
+
       if (action === "ask" && studentKey) {
         try {
           const res = await fetch("/api/notify-doctor", {
@@ -240,8 +245,13 @@ export default function Page() {
                 : speech.startListening()
             }
             onAnalyze={handleAnalyze}
-            onClearTranscript={speech.clearTranscript}
+            onClearTranscript={() => {
+              speech.clearTranscript();
+              setFlash(null);
+            }}
             error={speech.error}
+            flashMode={flash?.mode ?? null}
+            flashKey={flash?.key ?? 0}
           />
         );
       case "mindmap":
@@ -310,6 +320,12 @@ export default function Page() {
         onViewChange={setView}
         isLive={true}
         sidebarOpen={sidebarOpen}
+        footer={
+          <QuickActions
+            onAsk={() => handleAction("ask")}
+            onRepeat={() => handleAction("re-explain")}
+          />
+        }
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
         onOpenLectures={() => setLecturesOpen(true)}
       >
