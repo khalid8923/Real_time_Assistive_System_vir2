@@ -2,9 +2,9 @@
 
 # 🌉 CaptionBridge
 
-### جسر التواصل للطلاب الصم
+### رفيقك الذكي في المحاضرات الجامعية
 
-**Real-time AI-powered lecture transcription & analysis for deaf and hard-of-hearing university students**
+**Real-time AI-powered lecture transcription & analysis for university students**
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.3-black?logo=next.js)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)

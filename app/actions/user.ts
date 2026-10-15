@@ -23,7 +23,6 @@ export async function getFullUser(): Promise<FullUser | null> {
     const headersList = await headers();
     const session = await auth.api.getSession({ headers: headersList });
     const userId = session?.user?.id;
-
     if (!userId) return null;
 
     await ensureDbReady();
@@ -42,11 +41,20 @@ export async function getFullUser(): Promise<FullUser | null> {
     const row = result.rows[0];
     if (!row) return null;
 
-    const out: Record<string, unknown> = {};
-    for (const k of Object.keys(row as object)) {
-      out[k] = (row as Record<string, unknown>)[k];
-    }
-    return out as unknown as FullUser;
+    // Convert libsql proxy to plain object
+    return {
+      id: String(row.id ?? ""),
+      name: String(row.name ?? ""),
+      email: String(row.email ?? ""),
+      emailVerified: Number(row.emailVerified ?? 0),
+      image: row.image ? String(row.image) : null,
+      fullName: row.fullName ? String(row.fullName) : null,
+      university: row.university ? String(row.university) : null,
+      studentId: row.studentId ? String(row.studentId) : null,
+      role: row.role ? String(row.role) : null,
+      createdAt: Number(row.createdAt ?? 0),
+      updatedAt: Number(row.updatedAt ?? 0),
+    };
   } catch (err) {
     console.error("[getFullUser]", err);
     return null;

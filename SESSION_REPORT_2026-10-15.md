@@ -150,4 +150,4 @@ Consider adding Cerebras as LLM fallback ($0 tier)
 Backup	Path
 F9/F8 pre-fix	D:\Real_time_Assistive_System\_backups_from_chat\_backup_f9_f8_*
 Rate-limit pre-fix	D:\Real_time_Assistive_System\_backups_from_chat\_backup_ratelimit_*
-Old backups	D:\Real_time_Assistive_System\_backups_from_chat\_backup_*
+Old backups	D:\Real_time_Assistive_System\_backups_from_chat\_backup_

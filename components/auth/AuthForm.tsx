@@ -119,6 +119,7 @@ interface AuthPasswordInputProps
   icon?: React.ReactNode;
   validationState?: ValidationState;
   successMessage?: string;
+  onVisibilityChange?: (visible: boolean) => void;
 }
 
 export const AuthPasswordInput = React.forwardRef<
@@ -134,6 +135,7 @@ export const AuthPasswordInput = React.forwardRef<
       id,
       validationState = "idle",
       successMessage,
+      onVisibilityChange,
       onKeyUp,
       ...props
     },
@@ -196,7 +198,11 @@ export const AuthPasswordInput = React.forwardRef<
             <button
               type="button"
               tabIndex={-1}
-              onClick={() => setShow((s) => !s)}
+              onClick={() => {
+                const next = !show;
+                setShow(next);
+                onVisibilityChange?.(next);
+              }}
               aria-label={show ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
               className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >

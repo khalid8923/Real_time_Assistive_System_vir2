@@ -48,3 +48,9 @@ next-env.d.ts
 dump-*.txt
 _load_test_results.csv
 _commit_msg.txt
+# Debug & temp files
+md.md
+_test_*.js
+diag_output.txt
+*.backup
+_backup_*.ts

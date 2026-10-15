@@ -1,6 +1,9 @@
 import { Resend } from "resend";
+import nodemailer from "nodemailer";
+import type { Transporter } from "nodemailer";
 
 let resendClient: Resend | null = null;
+let gmailTransporter: Transporter | null = null;
 
 function getResend(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY?.trim();
@@ -11,7 +14,24 @@ function getResend(): Resend | null {
   return resendClient;
 }
 
-function getFrom(): string {
+function getGmailTransporter(): Transporter | null {
+  const user = process.env.GMAIL_USER?.trim();
+  const pass = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, "").trim();
+  if (!user || !pass) return null;
+  if (!gmailTransporter) {
+    gmailTransporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user, pass },
+    });
+  }
+  return gmailTransporter;
+}
+
+function getFromAddress(): string {
+  const gmailUser = process.env.GMAIL_USER?.trim();
+  if (gmailUser) {
+    return `CaptionBridge <${gmailUser}>`;
+  }
   return process.env.EMAIL_FROM || "CaptionBridge <onboarding@resend.dev>";
 }
 
@@ -71,26 +91,46 @@ export async function sendVerificationEmail(opts: {
   name: string;
   url: string;
 }): Promise<void> {
-  const client = getResend();
-  if (!client) {
-    console.warn(`[email] RESEND_API_KEY missing — URL: ${opts.url}`);
-    return;
-  }
-  try {
-    const result = await client.emails.send({
-      from: getFrom(),
-      to: opts.to,
-      subject: "تأكيد بريدك الإلكتروني — CaptionBridge",
-      html: verificationEmailHtml(opts.name || "صديقنا", opts.url),
-    });
-    if (result.error) {
-      console.error("[email] verify failed:", result.error.message);
+  const subject = "تأكيد بريدك الإلكتروني — CaptionBridge";
+  const html = verificationEmailHtml(opts.name || "صديقنا", opts.url);
+
+  const gmail = getGmailTransporter();
+  if (gmail) {
+    try {
+      await gmail.sendMail({
+        from: getFromAddress(),
+        to: opts.to,
+        subject,
+        html,
+      });
+      console.log(`[email] verify sent via Gmail to ${opts.to}`);
       return;
+    } catch (err) {
+      console.error("[email] Gmail failed:", err);
     }
-    console.log(`[email] verify sent to ${opts.to}`);
-  } catch (err) {
-    console.error("[email] verify threw:", err);
   }
+
+  const resend = getResend();
+  if (resend) {
+    try {
+      const result = await resend.emails.send({
+        from: process.env.EMAIL_FROM || "CaptionBridge <onboarding@resend.dev>",
+        to: opts.to,
+        subject,
+        html,
+      });
+      if (result.error) {
+        console.error("[email] Resend failed:", result.error.message);
+        return;
+      }
+      console.log(`[email] verify sent via Resend to ${opts.to}`);
+      return;
+    } catch (err) {
+      console.error("[email] Resend threw:", err);
+    }
+  }
+
+  console.warn(`[email] No provider available. URL: ${opts.url}`);
 }
 
 export async function sendResetPasswordEmail(opts: {
@@ -98,24 +138,44 @@ export async function sendResetPasswordEmail(opts: {
   name: string;
   url: string;
 }): Promise<void> {
-  const client = getResend();
-  if (!client) {
-    console.warn(`[email] RESEND_API_KEY missing — URL: ${opts.url}`);
-    return;
-  }
-  try {
-    const result = await client.emails.send({
-      from: getFrom(),
-      to: opts.to,
-      subject: "إعادة تعيين كلمة المرور — CaptionBridge",
-      html: resetPasswordEmailHtml(opts.name || "صديقنا", opts.url),
-    });
-    if (result.error) {
-      console.error("[email] reset failed:", result.error.message);
+  const subject = "إعادة تعيين كلمة المرور — CaptionBridge";
+  const html = resetPasswordEmailHtml(opts.name || "صديقنا", opts.url);
+
+  const gmail = getGmailTransporter();
+  if (gmail) {
+    try {
+      await gmail.sendMail({
+        from: getFromAddress(),
+        to: opts.to,
+        subject,
+        html,
+      });
+      console.log(`[email] reset sent via Gmail to ${opts.to}`);
       return;
+    } catch (err) {
+      console.error("[email] Gmail failed:", err);
     }
-    console.log(`[email] reset sent to ${opts.to}`);
-  } catch (err) {
-    console.error("[email] reset threw:", err);
   }
+
+  const resend = getResend();
+  if (resend) {
+    try {
+      const result = await resend.emails.send({
+        from: process.env.EMAIL_FROM || "CaptionBridge <onboarding@resend.dev>",
+        to: opts.to,
+        subject,
+        html,
+      });
+      if (result.error) {
+        console.error("[email] Resend failed:", result.error.message);
+        return;
+      }
+      console.log(`[email] reset sent via Resend to ${opts.to}`);
+      return;
+    } catch (err) {
+      console.error("[email] Resend threw:", err);
+    }
+  }
+
+  console.warn(`[email] No provider available. URL: ${opts.url}`);
 }
