@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { generateText, parseJsonResponse } from "@/lib/ai/provider";
 import type { Translation } from "@/lib/ai-types";
@@ -43,7 +43,7 @@ function jsonError(
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 15, 60_000).ok) {
+  if (!rateLimit(ip, 15, 60_000, "translate").ok) {
     return NextResponse.json(
       { error: "Too many requests. Try again in a minute." },
       { status: 429 },

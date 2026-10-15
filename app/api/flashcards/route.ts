@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { generateText, parseJsonResponse } from "@/lib/ai/provider";
 import type { Flashcard, FlashcardDifficulty } from "@/lib/ai-types";
@@ -65,7 +65,7 @@ export async function POST(
   request: NextRequest
 ): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 10, 60_000).ok) {
+  if (!rateLimit(ip, 10, 60_000, "flashcards").ok) {
     return NextResponse.json(
       { error: "Too many requests. Try again in a minute." },
       { status: 429 }

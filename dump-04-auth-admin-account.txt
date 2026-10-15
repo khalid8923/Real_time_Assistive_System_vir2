@@ -1,5 +1,5 @@
 ﻿# CaptionBridge Dump :: dump-04-auth-admin-account.txt
-# Generated: 2026-10-14 23:17:20
+# Generated: 2026-10-15 02:37:21
 
 ========== app\(auth)\layout.tsx ==========
 import Link from "next/link";
@@ -284,15 +284,6 @@ export default function LoginPage() {
           )}
         </Button>
       </AuthForm>
-
-      <div className="mb-4 mt-6 text-center">
-        <Link
-          href="/login/magic-link"
-          className="text-xs font-medium text-primary hover:underline"
-        >
-          ✨ أو سجّل دخول بدون باسورد (Magic Link)
-        </Link>
-      </div>
 
       <p className="mt-4 text-center text-sm text-muted-foreground">
         ليس لديك حساب؟{" "}
@@ -1740,6 +1731,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ProfileTab from "@/components/account/ProfileTab";
+import ProgressDashboard from "@/components/ProgressDashboard";
 import LecturesTab from "@/components/account/LecturesTab";
 import StudyTab from "@/components/account/StudyTab";
 import SettingsTab from "@/components/account/SettingsTab";
@@ -1880,6 +1872,9 @@ export default function AccountPage() {
             />
           </div>
         )}
+
+        {/* ==================== PROGRESS DASHBOARD ==================== */}
+        {stats && <ProgressDashboard stats={stats} />}
 
         {/* ==================== TABS ==================== */}
         <Tabs defaultValue="profile" className="space-y-6">

@@ -21,7 +21,7 @@ Your task:
 - Answer in clear Modern Standard Arabic
 - Be concise and clear
 - Keep English terms as-is (Array, API, React)
-- If info is not in the lecture, say "هذه المعلومة غير موجودة في المحاضرة"
+- If info is not in the lecture, say "Ù‡Ø°Ù‡ Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø© ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø© ÙÙŠ Ø§Ù„Ù…Ø­Ø§Ø¶Ø±Ø©"
 - Never invent information
 
 Style:
@@ -56,7 +56,7 @@ export async function POST(
   request: NextRequest
 ): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 20, 60_000).ok) {
+  if (!rateLimit(ip, 20, 60_000, "chat").ok) {
     return NextResponse.json(
       { error: "Too many requests. Try again in a minute." },
       { status: 429 }

@@ -16,45 +16,52 @@ For each argument, produce:
 - title: short Arabic title
 - thesis: the main position (one sentence)
 - nodes: 5-12 argument nodes with these types:
-  - "thesis"    — the main position (exactly 1)
-  - "claim"     — supporting point
-  - "evidence"  — data/example/proof supporting a claim
-  - "counterargument" — opposing view
-  - "rebuttal"  — response to counterargument
-  - "conclusion" — the takeaway
+  - "thesis"    Ã¢â‚¬â€ the main position (exactly 1)
+  - "claim"     Ã¢â‚¬â€ supporting point
+  - "evidence"  Ã¢â‚¬â€ data/example/proof supporting a claim
+  - "counterargument" Ã¢â‚¬â€ opposing view
+  - "rebuttal"  Ã¢â‚¬â€ response to counterargument
+  - "conclusion" Ã¢â‚¬â€ the takeaway
 - links: relations between nodes:
-  - "supports" — node A supports node B
-  - "attacks"  — node A argues against node B
-  - "refutes"  — node A refutes counterargument B
+  - "supports" Ã¢â‚¬â€ node A supports node B
+  - "attacks"  Ã¢â‚¬â€ node A argues against node B
+  - "refutes"  Ã¢â‚¬â€ node A refutes counterargument B
+- sourceQuote: short excerpt from professor's words (optional)
 
 CRITICAL RULES:
-1. ONLY extract arguments EXPLICITLY stated
-2. Detect "empty claims" — claims without any supporting evidence or data
-3. Use "strength": "strong" (has evidence) | "medium" (has reasoning) | "weak" (bare assertion)
-4. Max 12 nodes
-5. If NO clear argument exists → arguments: []
+1. ONLY extract arguments EXPLICITLY stated in the transcript
+2. MINIMUM 3 nodes, MAXIMUM 12 nodes per argument
+3. Detect "empty claims" Ã¢â‚¬â€ claims without any supporting evidence
+4. Use "strength": "strong" (has evidence) | "medium" (has reasoning) | "weak" (bare assertion)
+5. If NO clear argument exists Ã¢â€ â€™ arguments: []
 
-Example - "الـ Transformers أفضل من RNN. السبب إنها بتشتغل parallel على GPUs. الناقدين قالوا إنها محتاجة بيانات أكتر، بس ده مش مشكلة لأن البيانات متوفرة":
+IMPORTANT: Reply with a SINGLE JSON object that has an "arguments" array. Even if there is only ONE argument, it must still be wrapped in an array.
+
+Example - "Ã˜Â§Ã™â€žÃ™â‚¬ Transformers Ã˜Â£Ã™ÂÃ˜Â¶Ã™â€ž Ã™â€¦Ã™â€  RNN. Ã˜Â§Ã™â€žÃ˜Â³Ã˜Â¨Ã˜Â¨ Ã˜Â¥Ã™â€ Ã™â€¡Ã˜Â§ Ã˜Â¨Ã˜ÂªÃ˜Â´Ã˜ÂªÃ˜ÂºÃ™â€ž parallel Ã˜Â¹Ã™â€žÃ™â€° GPUs. Ã˜Â§Ã™â€žÃ™â€ Ã˜Â§Ã™â€šÃ˜Â¯Ã™Å Ã™â€  Ã™â€šÃ˜Â§Ã™â€žÃ™Ë†Ã˜Â§ Ã˜Â¥Ã™â€ Ã™â€¡Ã˜Â§ Ã™â€¦Ã˜Â­Ã˜ÂªÃ˜Â§Ã˜Â¬Ã˜Â© Ã˜Â¨Ã™Å Ã˜Â§Ã™â€ Ã˜Â§Ã˜Âª Ã˜Â£Ã™Æ’Ã˜ÂªÃ˜Â±Ã˜Å’ Ã˜Â¨Ã˜Â³ Ã˜Â¯Ã™â€¡ Ã™â€¦Ã˜Â´ Ã™â€¦Ã˜Â´Ã™Æ’Ã™â€žÃ˜Â© Ã™â€žÃ˜Â£Ã™â€  Ã˜Â§Ã™â€žÃ˜Â¨Ã™Å Ã˜Â§Ã™â€ Ã˜Â§Ã˜Âª Ã™â€¦Ã˜ÂªÃ™Ë†Ã™ÂÃ˜Â±Ã˜Â©":
 
 {
-  "title": "لماذا Transformers أفضل من RNN",
-  "thesis": "الـ Transformers أفضل من RNN في المهام الحديثة",
-  "nodes": [
-    { "id": "n1", "type": "thesis", "text": "الـ Transformers أفضل من RNN", "strength": "medium" },
-    { "id": "n2", "type": "claim", "text": "الـ Transformers بتشتغل parallel", "strength": "strong", "quote": "بتشتغل parallel على GPUs" },
-    { "id": "n3", "type": "evidence", "text": "بتستفيد من GPUs كاملة", "strength": "strong" },
-    { "id": "n4", "type": "counterargument", "text": "محتاجة بيانات أكتر", "strength": "medium" },
-    { "id": "n5", "type": "rebuttal", "text": "البيانات متوفرة حالياً", "strength": "strong" }
-  ],
-  "links": [
-    { "from": "n2", "to": "n1", "relation": "supports" },
-    { "from": "n3", "to": "n2", "relation": "supports" },
-    { "from": "n4", "to": "n1", "relation": "attacks" },
-    { "from": "n5", "to": "n4", "relation": "refutes" }
+  "arguments": [
+    {
+      "title": "Ã™â€žÃ™â€¦Ã˜Â§Ã˜Â°Ã˜Â§ Transformers Ã˜Â£Ã™ÂÃ˜Â¶Ã™â€ž Ã™â€¦Ã™â€  RNN",
+      "thesis": "Ã˜Â§Ã™â€žÃ™â‚¬ Transformers Ã˜Â£Ã™ÂÃ˜Â¶Ã™â€ž Ã™â€¦Ã™â€  RNN Ã™ÂÃ™Å  Ã˜Â§Ã™â€žÃ™â€¦Ã™â€¡Ã˜Â§Ã™â€¦ Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â¯Ã™Å Ã˜Â«Ã˜Â©",
+      "nodes": [
+        { "id": "n1", "type": "thesis", "text": "Ã˜Â§Ã™â€žÃ™â‚¬ Transformers Ã˜Â£Ã™ÂÃ˜Â¶Ã™â€ž Ã™â€¦Ã™â€  RNN", "strength": "medium" },
+        { "id": "n2", "type": "claim", "text": "Ã˜Â§Ã™â€žÃ™â‚¬ Transformers Ã˜Â¨Ã˜ÂªÃ˜Â´Ã˜ÂªÃ˜ÂºÃ™â€ž parallel", "strength": "strong", "quote": "Ã˜Â¨Ã˜ÂªÃ˜Â´Ã˜ÂªÃ˜ÂºÃ™â€ž parallel Ã˜Â¹Ã™â€žÃ™â€° GPUs" },
+        { "id": "n3", "type": "evidence", "text": "Ã˜Â¨Ã˜ÂªÃ˜Â³Ã˜ÂªÃ™ÂÃ™Å Ã˜Â¯ Ã™â€¦Ã™â€  GPUs Ã™Æ’Ã˜Â§Ã™â€¦Ã™â€žÃ˜Â©", "strength": "strong" },
+        { "id": "n4", "type": "counterargument", "text": "Ã™â€¦Ã˜Â­Ã˜ÂªÃ˜Â§Ã˜Â¬Ã˜Â© Ã˜Â¨Ã™Å Ã˜Â§Ã™â€ Ã˜Â§Ã˜Âª Ã˜Â£Ã™Æ’Ã˜ÂªÃ˜Â±", "strength": "medium" },
+        { "id": "n5", "type": "rebuttal", "text": "Ã˜Â§Ã™â€žÃ˜Â¨Ã™Å Ã˜Â§Ã™â€ Ã˜Â§Ã˜Âª Ã™â€¦Ã˜ÂªÃ™Ë†Ã™ÂÃ˜Â±Ã˜Â© Ã˜Â­Ã˜Â§Ã™â€žÃ™Å Ã˜Â§Ã™â€¹", "strength": "strong" }
+      ],
+      "links": [
+        { "from": "n2", "to": "n1", "relation": "supports" },
+        { "from": "n3", "to": "n2", "relation": "supports" },
+        { "from": "n4", "to": "n1", "relation": "attacks" },
+        { "from": "n5", "to": "n4", "relation": "refutes" }
+      ]
+    }
   ]
 }
 
-Reply with JSON only.`;
+Reply with JSON only, no markdown.`;
 
 interface ArgPayload {
   arguments?: Array<{
@@ -79,14 +86,29 @@ interface ArgPayload {
 const VALID_TYPES = ["thesis", "claim", "evidence", "counterargument", "rebuttal", "conclusion"];
 const VALID_RELATIONS = ["supports", "attacks", "refutes"];
 
-function isValid(d: unknown): d is ArgPayload {
-  if (typeof d !== "object" || d === null) return false;
-  return Array.isArray((d as Record<string, unknown>).arguments);
+function normalizeArguments(parsed: unknown): ArgPayload["arguments"] {
+  if (!parsed || typeof parsed !== "object") return [];
+
+  const o = parsed as Record<string, unknown>;
+
+  if (Array.isArray(o.arguments)) {
+    return o.arguments as ArgPayload["arguments"];
+  }
+
+  if (
+    typeof o.title === "string" &&
+    typeof o.thesis === "string" &&
+    Array.isArray(o.nodes)
+  ) {
+    return [o as NonNullable<ArgPayload["arguments"]>[0]];
+  }
+
+  return [];
 }
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 10, 60_000).ok) {
+  if (!rateLimit(ip, 10, 60_000, "visualize-argument").ok) {
     return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }
 
@@ -121,14 +143,17 @@ export async function POST(request: NextRequest) {
   }
 
   const parsed = parseJsonResponse(result.text);
-  if (!parsed || !isValid(parsed)) {
+  if (!parsed) {
     return NextResponse.json({ error: "Invalid schema." }, { status: 502 });
   }
 
+  const rawArguments = normalizeArguments(parsed) ?? [];
+
   const now = Date.now();
-  const arguments_: ArgumentMap[] = (parsed.arguments ?? [])
+  const arguments_: ArgumentMap[] = rawArguments
     .filter(
       (a) =>
+        a &&
         typeof a.title === "string" &&
         typeof a.thesis === "string" &&
         Array.isArray(a.nodes) &&
@@ -167,7 +192,6 @@ export async function POST(request: NextRequest) {
             : "supports",
         }));
 
-      // Detect empty claims — claims with no incoming "supports" link
       const supportedIds = new Set(
         links.filter((l) => l.relation === "supports").map((l) => l.to)
       );

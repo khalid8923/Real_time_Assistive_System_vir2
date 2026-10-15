@@ -10,7 +10,7 @@ function isAdmin(request: NextRequest): boolean {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 5, 60_000).ok) {
+  if (!rateLimit(ip, 5, 60_000, "admin-change-password").ok) {
     return NextResponse.json(
       { error: "Too many requests. Try again in a minute." },
       { status: 429 }

@@ -19,7 +19,7 @@ const NVIDIA_MODELS = [
   "mistralai/mistral-nemotron",
 ];
 
-// ✅ محدث — Gemini 2.0 و2.5 اتشالوا
+// âœ… Ù…Ø­Ø¯Ø« â€” Gemini 2.0 Ùˆ2.5 Ø§ØªØ´Ø§Ù„ÙˆØ§
 const GEMINI_MODELS = [
   "gemini-3.6-flash",
   "gemini-flash-latest",
@@ -30,11 +30,11 @@ const GEMINI_MODELS = [
 /* ------------------------------------------------------------------ */
 
 const FRIENDLY_ERRORS = {
-  noProviders: "كل خدمات الذكاء الاصطناعي مشغولة حالياً. جرّب تاني بعد لحظة.",
-  nvidiaMissing: "خدمة NVIDIA مش مفعّلة. كلّم الدعم.",
-  groqMissing: "خدمة Groq مش مفعّلة. كلّم الدعم.",
-  geminiMissing: "خدمة Gemini مش مفعّلة. كلّم الدعم.",
-  allFailed: "الخدمات مشغولة حالياً. جرّب تاني بعد لحظة.",
+  noProviders: "ÙƒÙ„ Ø®Ø¯Ù…Ø§Øª Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ Ù…Ø´ØºÙˆÙ„Ø© Ø­Ø§Ù„ÙŠØ§Ù‹. Ø¬Ø±Ù‘Ø¨ ØªØ§Ù†ÙŠ Ø¨Ø¹Ø¯ Ù„Ø­Ø¸Ø©.",
+  nvidiaMissing: "Ø®Ø¯Ù…Ø© NVIDIA Ù…Ø´ Ù…ÙØ¹Ù‘Ù„Ø©. ÙƒÙ„Ù‘Ù… Ø§Ù„Ø¯Ø¹Ù….",
+  groqMissing: "Ø®Ø¯Ù…Ø© Groq Ù…Ø´ Ù…ÙØ¹Ù‘Ù„Ø©. ÙƒÙ„Ù‘Ù… Ø§Ù„Ø¯Ø¹Ù….",
+  geminiMissing: "Ø®Ø¯Ù…Ø© Gemini Ù…Ø´ Ù…ÙØ¹Ù‘Ù„Ø©. ÙƒÙ„Ù‘Ù… Ø§Ù„Ø¯Ø¹Ù….",
+  allFailed: "Ø§Ù„Ø®Ø¯Ù…Ø§Øª Ù…Ø´ØºÙˆÙ„Ø© Ø­Ø§Ù„ÙŠØ§Ù‹. Ø¬Ø±Ù‘Ø¨ ØªØ§Ù†ÙŠ Ø¨Ø¹Ø¯ Ù„Ø­Ø¸Ø©.",
 };
 
 function friendlyError(raw: string): string {
@@ -42,13 +42,13 @@ function friendlyError(raw: string): string {
   const lower = raw.toLowerCase();
   // Gemini model not found
   if (lower.includes("no longer available") || lower.includes("not_found")) {
-    return "الخدمة تحتاج تحديث. فريقنا بيراجعها دلوقتي.";
+    return "Ø§Ù„Ø®Ø¯Ù…Ø© ØªØ­ØªØ§Ø¬ ØªØ­Ø¯ÙŠØ«. ÙØ±ÙŠÙ‚Ù†Ø§ Ø¨ÙŠØ±Ø§Ø¬Ø¹Ù‡Ø§ Ø¯Ù„ÙˆÙ‚ØªÙŠ.";
   }
   if (lower.includes("quota") || lower.includes("429") || lower.includes("rate limit")) {
-    return "الخدمة مشغولة حالياً. جرّب بعد دقيقة.";
+    return "Ø§Ù„Ø®Ø¯Ù…Ø© Ù…Ø´ØºÙˆÙ„Ø© Ø­Ø§Ù„ÙŠØ§Ù‹. Ø¬Ø±Ù‘Ø¨ Ø¨Ø¹Ø¯ Ø¯Ù‚ÙŠÙ‚Ø©.";
   }
   if (lower.includes("unauthorized") || lower.includes("401") || lower.includes("invalid api key")) {
-    return "خدمة الذكاء الاصطناعي محتاجة إعادة تفعيل. كلّم الدعم.";
+    return "Ø®Ø¯Ù…Ø© Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ Ù…Ø­ØªØ§Ø¬Ø© Ø¥Ø¹Ø§Ø¯Ø© ØªÙØ¹ÙŠÙ„. ÙƒÙ„Ù‘Ù… Ø§Ù„Ø¯Ø¹Ù….";
   }
   // Default friendly
   return FRIENDLY_ERRORS.allFailed;
@@ -103,7 +103,7 @@ function getGeminiKeys(): string[] {
 }
 
 /* ------------------------------------------------------------------ */
-/* NVIDIA NIM — primary                                               */
+/* NVIDIA NIM â€” primary                                               */
 /* ------------------------------------------------------------------ */
 
 async function tryNvidia(options: GenerateOptions): Promise<GenerateResult> {
@@ -144,7 +144,7 @@ async function tryNvidia(options: GenerateOptions): Promise<GenerateResult> {
 
         if (!res.ok) {
           lastErr = `NVIDIA ${res.status}`;
-          if (res.status === 429) break; // جرّب المفتاح التالي
+          if (res.status === 429) break; // Ø¬Ø±Ù‘Ø¨ Ø§Ù„Ù…ÙØªØ§Ø­ Ø§Ù„ØªØ§Ù„ÙŠ
           if (res.status === 404 || res.status === 400) continue;
           continue;
         }
@@ -322,4 +322,13 @@ export function parseJsonResponse<T = unknown>(raw: string): T | null {
   } catch {
     return null;
   }
+}
+/* ------------------------------------------------------------------ */
+/* Array helper — wraps single objects in arrays (defensive)          */
+/* ------------------------------------------------------------------ */
+
+export function ensureArray<T = unknown>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[];
+  if (value && typeof value === "object") return [value as T];
+  return [];
 }

@@ -502,3 +502,97 @@ export async function hasCustomAdminPassword(): Promise<boolean> {
   );
   return !!row;
 }
+
+/* ------------------------------------------------------------------ */
+/* DOCTOR REPLIES                                                     */
+/* ------------------------------------------------------------------ */
+
+export interface DoctorReplyRecord {
+  id: string;
+  studentKey: string;
+  studentName: string;
+  status: "pending" | "replied" | "come_office";
+  messageId: number | null;
+  createdAt: number;
+  repliedAt: number | null;
+  replyType: "replied" | "come_office" | null;
+  seen: number;
+}
+
+export async function createDoctorReply(
+  studentKey: string,
+  studentName: string
+): Promise<DoctorReplyRecord> {
+  const id = generateId();
+  const ts = now();
+
+  await exec(
+    `INSERT INTO doctor_replies
+     (id, studentKey, studentName, status, createdAt, seen)
+     VALUES (?, ?, ?, 'pending', ?, 0)`,
+    [id, studentKey, studentName, ts]
+  );
+
+  const row = await firstRow<DoctorReplyRecord>(
+    "SELECT * FROM doctor_replies WHERE id = ?",
+    [id]
+  );
+  return row!;
+}
+
+export async function setDoctorReplyMessageId(
+  id: string,
+  messageId: number
+): Promise<void> {
+  await exec(
+    "UPDATE doctor_replies SET messageId = ? WHERE id = ?",
+    [messageId, id]
+  );
+}
+
+export async function getDoctorReply(
+  id: string
+): Promise<DoctorReplyRecord | null> {
+  return firstRow<DoctorReplyRecord>(
+    "SELECT * FROM doctor_replies WHERE id = ?",
+    [id]
+  );
+}
+
+export async function markDoctorReplied(
+  id: string,
+  replyType: "replied" | "come_office"
+): Promise<boolean> {
+  const result = await exec(
+    `UPDATE doctor_replies
+     SET status = ?, replyType = ?, repliedAt = ?
+     WHERE id = ? AND status = 'pending'`,
+    [replyType, replyType, now(), id]
+  );
+  return (result.rowsAffected ?? 0) > 0;
+}
+
+export async function getUnseenReply(
+  studentKey: string
+): Promise<DoctorReplyRecord | null> {
+  return firstRow<DoctorReplyRecord>(
+    `SELECT * FROM doctor_replies
+     WHERE studentKey = ? AND status != 'pending' AND seen = 0
+     ORDER BY repliedAt DESC
+     LIMIT 1`,
+    [studentKey]
+  );
+}
+
+export async function markReplySeen(id: string): Promise<void> {
+  await exec("UPDATE doctor_replies SET seen = 1 WHERE id = ?", [id]);
+}
+
+export async function cleanupOldDoctorReplies(): Promise<number> {
+  const oneHourAgo = now() - 60 * 60 * 1000;
+  const result = await exec(
+    "DELETE FROM doctor_replies WHERE createdAt < ?",
+    [oneHourAgo]
+  );
+  return result.rowsAffected ?? 0;
+}

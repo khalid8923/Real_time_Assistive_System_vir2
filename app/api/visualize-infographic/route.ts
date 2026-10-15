@@ -16,38 +16,38 @@ For EACH section, choose the best visualization type from:
 
 Reply with JSON only:
 {
-  "title": "عنوان عام للمحاضرة",
-  "summary": "جملة واحدة تلخص المحتوى",
+  "title": "Ø¹Ù†ÙˆØ§Ù† Ø¹Ø§Ù… Ù„Ù„Ù…Ø­Ø§Ø¶Ø±Ø©",
+  "summary": "Ø¬Ù…Ù„Ø© ÙˆØ§Ø­Ø¯Ø© ØªÙ„Ø®Øµ Ø§Ù„Ù…Ø­ØªÙˆÙ‰",
   "sections": [
     {
       "id": "sec-1",
-      "title": "عنوان القسم",
+      "title": "Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ù‚Ø³Ù…",
       "type": "flowchart",
       "flowchart": {
-        "mermaidCode": "graph TD\\n  A[نقطة 1] --> B[نقطة 2]",
-        "title": "العملية",
+        "mermaidCode": "graph TD\\n  A[Ù†Ù‚Ø·Ø© 1] --> B[Ù†Ù‚Ø·Ø© 2]",
+        "title": "Ø§Ù„Ø¹Ù…Ù„ÙŠØ©",
         "description": "..."
       }
     },
     {
       "id": "sec-2",
-      "title": "إحصائيات",
+      "title": "Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª",
       "type": "bar-chart",
       "chart": {
         "type": "bar",
-        "title": "توزيع...",
-        "labels": ["أ", "ب", "ج"],
-        "datasets": [{ "label": "العدد", "data": [10, 20, 30] }]
+        "title": "ØªÙˆØ²ÙŠØ¹...",
+        "labels": ["Ø£", "Ø¨", "Ø¬"],
+        "datasets": [{ "label": "Ø§Ù„Ø¹Ø¯Ø¯", "data": [10, 20, 30] }]
       }
     },
     {
       "id": "sec-3",
-      "title": "مقارنة",
+      "title": "Ù…Ù‚Ø§Ø±Ù†Ø©",
       "type": "comparison-table",
       "table": {
-        "title": "س vs ص",
-        "headers": ["المعيار", "س", "ص"],
-        "rows": [["السرعة", "عالية", "منخفضة"]]
+        "title": "Ø³ vs Øµ",
+        "headers": ["Ø§Ù„Ù…Ø¹ÙŠØ§Ø±", "Ø³", "Øµ"],
+        "rows": [["Ø§Ù„Ø³Ø±Ø¹Ø©", "Ø¹Ø§Ù„ÙŠØ©", "Ù…Ù†Ø®ÙØ¶Ø©"]]
       }
     }
   ]
@@ -55,7 +55,7 @@ Reply with JSON only:
 
 Rules:
 - Only create sections that match actual content (skip empty)
-- If the text has no data for charts, don't invent numbers — use flowchart/table
+- If the text has no data for charts, don't invent numbers â€” use flowchart/table
 - If nothing visual fits, return sections: []`;
 
 function isValidSection(s: unknown): boolean {
@@ -70,7 +70,7 @@ function isValidSection(s: unknown): boolean {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 8, 60_000).ok) {
+  if (!rateLimit(ip, 8, 60_000, "visualize-infographic").ok) {
     return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }
 
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json(
     {
-      title: parsed.title ?? "ملخص بصري",
+      title: parsed.title ?? "Ù…Ù„Ø®Øµ Ø¨ØµØ±ÙŠ",
       summary: parsed.summary ?? "",
       sections,
     },

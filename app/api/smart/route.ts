@@ -19,18 +19,18 @@ function getHakimKeys(): string[] {
   ].filter((k): k is string => !!k && k.length > 0);
 }
 
-// Simple round-robin counter — يتصفّر كل restart
+// Simple round-robin counter â€” ÙŠØªØµÙÙ‘Ø± ÙƒÙ„ restart
 let hakimRoundRobin = 0;
 
 async function transcribeWithHakim(audio: Blob): Promise<string> {
   const keys = getHakimKeys();
   if (keys.length === 0) return "";
 
-  // ابدأ من المفتاح التالي في الـ round-robin
+  // Ø§Ø¨Ø¯Ø£ Ù…Ù† Ø§Ù„Ù…ÙØªØ§Ø­ Ø§Ù„ØªØ§Ù„ÙŠ ÙÙŠ Ø§Ù„Ù€ round-robin
   const startIdx = hakimRoundRobin % keys.length;
   hakimRoundRobin = (hakimRoundRobin + 1) % keys.length;
 
-  // جرّب كل المفاتيح بالترتيب (يبدأ من الـ round-robin)
+  // Ø¬Ø±Ù‘Ø¨ ÙƒÙ„ Ø§Ù„Ù…ÙØ§ØªÙŠØ­ Ø¨Ø§Ù„ØªØ±ØªÙŠØ¨ (ÙŠØ¨Ø¯Ø£ Ù…Ù† Ø§Ù„Ù€ round-robin)
   for (let i = 0; i < keys.length; i++) {
     const idx = (startIdx + i) % keys.length;
     const apiKey = keys[idx];
@@ -55,11 +55,11 @@ async function transcribeWithHakim(audio: Blob): Promise<string> {
         const errText = await res.text();
         console.error(`[hakim #${idx + 1}] ${res.status}:`, errText.slice(0, 150));
 
-        // 429 أو 401 → جرّب المفتاح التالي
+        // 429 Ø£Ùˆ 401 â†’ Ø¬Ø±Ù‘Ø¨ Ø§Ù„Ù…ÙØªØ§Ø­ Ø§Ù„ØªØ§Ù„ÙŠ
         if (res.status === 429 || res.status === 401 || res.status === 403) {
           continue;
         }
-        // خطأ تاني → اطلع
+        // Ø®Ø·Ø£ ØªØ§Ù†ÙŠ â†’ Ø§Ø·Ù„Ø¹
         return "";
       }
 
@@ -74,7 +74,7 @@ async function transcribeWithHakim(audio: Blob): Promise<string> {
         return text;
       }
 
-      // نص فاضي → جرّب المفتاح التالي
+      // Ù†Øµ ÙØ§Ø¶ÙŠ â†’ Ø¬Ø±Ù‘Ø¨ Ø§Ù„Ù…ÙØªØ§Ø­ Ø§Ù„ØªØ§Ù„ÙŠ
       console.log(`[smart] Hakim key #${idx + 1} returned empty`);
     } catch (err) {
       console.warn(`[hakim #${idx + 1}] threw:`, err);
@@ -101,7 +101,7 @@ async function transcribeWithGroq(audio: Blob): Promise<string> {
   formData.append("language", "ar");
   formData.append(
     "prompt",
-    "دكتور جامعي يشرح بالعربي المصري. احتفظ بالمصطلحات الإنجليزية."
+    "Ø¯ÙƒØªÙˆØ± Ø¬Ø§Ù…Ø¹ÙŠ ÙŠØ´Ø±Ø­ Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠ Ø§Ù„Ù…ØµØ±ÙŠ. Ø§Ø­ØªÙØ¸ Ø¨Ø§Ù„Ù…ØµØ·Ù„Ø­Ø§Øª Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©."
   );
 
   const res = await fetch(
@@ -129,7 +129,7 @@ async function transcribeWithGroq(audio: Blob): Promise<string> {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 15, 60_000).ok) {
+  if (!rateLimit(ip, 15, 60_000, "smart").ok) {
     return NextResponse.json(
       { error: "Too many requests. Try again in a minute." },
       { status: 429 }
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
   let rawText = "";
   let provider = "";
 
-  // 1. جرّب Hakim (multi-key round-robin + failover)
+  // 1. Ø¬Ø±Ù‘Ø¨ Hakim (multi-key round-robin + failover)
   try {
     rawText = await transcribeWithHakim(audio);
     if (rawText) provider = "hakim";
@@ -165,9 +165,9 @@ export async function POST(request: NextRequest) {
     console.warn("[smart] hakim threw:", err);
   }
 
-  // 2. لو فشل، Groq
+  // 2. Ù„Ùˆ ÙØ´Ù„ØŒ Groq
   if (!rawText) {
-    console.log("[smart] Hakim empty — falling back to Groq");
+    console.log("[smart] Hakim empty â€” falling back to Groq");
     try {
       rawText = await transcribeWithGroq(audio);
       if (rawText) provider = "groq";

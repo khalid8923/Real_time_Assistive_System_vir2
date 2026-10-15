@@ -22,11 +22,11 @@ const ALLOWED_ICONS = [
 const SYSTEM_PROMPT = `You are a visual diagram generator for a university STEM lecture assistant. You receive a fragment of Arabic lecture text (may include English technical terms) and convert it to a STRUCTURED diagram.
 
 Choose ONE shape from this closed list:
-- "sequence"   = ordered steps (خطوات بالترتيب، مراحل)
-- "cycle"      = repeating process (دورة، حلقة، لوب)
-- "hierarchy"  = tree / taxonomy (تصنيف، شجرة، مستويات)
+- "sequence"   = ordered steps (Ø®Ø·ÙˆØ§Øª Ø¨Ø§Ù„ØªØ±ØªÙŠØ¨ØŒ Ù…Ø±Ø§Ø­Ù„)
+- "cycle"      = repeating process (Ø¯ÙˆØ±Ø©ØŒ Ø­Ù„Ù‚Ø©ØŒ Ù„ÙˆØ¨)
+- "hierarchy"  = tree / taxonomy (ØªØµÙ†ÙŠÙØŒ Ø´Ø¬Ø±Ø©ØŒ Ù…Ø³ØªÙˆÙŠØ§Øª)
 - "comparison" = 2 sides being compared (X vs Y)
-- "layers"     = stacked layers (طبقات، طبقات فوق بعض)
+- "layers"     = stacked layers (Ø·Ø¨Ù‚Ø§ØªØŒ Ø·Ø¨Ù‚Ø§Øª ÙÙˆÙ‚ Ø¨Ø¹Ø¶)
 
 Output JSON ONLY:
 {
@@ -34,13 +34,13 @@ Output JSON ONLY:
   "title": "short Arabic title",
   "subtitle": "one sentence in Arabic",
   "nodes": [
-    { "id": "n1", "label": "اسم قصير بالعربي أو إنجليزي", "detail": "جملة قصيرة", "icon": "arrow-right" }
+    { "id": "n1", "label": "Ø§Ø³Ù… Ù‚ØµÙŠØ± Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠ Ø£Ùˆ Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ", "detail": "Ø¬Ù…Ù„Ø© Ù‚ØµÙŠØ±Ø©", "icon": "arrow-right" }
   ],
   "relations": [
-    { "from": "n1", "to": "n2", "type": "next", "label": "بعد كده" }
+    { "from": "n1", "to": "n2", "type": "next", "label": "Ø¨Ø¹Ø¯ ÙƒØ¯Ù‡" }
   ],
   "emphasis": ["n1"],
-  "sourceQuote": "الجملة الأصلية من المحاضرة"
+  "sourceQuote": "Ø§Ù„Ø¬Ù…Ù„Ø© Ø§Ù„Ø£ØµÙ„ÙŠØ© Ù…Ù† Ø§Ù„Ù…Ø­Ø§Ø¶Ø±Ø©"
 }
 
 STRICT RULES:
@@ -57,13 +57,13 @@ STRICT RULES:
 
 Examples:
 
-Input: "الماكينة تبدأ بفحص المواد الأولية، بعدين بتخلطها، وبعدين بتسخنها، وفي الآخر بتعبّي المنتج"
-Output: shape="sequence", nodes: [فحص، خلط، تسخين، تعبئة], relations: next.
+Input: "Ø§Ù„Ù…Ø§ÙƒÙŠÙ†Ø© ØªØ¨Ø¯Ø£ Ø¨ÙØ­Øµ Ø§Ù„Ù…ÙˆØ§Ø¯ Ø§Ù„Ø£ÙˆÙ„ÙŠØ©ØŒ Ø¨Ø¹Ø¯ÙŠÙ† Ø¨ØªØ®Ù„Ø·Ù‡Ø§ØŒ ÙˆØ¨Ø¹Ø¯ÙŠÙ† Ø¨ØªØ³Ø®Ù†Ù‡Ø§ØŒ ÙˆÙÙŠ Ø§Ù„Ø¢Ø®Ø± Ø¨ØªØ¹Ø¨Ù‘ÙŠ Ø§Ù„Ù…Ù†ØªØ¬"
+Output: shape="sequence", nodes: [ÙØ­ØµØŒ Ø®Ù„Ø·ØŒ ØªØ³Ø®ÙŠÙ†ØŒ ØªØ¹Ø¨Ø¦Ø©], relations: next.
 
-Input: "دورة حياة البرمجيات: تحليل، تصميم، تنفيذ، اختبار، صيانة، وبعدها بترجع للتحليل"
-Output: shape="cycle", relations: next (with last→first).
+Input: "Ø¯ÙˆØ±Ø© Ø­ÙŠØ§Ø© Ø§Ù„Ø¨Ø±Ù…Ø¬ÙŠØ§Øª: ØªØ­Ù„ÙŠÙ„ØŒ ØªØµÙ…ÙŠÙ…ØŒ ØªÙ†ÙÙŠØ°ØŒ Ø§Ø®ØªØ¨Ø§Ø±ØŒ ØµÙŠØ§Ù†Ø©ØŒ ÙˆØ¨Ø¹Ø¯Ù‡Ø§ Ø¨ØªØ±Ø¬Ø¹ Ù„Ù„ØªØ­Ù„ÙŠÙ„"
+Output: shape="cycle", relations: next (with lastâ†’first).
 
-Input: "أنواع الـ AI: supervised, unsupervised, reinforcement، كل واحد ليه subtypes"
+Input: "Ø£Ù†ÙˆØ§Ø¹ Ø§Ù„Ù€ AI: supervised, unsupervised, reinforcementØŒ ÙƒÙ„ ÙˆØ§Ø­Ø¯ Ù„ÙŠÙ‡ subtypes"
 Output: shape="hierarchy".
 
 Reply with JSON only, no markdown.`;
@@ -96,7 +96,7 @@ function isValid(d: unknown): d is DiagramPayload {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 10, 60_000).ok) {
+  if (!rateLimit(ip, 10, 60_000, "visualize-this").ok) {
     return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }
 
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
   const diagram: GeneratedDiagram = {
     id: `diag-${now}`,
     shape,
-    title: String(parsed.title ?? "رسم توضيحي"),
+    title: String(parsed.title ?? "Ø±Ø³Ù… ØªÙˆØ¶ÙŠØ­ÙŠ"),
     subtitle: parsed.subtitle ? String(parsed.subtitle) : undefined,
     nodes,
     relations,

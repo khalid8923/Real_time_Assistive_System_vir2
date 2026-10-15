@@ -43,3 +43,8 @@ next-env.d.ts
 # SQLite
 *.db
 *.db-journal
+
+# Chat dumps
+dump-*.txt
+_load_test_results.csv
+_commit_msg.txt

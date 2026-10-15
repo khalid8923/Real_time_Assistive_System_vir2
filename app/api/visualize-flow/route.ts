@@ -21,7 +21,7 @@ Reply with JSON only:
 {
   "title": "short Arabic title",
   "description": "one sentence in Arabic",
-  "mermaidCode": "graph TD\\n    A[الخطوة الأولى] --> B[الخطوة الثانية]\\n    B --> C{قرار؟}",
+  "mermaidCode": "graph TD\\n    A[Ø§Ù„Ø®Ø·ÙˆØ© Ø§Ù„Ø£ÙˆÙ„Ù‰] --> B[Ø§Ù„Ø®Ø·ÙˆØ© Ø§Ù„Ø«Ø§Ù†ÙŠØ©]\\n    B --> C{Ù‚Ø±Ø§Ø±ØŸ}",
   "hasProcess": true
 }`;
 
@@ -45,7 +45,7 @@ function isValidFlow(d: unknown): d is FlowResult {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 10, 60_000).ok) {
+  if (!rateLimit(ip, 10, 60_000, "visualize-flow").ok) {
     return NextResponse.json(
       { error: "Too many requests." },
       { status: 429 }

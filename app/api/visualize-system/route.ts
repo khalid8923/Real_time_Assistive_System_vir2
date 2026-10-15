@@ -12,16 +12,16 @@ A "system" = a set of layers/components working together in a hierarchy. Example
 - OSI model (7 layers)
 - TCP/IP model (4 layers)
 - Computer architecture (CPU pipeline, memory hierarchy)
-- Compiler stages (lexer → parser → optimizer → codegen)
-- ML pipeline (data → features → model → eval → deploy)
-- IoT architecture (sensor → edge → cloud → app)
-- Software architecture (UI → logic → data)
+- Compiler stages (lexer â†’ parser â†’ optimizer â†’ codegen)
+- ML pipeline (data â†’ features â†’ model â†’ eval â†’ deploy)
+- IoT architecture (sensor â†’ edge â†’ cloud â†’ app)
+- Software architecture (UI â†’ logic â†’ data)
 - Microservices stack
 
 For each system, produce:
 - title: short Arabic title
 - subtitle: short Arabic description
-- layers: 3-7 layers, ordered top-to-bottom (high-level → low-level). Each layer:
+- layers: 3-7 layers, ordered top-to-bottom (high-level â†’ low-level). Each layer:
   - id: "l1", "l2"...
   - name: layer name (English kept as-is: "Application Layer")
   - role: ONE sentence in Arabic (what it does)
@@ -37,26 +37,26 @@ For each system, produce:
 
 RULES:
 1. ONLY extract systems EXPLICITLY described in the transcript
-2. If professor didn't describe a flow scenario, set scenario: [] — DON'T invent
+2. If professor didn't describe a flow scenario, set scenario: [] â€” DON'T invent
 3. Order layers as professor described them (top-down usually)
 4. Prefer STEM systems: OSI, TCP/IP, CPU, compiler, ML pipeline
-5. If NO layered system exists → systems: []
+5. If NO layered system exists â†’ systems: []
 
-Example - "نموذج OSI فيه 7 طبقات: Application, Presentation, Session, Transport, Network, Data Link, Physical. كل طبقة بتضيف header خاص بها":
+Example - "Ù†Ù…ÙˆØ°Ø¬ OSI ÙÙŠÙ‡ 7 Ø·Ø¨Ù‚Ø§Øª: Application, Presentation, Session, Transport, Network, Data Link, Physical. ÙƒÙ„ Ø·Ø¨Ù‚Ø© Ø¨ØªØ¶ÙŠÙ header Ø®Ø§Øµ Ø¨Ù‡Ø§":
 
 {
   "systems": [
     {
-      "title": "نموذج OSI",
-      "subtitle": "7 طبقات للاتصال الشبكي",
+      "title": "Ù†Ù…ÙˆØ°Ø¬ OSI",
+      "subtitle": "7 Ø·Ø¨Ù‚Ø§Øª Ù„Ù„Ø§ØªØµØ§Ù„ Ø§Ù„Ø´Ø¨ÙƒÙŠ",
       "layers": [
-        { "id": "l1", "name": "Application", "role": "بيوفر الخدمات للمستخدم مباشرة", "examples": ["HTTP", "FTP", "SMTP"], "input": "أوامر المستخدم", "output": "داتا منظمة" },
-        { "id": "l2", "name": "Presentation", "role": "بيترجم الداتا ويضغطها ويشفّرها", "examples": ["SSL/TLS", "JPEG", "ASCII"], "input": "داتا من Application", "output": "داتا مُشفّرة" },
-        { "id": "l3", "name": "Session", "role": "بيدير الاتصال بين الجهازين", "examples": ["NetBIOS", "RPC"], "input": "داتا مشفرة", "output": "سيشن مفتوح" }
+        { "id": "l1", "name": "Application", "role": "Ø¨ÙŠÙˆÙØ± Ø§Ù„Ø®Ø¯Ù…Ø§Øª Ù„Ù„Ù…Ø³ØªØ®Ø¯Ù… Ù…Ø¨Ø§Ø´Ø±Ø©", "examples": ["HTTP", "FTP", "SMTP"], "input": "Ø£ÙˆØ§Ù…Ø± Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…", "output": "Ø¯Ø§ØªØ§ Ù…Ù†Ø¸Ù…Ø©" },
+        { "id": "l2", "name": "Presentation", "role": "Ø¨ÙŠØªØ±Ø¬Ù… Ø§Ù„Ø¯Ø§ØªØ§ ÙˆÙŠØ¶ØºØ·Ù‡Ø§ ÙˆÙŠØ´ÙÙ‘Ø±Ù‡Ø§", "examples": ["SSL/TLS", "JPEG", "ASCII"], "input": "Ø¯Ø§ØªØ§ Ù…Ù† Application", "output": "Ø¯Ø§ØªØ§ Ù…ÙØ´ÙÙ‘Ø±Ø©" },
+        { "id": "l3", "name": "Session", "role": "Ø¨ÙŠØ¯ÙŠØ± Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨ÙŠÙ† Ø§Ù„Ø¬Ù‡Ø§Ø²ÙŠÙ†", "examples": ["NetBIOS", "RPC"], "input": "Ø¯Ø§ØªØ§ Ù…Ø´ÙØ±Ø©", "output": "Ø³ÙŠØ´Ù† Ù…ÙØªÙˆØ­" }
       ],
       "scenario": [
-        { "step": 1, "from": "l1", "to": "l2", "label": "الطلب بيتحول لصيغة موحدة" },
-        { "step": 2, "from": "l2", "to": "l3", "label": "البيانات بتتشفّر" }
+        { "step": 1, "from": "l1", "to": "l2", "label": "Ø§Ù„Ø·Ù„Ø¨ Ø¨ÙŠØªØ­ÙˆÙ„ Ù„ØµÙŠØºØ© Ù…ÙˆØ­Ø¯Ø©" },
+        { "step": 2, "from": "l2", "to": "l3", "label": "Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¨ØªØªØ´ÙÙ‘Ø±" }
       ]
     }
   ]
@@ -93,7 +93,7 @@ function isValid(d: unknown): d is SystemPayload {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 10, 60_000).ok) {
+  if (!rateLimit(ip, 10, 60_000, "visualize-system").ok) {
     return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }
 

@@ -238,6 +238,25 @@ const MIGRATIONS: Migration[] = [
       appliedAt INTEGER NOT NULL
     )`,
   },
+  {
+    id: "010_doctor_replies",
+    sql: `CREATE TABLE IF NOT EXISTS doctor_replies (
+      id TEXT PRIMARY KEY,
+      studentKey TEXT NOT NULL,
+      studentName TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      messageId INTEGER,
+      createdAt INTEGER NOT NULL,
+      repliedAt INTEGER,
+      replyType TEXT,
+      seen INTEGER NOT NULL DEFAULT 0
+    )`,
+  },
+  {
+    id: "011_idx_doctor_replies",
+    sql: `CREATE INDEX IF NOT EXISTS idx_doctor_replies_key
+          ON doctor_replies(studentKey, createdAt DESC)`,
+  },
 ];
 
 async function runMigrations(db: Client): Promise<void> {

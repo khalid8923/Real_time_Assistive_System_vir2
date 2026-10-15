@@ -24,7 +24,7 @@ interface UserRow {
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 30, 60_000).ok) {
+  if (!rateLimit(ip, 30, 60_000, "admin-users").ok) {
     return NextResponse.json(
       { error: "Too many requests. Try again in a minute." },
       { status: 429 }
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 30, 60_000).ok) {
+  if (!rateLimit(ip, 30, 60_000, "admin-users").ok) {
     return NextResponse.json(
       { error: "Too many requests. Try again in a minute." },
       { status: 429 }

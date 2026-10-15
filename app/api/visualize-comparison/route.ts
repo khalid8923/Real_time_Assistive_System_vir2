@@ -8,44 +8,44 @@ export const maxDuration = 60;
 
 const SYSTEM_PROMPT = `You extract EXPLICIT comparison tables from university lecture transcripts. Content may be Arabic (Egyptian or MSA) with English technical terms.
 
-TASK: Find moments where the professor compares 2-4 things side-by-side (X vs Y, X والفرق بينه و Y, مقارنة بين..., أفضل من..., على عكس..., بخلاف...).
+TASK: Find moments where the professor compares 2-4 things side-by-side (X vs Y, X ÙˆØ§Ù„ÙØ±Ù‚ Ø¨ÙŠÙ†Ù‡ Ùˆ Y, Ù…Ù‚Ø§Ø±Ù†Ø© Ø¨ÙŠÙ†..., Ø£ÙØ¶Ù„ Ù…Ù†..., Ø¹Ù„Ù‰ Ø¹ÙƒØ³..., Ø¨Ø®Ù„Ø§Ù...).
 
 For each comparison, produce:
-- title: short Arabic title (e.g., "TCP vs UDP", "المقارنة بين Stack و Queue")
+- title: short Arabic title (e.g., "TCP vs UDP", "Ø§Ù„Ù…Ù‚Ø§Ø±Ù†Ø© Ø¨ÙŠÙ† Stack Ùˆ Queue")
 - items: 2-4 things being compared (short names, keep English terms in English)
-- criteria: 3-6 comparison dimensions (e.g., السرعة، التعقيد، الاستخدام)
+- criteria: 3-6 comparison dimensions (e.g., Ø§Ù„Ø³Ø±Ø¹Ø©ØŒ Ø§Ù„ØªØ¹Ù‚ÙŠØ¯ØŒ Ø§Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù…)
 
 CRITICAL RULES:
 1. ONLY extract comparisons that appear EXPLICITLY in the transcript
 2. For each cell, set source:
    - "lecture" if the professor SAID this value in the transcript (add a short quote)
    - "inferred" if you filled it from general knowledge to complete the table
-3. If a cell has no data and you can't infer it confidently, use value: "—" and source: "inferred"
+3. If a cell has no data and you can't infer it confidently, use value: "â€”" and source: "inferred"
 4. Prefer technical/academic comparisons relevant to STEM: algorithms, data structures, models, methods, materials, theorems, architectures
 5. If NO explicit comparison exists, return comparisons: []
 
 Examples of what to extract:
-- "let بيستخدم block scope، أما var فبيستخدم function scope" → let vs var
-- "TCP بيعمل connection الأول، UDP لأ" → TCP vs UDP
-- "Stack LIFO، Queue FIFO" → Stack vs Queue
-- "Batch gradient descent بيحسب على كل الداتا، stochastic على عينة" → Batch vs SGD
+- "let Ø¨ÙŠØ³ØªØ®Ø¯Ù… block scopeØŒ Ø£Ù…Ø§ var ÙØ¨ÙŠØ³ØªØ®Ø¯Ù… function scope" â†’ let vs var
+- "TCP Ø¨ÙŠØ¹Ù…Ù„ connection Ø§Ù„Ø£ÙˆÙ„ØŒ UDP Ù„Ø£" â†’ TCP vs UDP
+- "Stack LIFOØŒ Queue FIFO" â†’ Stack vs Queue
+- "Batch gradient descent Ø¨ÙŠØ­Ø³Ø¨ Ø¹Ù„Ù‰ ÙƒÙ„ Ø§Ù„Ø¯Ø§ØªØ§ØŒ stochastic Ø¹Ù„Ù‰ Ø¹ÙŠÙ†Ø©" â†’ Batch vs SGD
 
 JSON schema:
 {
   "comparisons": [
     {
       "title": "TCP vs UDP",
-      "subtitle": "مقارنة بروتوكولات النقل",
+      "subtitle": "Ù…Ù‚Ø§Ø±Ù†Ø© Ø¨Ø±ÙˆØªÙˆÙƒÙˆÙ„Ø§Øª Ø§Ù„Ù†Ù‚Ù„",
       "items": [
         { "name": "TCP", "source": "lecture" },
         { "name": "UDP", "source": "lecture" }
       ],
       "criteria": [
         {
-          "name": "الاتصال",
+          "name": "Ø§Ù„Ø§ØªØµØ§Ù„",
           "values": [
-            { "value": "connection-oriented", "source": "lecture", "quote": "بيعمل connection الأول" },
-            { "value": "connectionless", "source": "lecture", "quote": "بيبعت على طول" }
+            { "value": "connection-oriented", "source": "lecture", "quote": "Ø¨ÙŠØ¹Ù…Ù„ connection Ø§Ù„Ø£ÙˆÙ„" },
+            { "value": "connectionless", "source": "lecture", "quote": "Ø¨ÙŠØ¨Ø¹Øª Ø¹Ù„Ù‰ Ø·ÙˆÙ„" }
           ]
         }
       ]
@@ -75,7 +75,7 @@ function isValidPayload(d: unknown): d is ComparisonResponse {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 10, 60_000).ok) {
+  if (!rateLimit(ip, 10, 60_000, "visualize-comparison").ok) {
     return NextResponse.json(
       { error: "Too many requests. Try again in a minute." },
       { status: 429 }
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
       criteria: (c.criteria ?? []).map((cr) => ({
         name: String(cr.name ?? ""),
         values: (cr.values ?? []).map((v) => ({
-          value: String(v.value ?? "—"),
+          value: String(v.value ?? "â€”"),
           source: v.source === "lecture" ? "lecture" : "inferred",
           quote: v.quote ? String(v.quote) : undefined,
         })),

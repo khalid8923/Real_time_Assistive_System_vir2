@@ -8,18 +8,18 @@ export const maxDuration = 60;
 
 const SYSTEM_PROMPT = `You extract ANALOGIES from university lecture transcripts. Content is Arabic (Egyptian or MSA) with English technical terms.
 
-An analogy = professor compares an abstract concept to something familiar (زي، مثل، كأنه، بالظبط زي، يشبه).
+An analogy = professor compares an abstract concept to something familiar (Ø²ÙŠØŒ Ù…Ø«Ù„ØŒ ÙƒØ£Ù†Ù‡ØŒ Ø¨Ø§Ù„Ø¸Ø¨Ø· Ø²ÙŠØŒ ÙŠØ´Ø¨Ù‡).
 
 TASK: Find analogies and map the correspondence between the familiar thing (source) and the concept (target).
 
 For each analogy, produce:
 - title: short Arabic title
-- sourceConcept: the familiar thing (مثل "المكتب"، "الويتر"، "عداد السرعة")
-- sourceEmoji: ONE emoji representing the source (🏠, 🍽️, ⏱️, 📚, 🚗, 🏦, 🧠, 🍳, 🏗️, ⚙️, 📡, etc.)
-- targetConcept: the technical concept (مثل "Cache"، "API"، "Derivative")
+- sourceConcept: the familiar thing (Ù…Ø«Ù„ "Ø§Ù„Ù…ÙƒØªØ¨"ØŒ "Ø§Ù„ÙˆÙŠØªØ±"ØŒ "Ø¹Ø¯Ø§Ø¯ Ø§Ù„Ø³Ø±Ø¹Ø©")
+- sourceEmoji: ONE emoji representing the source (ðŸ , ðŸ½ï¸, â±ï¸, ðŸ“š, ðŸš—, ðŸ¦, ðŸ§ , ðŸ³, ðŸ—ï¸, âš™ï¸, ðŸ“¡, etc.)
+- targetConcept: the technical concept (Ù…Ø«Ù„ "Cache"ØŒ "API"ØŒ "Derivative")
 - targetEmoji: ONE emoji representing the target
-- mappings: array of correspondence pairs (كل جزء في المصدر بيقابل إيه في الهدف)
-- breaks: ways the analogy BREAKS DOWN (متى التشبيه مش دقيق؟)
+- mappings: array of correspondence pairs (ÙƒÙ„ Ø¬Ø²Ø¡ ÙÙŠ Ø§Ù„Ù…ØµØ¯Ø± Ø¨ÙŠÙ‚Ø§Ø¨Ù„ Ø¥ÙŠÙ‡ ÙÙŠ Ø§Ù„Ù‡Ø¯Ù)
+- breaks: ways the analogy BREAKS DOWN (Ù…ØªÙ‰ Ø§Ù„ØªØ´Ø¨ÙŠÙ‡ Ù…Ø´ Ø¯Ù‚ÙŠÙ‚ØŸ)
 - quote: short excerpt from professor's words
 
 CRITICAL RULES:
@@ -30,26 +30,26 @@ CRITICAL RULES:
 5. If NO analogy exists, return analogies: []
 
 Examples:
-- "الكاش زي المكتب جنب المكتبة — سريع وصغير، والمكتبة بطيئة وكبيرة" → Cache vs مكتب
-- "الـ API زي الويتر في المطعم — بياخد طلبك ويرجعلك" → API vs ويتر
-- "الـ Stack زي كومة أطباق — آخر واحد بتحطه أول واحد بتشيله" → Stack vs أطباق
-- "المشتقة زي عداد سرعة العربية" → Derivative vs عداد
+- "Ø§Ù„ÙƒØ§Ø´ Ø²ÙŠ Ø§Ù„Ù…ÙƒØªØ¨ Ø¬Ù†Ø¨ Ø§Ù„Ù…ÙƒØªØ¨Ø© â€” Ø³Ø±ÙŠØ¹ ÙˆØµØºÙŠØ±ØŒ ÙˆØ§Ù„Ù…ÙƒØªØ¨Ø© Ø¨Ø·ÙŠØ¦Ø© ÙˆÙƒØ¨ÙŠØ±Ø©" â†’ Cache vs Ù…ÙƒØªØ¨
+- "Ø§Ù„Ù€ API Ø²ÙŠ Ø§Ù„ÙˆÙŠØªØ± ÙÙŠ Ø§Ù„Ù…Ø·Ø¹Ù… â€” Ø¨ÙŠØ§Ø®Ø¯ Ø·Ù„Ø¨Ùƒ ÙˆÙŠØ±Ø¬Ø¹Ù„Ùƒ" â†’ API vs ÙˆÙŠØªØ±
+- "Ø§Ù„Ù€ Stack Ø²ÙŠ ÙƒÙˆÙ…Ø© Ø£Ø·Ø¨Ø§Ù‚ â€” Ø¢Ø®Ø± ÙˆØ§Ø­Ø¯ Ø¨ØªØ­Ø·Ù‡ Ø£ÙˆÙ„ ÙˆØ§Ø­Ø¯ Ø¨ØªØ´ÙŠÙ„Ù‡" â†’ Stack vs Ø£Ø·Ø¨Ø§Ù‚
+- "Ø§Ù„Ù…Ø´ØªÙ‚Ø© Ø²ÙŠ Ø¹Ø¯Ø§Ø¯ Ø³Ø±Ø¹Ø© Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©" â†’ Derivative vs Ø¹Ø¯Ø§Ø¯
 
 JSON schema:
 {
   "analogies": [
     {
-      "title": "Cache vs مكتب",
-      "sourceConcept": "مكتب جنب المكتبة",
-      "sourceEmoji": "🏠",
+      "title": "Cache vs Ù…ÙƒØªØ¨",
+      "sourceConcept": "Ù…ÙƒØªØ¨ Ø¬Ù†Ø¨ Ø§Ù„Ù…ÙƒØªØ¨Ø©",
+      "sourceEmoji": "ðŸ ",
       "targetConcept": "Cache",
-      "targetEmoji": "⚡",
+      "targetEmoji": "âš¡",
       "mappings": [
-        { "sourceTerm": "المكتب", "targetTerm": "Cache", "note": "سريع وصغير" },
-        { "sourceTerm": "المكتبة", "targetTerm": "RAM/HDD", "note": "بطيء وكبير" }
+        { "sourceTerm": "Ø§Ù„Ù…ÙƒØªØ¨", "targetTerm": "Cache", "note": "Ø³Ø±ÙŠØ¹ ÙˆØµØºÙŠØ±" },
+        { "sourceTerm": "Ø§Ù„Ù…ÙƒØªØ¨Ø©", "targetTerm": "RAM/HDD", "note": "Ø¨Ø·ÙŠØ¡ ÙˆÙƒØ¨ÙŠØ±" }
       ],
-      "breaks": ["الكتب مش بتتفقد زي الداتا"],
-      "quote": "الكاش زي المكتب جنب المكتبة"
+      "breaks": ["Ø§Ù„ÙƒØªØ¨ Ù…Ø´ Ø¨ØªØªÙÙ‚Ø¯ Ø²ÙŠ Ø§Ù„Ø¯Ø§ØªØ§"],
+      "quote": "Ø§Ù„ÙƒØ§Ø´ Ø²ÙŠ Ø§Ù„Ù…ÙƒØªØ¨ Ø¬Ù†Ø¨ Ø§Ù„Ù…ÙƒØªØ¨Ø©"
     }
   ]
 }
@@ -76,7 +76,7 @@ function isValid(d: unknown): d is AnalogyPayload {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  if (!rateLimit(ip, 10, 60_000).ok) {
+  if (!rateLimit(ip, 10, 60_000, "visualize-analogy").ok) {
     return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }
 
@@ -130,9 +130,9 @@ export async function POST(request: NextRequest) {
       id: `anl-${now}-${idx}`,
       title: String(a.title),
       sourceConcept: String(a.sourceConcept),
-      sourceEmoji: String(a.sourceEmoji || "🔷").slice(0, 4),
+      sourceEmoji: String(a.sourceEmoji || "ðŸ”·").slice(0, 4),
       targetConcept: String(a.targetConcept),
-      targetEmoji: String(a.targetEmoji || "⚙️").slice(0, 4),
+      targetEmoji: String(a.targetEmoji || "âš™ï¸").slice(0, 4),
       mappings: (a.mappings ?? []).map((m) => ({
         sourceTerm: String(m.sourceTerm ?? ""),
         targetTerm: String(m.targetTerm ?? ""),

@@ -1,6 +1,6 @@
 const cache = new Map<string, { count: number; resetAt: number }>();
 
-// ✅ Cleanup كل 5 دقايق (unref عشان مش يمنع الخروج)
+// Cleanup كل 5 دقايق (unref عشان مش يمنع الخروج)
 if (typeof setInterval !== "undefined") {
   const timer = setInterval(() => {
     const now = Date.now();
@@ -13,16 +13,27 @@ if (typeof setInterval !== "undefined") {
   }
 }
 
+/**
+ * In-memory rate limiter.
+ *
+ * @param key      Usually the client IP (from getClientIp).
+ * @param max      Max requests allowed in the window.
+ * @param windowMs Window length in milliseconds (default 60s).
+ * @param scope    Route identifier. Each route MUST pass a unique scope,
+ *                 otherwise all routes share the same counter (bug).
+ */
 export function rateLimit(
   key: string,
   max: number = 30,
-  windowMs: number = 60_000
+  windowMs: number = 60_000,
+  scope: string = "global"
 ): { ok: boolean; remaining: number; resetIn: number } {
+  const fullKey = `${scope}:${key}`;
   const now = Date.now();
-  const record = cache.get(key);
+  const record = cache.get(fullKey);
 
   if (!record || record.resetAt < now) {
-    cache.set(key, { count: 1, resetAt: now + windowMs });
+    cache.set(fullKey, { count: 1, resetAt: now + windowMs });
     return { ok: true, remaining: max - 1, resetIn: windowMs };
   }
 

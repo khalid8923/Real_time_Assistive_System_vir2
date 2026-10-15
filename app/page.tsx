@@ -56,6 +56,57 @@ export default function Page() {
   >([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [lastSentFeedback, setLastSentFeedback] = useState<string | null>(null);
+  const [doctorReply, setDoctorReply] = useState<{
+    type: string;
+    at: number;
+  } | null>(null);
+  const [studentKey, setStudentKey] = useState<string>("");
+
+  useEffect(() => {
+    try {
+      let key = localStorage.getItem("cb_student_key");
+      if (!key) {
+        key =
+          "sk_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+        localStorage.setItem("cb_student_key", key);
+      }
+      setStudentKey(key);
+    } catch {
+      setStudentKey("sk_anon_" + Math.random().toString(36).slice(2, 10));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!studentKey) return;
+    let active = true;
+    const poll = async () => {
+      try {
+        const res = await fetch(
+          "/api/notify-doctor/check?key=" + encodeURIComponent(studentKey),
+          { cache: "no-store" }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!active) return;
+        if (data && data.reply && data.reply.type) {
+          setDoctorReply({ type: data.reply.type, at: data.reply.at });
+          const text =
+            data.reply.type === "replied"
+              ? "الدكتور رد عليك"
+              : "الدكتور بيقولك تعلالي في المكتب بعد المحاضرة";
+          toast.success(text, { duration: 8000 });
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    const id = setInterval(poll, 3000);
+    poll();
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, [studentKey]);
 
   useEffect(() => {
     if (speech.isListening) {
@@ -127,20 +178,46 @@ export default function Page() {
     setActiveFeature("captions");
   }, []);
 
-  const handleAction = useCallback((action: "ask" | "re-explain") => {
-    const text = action === "ask" ? "عايز أسأل ✋" : "أعد الشرح 🔄";
-    const newNotif: Notification = {
-      id: Date.now(),
-      action: text,
-      time: new Date().toLocaleTimeString("ar-EG", {
+  const handleAction = useCallback(
+    async (action: "ask" | "re-explain") => {
+      const text = action === "ask" ? "عايز أسأل ✋" : "أعد الشرح 🔄";
+      const time = new Date().toLocaleTimeString("ar-EG", {
         hour: "2-digit",
         minute: "2-digit",
-      }),
-    };
-    setNotifications((prev) => [newNotif, ...prev]);
-    setLastSentFeedback(`تم إرسال "${text}" للدكتور`);
-    window.setTimeout(() => setLastSentFeedback(null), 2500);
-  }, []);
+      });
+      const newNotif: Notification = {
+        id: Date.now(),
+        action: text,
+        time,
+      };
+      setNotifications((prev) => [newNotif, ...prev]);
+
+      if (action === "ask" && studentKey) {
+        try {
+          const res = await fetch("/api/notify-doctor", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ studentKey }),
+          });
+          if (res.ok) {
+            setLastSentFeedback(`تم إرسال "${text}" للدكتور ✅`);
+          } else {
+            const data = await res.json().catch(() => ({}));
+            toast.error(data.error || "فشل إرسال الإشعار");
+            setLastSentFeedback(null);
+          }
+        } catch {
+          toast.error("تعذّر الاتصال بالسيرفر");
+          setLastSentFeedback(null);
+        }
+      } else {
+        setLastSentFeedback(`تم إرسال "${text}" للدكتور`);
+      }
+
+      window.setTimeout(() => setLastSentFeedback(null), 2500);
+    },
+    [studentKey]
+  );
 
   const displayTranscript =
     loadedLecture?.transcript || speech.currentTranscript;
@@ -207,10 +284,12 @@ export default function Page() {
       case "analogy":
         return <AnalogyMapPanel transcript={displayTranscript} />;
       case "timeline":
-        return <LectureTimelinePanel
-          refinedChunks={speech.refinedChunks}
-          currentTranscript={displayTranscript}
-        />;
+        return (
+          <LectureTimelinePanel
+            refinedChunks={speech.refinedChunks}
+            currentTranscript={displayTranscript}
+          />
+        );
       case "comparison":
         return <ComparisonTablePanel transcript={displayTranscript} />;
       case "flowDiagram":
@@ -237,6 +316,51 @@ export default function Page() {
         {view === "student" ? (
           <div dir="rtl" className="space-y-4" id="main-content">
             <Breadcrumbs items={[{ label: getFeature(activeFeature).label }]} />
+
+            {doctorReply && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={
+                  "flex items-start gap-3 rounded-2xl border p-4 shadow-sm " +
+                  (doctorReply.type === "replied"
+                    ? "border-emerald-500/30 bg-emerald-500/10"
+                    : "border-amber-500/30 bg-amber-500/10")
+                }
+              >
+                <span className="text-2xl" aria-hidden="true">
+                  {doctorReply.type === "replied" ? "✅" : "🚶"}
+                </span>
+                <div className="flex-1">
+                  <p
+                    className={
+                      "text-sm font-bold " +
+                      (doctorReply.type === "replied"
+                        ? "text-emerald-700 dark:text-emerald-400"
+                        : "text-amber-700 dark:text-amber-400")
+                    }
+                  >
+                    {doctorReply.type === "replied"
+                      ? "الدكتور رد عليك"
+                      : "الدكتور بيقولك تعلالي في المكتب بعد المحاضرة"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {doctorReply.type === "replied"
+                      ? "اسمع رد الدكتور في القاعة"
+                      : "متنساش تروحله بعد ما المحاضرة تخلص"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDoctorReply(null)}
+                  aria-label="إغلاق"
+                  className="text-lg leading-none text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  ×
+                </button>
+              </motion.div>
+            )}
+
             {renderFeature()}
           </div>
         ) : (
