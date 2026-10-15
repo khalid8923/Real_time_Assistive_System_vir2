@@ -12,7 +12,6 @@ import {
   UserPlus,
   GraduationCap,
   Building2,
-  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { signUp } from "@/lib/auth-client";
@@ -26,13 +25,8 @@ import {
   type ValidationState,
 } from "@/components/auth/AuthForm";
 import GoogleButton from "@/components/auth/GoogleButton";
-import AuthCompanion, {
-  type AuthCompanionState,
-} from "@/components/auth/AuthCompanion";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-type Field = "name" | "university" | "studentId" | "email" | "password" | "confirm";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -46,16 +40,12 @@ export default function SignupPage() {
   const [confirm, setConfirm] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState(false);
 
   const [emailState, setEmailState] = React.useState<ValidationState>("idle");
   const [passwordState, setPasswordState] =
     React.useState<ValidationState>("idle");
   const [confirmState, setConfirmState] =
     React.useState<ValidationState>("idle");
-
-  const [focused, setFocused] = React.useState<Field | null>(null);
-  const [passwordVisible, setPasswordVisible] = React.useState(false);
 
   React.useEffect(() => {
     nameRef.current?.focus();
@@ -93,22 +83,6 @@ export default function SignupPage() {
     }, 300);
     return () => clearTimeout(t);
   }, [confirm, password]);
-
-  React.useEffect(() => {
-    if (error) setError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, university, studentId, email, password, confirm]);
-
-  const companionState: AuthCompanionState = React.useMemo(() => {
-    if (success) return "success";
-    if (loading) return "submitting";
-    if (error) return "error";
-    if (focused === "password" || focused === "confirm") {
-      return passwordVisible ? "password-visible" : "password-focus";
-    }
-    if (focused) return "email-focus";
-    return "idle";
-  }, [success, loading, error, focused, passwordVisible]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,6 +131,7 @@ export default function SignupPage() {
       if (signUpError) {
         console.error("[signup error]", signUpError.message);
         const msg = signUpError.message?.toLowerCase() || "";
+
         if (msg.includes("already") || msg.includes("exists")) {
           setError("الإيميل ده مسجل بالفعل. جرّب تسجل دخول.");
         } else if (msg.includes("password")) {
@@ -164,40 +139,25 @@ export default function SignupPage() {
         } else {
           setError(`خطأ: ${signUpError.message}`);
         }
-        setLoading(false);
         return;
       }
 
       document.cookie =
         "guest_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      setSuccess(true);
-      toast.success("تم إنشاء الحساب! اتفضل اتفقد إيميلك للتحقق.", {
-        duration: 6000,
-      });
-      window.setTimeout(() => {
-        router.push(`/check-email?email=${encodeURIComponent(email.trim())}`);
-      }, 900);
+      toast.success(
+        "تم إنشاء الحساب! اتحقق من بريدك الإلكتروني لتنشيط الحساب."
+      );
+      router.push("/login?verify=email");
     } catch (err) {
       console.error("[signup] failed:", err);
       setError("تعذّر الاتصال بالسيرفر. حاول تاني.");
+    } finally {
       setLoading(false);
     }
   };
 
-  const focusProps = (field: Field) => ({
-    onFocus: () => setFocused(field),
-    onBlur: () => setFocused((f) => (f === field ? null : f)),
-  });
-
   return (
     <div>
-      <div className="mb-5 flex justify-center">
-        <AuthCompanion
-          state={companionState}
-          className="w-24 sm:w-28 md:w-32"
-        />
-      </div>
-
       <header className="mb-6 text-center">
         <Image
           src="/logo.png"
@@ -227,7 +187,6 @@ export default function SignupPage() {
           autoComplete="name"
           disabled={loading}
           minLength={2}
-          {...focusProps("name")}
         />
 
         <AuthInput
@@ -240,7 +199,6 @@ export default function SignupPage() {
           required
           disabled={loading}
           minLength={2}
-          {...focusProps("university")}
         />
 
         <AuthInput
@@ -253,7 +211,6 @@ export default function SignupPage() {
           required
           disabled={loading}
           minLength={3}
-          {...focusProps("studentId")}
         />
 
         <AuthInput
@@ -265,13 +222,10 @@ export default function SignupPage() {
           icon={<Mail className="h-4 w-4" />}
           validationState={emailState}
           successMessage="الإيميل شكله صح"
-          error={
-            emailState === "invalid" ? "صيغة الإيميل غير صحيحة" : undefined
-          }
+          error={emailState === "invalid" ? "صيغة الإيميل غير صحيحة" : undefined}
           required
           autoComplete="email"
           disabled={loading}
-          {...focusProps("email")}
         />
 
         <AuthPasswordInput
@@ -280,7 +234,6 @@ export default function SignupPage() {
           placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          onVisibilityChange={setPasswordVisible}
           icon={<Lock className="h-4 w-4" />}
           validationState={passwordState}
           successMessage="كلمة المرور جاهزة"
@@ -293,7 +246,6 @@ export default function SignupPage() {
           autoComplete="new-password"
           disabled={loading}
           minLength={6}
-          {...focusProps("password")}
         />
 
         <AuthPasswordInput
@@ -312,23 +264,17 @@ export default function SignupPage() {
           autoComplete="new-password"
           disabled={loading}
           minLength={6}
-          {...focusProps("confirm")}
         />
 
         <Button
           type="submit"
-          disabled={loading || success}
+          disabled={loading}
           className="h-11 w-full gap-2 rounded-xl bg-linear-to-l from-primary to-accent-1 text-sm font-bold text-white shadow-lg transition-transform hover:scale-[1.02]"
         >
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
               جارٍ إنشاء الحساب...
-            </>
-          ) : success ? (
-            <>
-              <CheckCircle2 className="h-4 w-4" />
-              تم الإنشاء
             </>
           ) : (
             <>
