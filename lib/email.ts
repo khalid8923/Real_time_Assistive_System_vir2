@@ -1,11 +1,30 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const EMAIL_FROM =
-  process.env.EMAIL_FROM || "CaptionBridge <onboarding@resend.dev>";
+/* ------------------------------------------------------------------ */
+/* Lazy Resend client — created on first use, not at module load.    */
+/* This prevents build-time crashes when RESEND_API_KEY is missing.  */
+/* ------------------------------------------------------------------ */
+
+let resendClient: Resend | null = null;
+
+function getResend(): Resend | null {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) return null;
+  if (!resendClient) {
+    resendClient = new Resend(apiKey);
+  }
+  return resendClient;
+}
+
+function getFrom(): string {
+  return (
+    process.env.EMAIL_FROM ||
+    "CaptionBridge <onboarding@resend.dev>"
+  );
+}
 
 /* ------------------------------------------------------------------ */
-/* Shared layout                                                      */
+/* HTML templates                                                     */
 /* ------------------------------------------------------------------ */
 
 function emailShell(title: string, body: string): string {
@@ -38,10 +57,6 @@ function ctaButton(url: string, label: string): string {
   <p style="font-size:12px;color:#1a3e9c;word-break:break-all;text-align:center;direction:ltr;">${url}</p>`;
 }
 
-/* ------------------------------------------------------------------ */
-/* Templates                                                          */
-/* ------------------------------------------------------------------ */
-
 export function verificationEmailHtml(name: string, url: string): string {
   const body = `
     <h1 style="font-size:22px;line-height:32px;font-weight:700;margin:0 0 20px;">تأكيد بريدك الإلكتروني</h1>
@@ -64,7 +79,7 @@ export function resetPasswordEmailHtml(name: string, url: string): string {
 }
 
 /* ------------------------------------------------------------------ */
-/* Send helpers                                                       */
+/* Send helpers — gracefully skip if key is missing                   */
 /* ------------------------------------------------------------------ */
 
 export async function sendVerificationEmail(opts: {
@@ -72,17 +87,30 @@ export async function sendVerificationEmail(opts: {
   name: string;
   url: string;
 }): Promise<void> {
-  const result = await resend.emails.send({
-    from: EMAIL_FROM,
-    to: opts.to,
-    subject: "تأكيد بريدك الإلكتروني — CaptionBridge",
-    html: verificationEmailHtml(opts.name || "صديقنا", opts.url),
-  });
-  if (result.error) {
-    console.error("[email] verify send failed:", result.error);
-    throw new Error(result.error.message);
+  const client = getResend();
+  if (!client) {
+    console.warn(
+      `[email] RESEND_API_KEY missing — skipping verification email to ${opts.to}`
+    );
+    console.warn(`[email] Verification URL: ${opts.url}`);
+    return;
   }
-  console.log(`[email] verify sent to ${opts.to}`);
+
+  try {
+    const result = await client.emails.send({
+      from: getFrom(),
+      to: opts.to,
+      subject: "تأكيد بريدك الإلكتروني — CaptionBridge",
+      html: verificationEmailHtml(opts.name || "صديقنا", opts.url),
+    });
+    if (result.error) {
+      console.error("[email] verify send failed:", result.error.message);
+      return;
+    }
+    console.log(`[email] verify sent to ${opts.to}`);
+  } catch (err) {
+    console.error("[email] verify threw:", err);
+  }
 }
 
 export async function sendResetPasswordEmail(opts: {
@@ -90,15 +118,28 @@ export async function sendResetPasswordEmail(opts: {
   name: string;
   url: string;
 }): Promise<void> {
-  const result = await resend.emails.send({
-    from: EMAIL_FROM,
-    to: opts.to,
-    subject: "إعادة تعيين كلمة المرور — CaptionBridge",
-    html: resetPasswordEmailHtml(opts.name || "صديقنا", opts.url),
-  });
-  if (result.error) {
-    console.error("[email] reset send failed:", result.error);
-    throw new Error(result.error.message);
+  const client = getResend();
+  if (!client) {
+    console.warn(
+      `[email] RESEND_API_KEY missing — skipping reset email to ${opts.to}`
+    );
+    console.warn(`[email] Reset URL: ${opts.url}`);
+    return;
   }
-  console.log(`[email] reset sent to ${opts.to}`);
+
+  try {
+    const result = await client.emails.send({
+      from: getFrom(),
+      to: opts.to,
+      subject: "إعادة تعيين كلمة المرور — CaptionBridge",
+      html: resetPasswordEmailHtml(opts.name || "صديقنا", opts.url),
+    });
+    if (result.error) {
+      console.error("[email] reset send failed:", result.error.message);
+      return;
+    }
+    console.log(`[email] reset sent to ${opts.to}`);
+  } catch (err) {
+    console.error("[email] reset threw:", err);
+  }
 }
