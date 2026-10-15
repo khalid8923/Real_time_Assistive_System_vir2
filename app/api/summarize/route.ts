@@ -7,7 +7,7 @@ export const maxDuration = 60;
 
 const MAX_TEXT_LENGTH = 10000;
 
-const SYSTEM_PROMPT = `You are an academic assistant for deaf students. You receive a lecture transcript and summarize it.
+const SYSTEM_PROMPT = `You are an academic assistant for university students. You receive a lecture transcript and summarize it.
 
 Your task: summarize the lecture in an organized form:
 

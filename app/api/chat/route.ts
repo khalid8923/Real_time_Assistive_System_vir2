@@ -9,7 +9,7 @@ const MAX_CONTEXT_LENGTH = 8000;
 const MAX_MESSAGES = 20;
 const MAX_QUESTION_LENGTH = 500;
 
-const SYSTEM_PROMPT = `You are a smart academic assistant for deaf students in CaptionBridge. You help them understand a recorded university lecture.
+const SYSTEM_PROMPT = `You are a smart academic assistant for university students in CaptionBridge. You help them understand a recorded university lecture.
 
 You have:
 - The full lecture transcript (context)

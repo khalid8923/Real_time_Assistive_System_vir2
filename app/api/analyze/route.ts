@@ -7,7 +7,7 @@ export const maxDuration = 60;
 
 const MAX_TEXT_LENGTH = 8000;
 
-const SYSTEM_PROMPT = `You are an academic analyst inside a real-time captioning tool for deaf students. You receive a lecture transcript chunk in Arabic (may contain English technical terms).
+const SYSTEM_PROMPT = `You are an academic analyst inside a real-time captioning tool for university students. You receive a lecture transcript chunk in Arabic (may contain English technical terms).
 
 Extract:
 

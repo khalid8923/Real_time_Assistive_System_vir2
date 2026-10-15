@@ -283,7 +283,7 @@ function buildPrintHTML({
 <body>
   <div class="header">
     <h1>CaptionBridge</h1>
-    <p>جسر التواصل للطلاب الصم — ${escapeHtml(date)}</p>
+    <p>رفيقك الذكي في المحاضرات الجامعية — ${escapeHtml(date)}</p>
   </div>
 
   ${

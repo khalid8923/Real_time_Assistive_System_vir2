@@ -8,7 +8,7 @@ export const maxDuration = 60;
 
 const MAX_TEXT_LENGTH = 8000;
 
-const SYSTEM_PROMPT = `You are a study-card generator for deaf university students. You receive a lecture transcript in Arabic (may contain English technical terms) and generate study flashcards.
+const SYSTEM_PROMPT = `You are a study-card generator for university students. You receive a lecture transcript in Arabic (may contain English technical terms) and generate study flashcards.
 
 Your task: create 4-8 high-quality flashcards that test understanding of the lecture.
 

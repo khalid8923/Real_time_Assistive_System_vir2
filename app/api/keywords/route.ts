@@ -8,7 +8,7 @@ export const maxDuration = 60;
 
 const MAX_TEXT_LENGTH = 8000;
 
-const SYSTEM_PROMPT = `You are a keyword extractor for deaf university students. You receive a lecture transcript in Arabic (may contain English technical terms) and extract the most important keywords.
+const SYSTEM_PROMPT = `You are a keyword extractor for university students. You receive a lecture transcript in Arabic (may contain English technical terms) and extract the most important keywords.
 
 For each keyword:
 - word: The exact word or short phrase from the text (keep English as-is: React, API)
