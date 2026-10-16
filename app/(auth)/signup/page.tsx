@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Mail,
@@ -23,8 +22,20 @@ import {
   AuthError,
   type ValidationState,
 } from "@/components/auth/AuthForm";
+import AuthCompanion, {
+  type AuthCompanionState,
+} from "@/components/auth/AuthCompanion";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type ActiveField =
+  | "name"
+  | "university"
+  | "studentId"
+  | "email"
+  | "password"
+  | "confirm"
+  | null;
 
 export default function SignupPage() {
   const router = useRouter();
@@ -38,6 +49,8 @@ export default function SignupPage() {
   const [confirm, setConfirm] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [succeeded, setSucceeded] = React.useState(false);
+  const [activeField, setActiveField] = React.useState<ActiveField>(null);
 
   const [emailState, setEmailState] = React.useState<ValidationState>("idle");
   const [passwordState, setPasswordState] =
@@ -50,10 +63,7 @@ export default function SignupPage() {
   }, []);
 
   React.useEffect(() => {
-    if (email.length === 0) {
-      setEmailState("idle");
-      return;
-    }
+    if (email.length === 0) return setEmailState("idle");
     const t = setTimeout(() => {
       setEmailState(EMAIL_REGEX.test(email.trim()) ? "valid" : "invalid");
     }, 450);
@@ -61,10 +71,7 @@ export default function SignupPage() {
   }, [email]);
 
   React.useEffect(() => {
-    if (password.length === 0) {
-      setPasswordState("idle");
-      return;
-    }
+    if (password.length === 0) return setPasswordState("idle");
     const t = setTimeout(() => {
       setPasswordState(password.length >= 6 ? "valid" : "invalid");
     }, 300);
@@ -72,15 +79,24 @@ export default function SignupPage() {
   }, [password]);
 
   React.useEffect(() => {
-    if (confirm.length === 0) {
-      setConfirmState("idle");
-      return;
-    }
+    if (confirm.length === 0) return setConfirmState("idle");
     const t = setTimeout(() => {
       setConfirmState(confirm === password ? "valid" : "invalid");
     }, 300);
     return () => clearTimeout(t);
   }, [confirm, password]);
+
+  const companionState: AuthCompanionState = succeeded
+    ? "success"
+    : loading
+    ? "submitting"
+    : error
+    ? "error"
+    : activeField === "email"
+    ? "email-focus"
+    : activeField === "password" || activeField === "confirm"
+    ? "password-focus"
+    : "idle";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,9 +143,7 @@ export default function SignupPage() {
       const { error: signUpError } = await signUp.email(signUpData as never);
 
       if (signUpError) {
-        console.error("[signup error]", signUpError.message);
         const msg = signUpError.message?.toLowerCase() || "";
-
         if (msg.includes("already") || msg.includes("exists")) {
           setError("الإيميل ده مسجل بالفعل. جرّب تسجل دخول.");
         } else if (msg.includes("password")) {
@@ -140,12 +154,15 @@ export default function SignupPage() {
         return;
       }
 
+      setSucceeded(true);
       document.cookie =
         "guest_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      toast.success(
-        "تم إنشاء الحساب! اتحقق من بريدك الإلكتروني لتنشيط الحساب."
-      );
-      router.push("/login?verify=email");
+
+      // Let the success animation play
+      await new Promise((r) => setTimeout(r, 900));
+
+      toast.success("تم إنشاء الحساب بنجاح!");
+      window.location.href = "/";
     } catch (err) {
       console.error("[signup] failed:", err);
       setError("تعذّر الاتصال بالسيرفر. حاول تاني.");
@@ -156,20 +173,15 @@ export default function SignupPage() {
 
   return (
     <div>
-      <header className="mb-6 text-center">
-        <Image
-          src="/logo.png"
-          alt="CaptionBridge"
-          width={48}
-          height={48}
-          className="mx-auto mb-3 h-12 w-12 rounded-xl shadow-lg shadow-primary/20"
-          priority
-        />
+      <header className="mb-4 text-center">
         <h2 className="text-xl font-bold text-foreground">أهلاً بيك! 👋</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           أنشئ حسابك عشان تبدأ
         </p>
       </header>
+
+      <AuthCompanion state={companionState} className="my-4" />
+
       <AuthForm onSubmit={handleSubmit}>
         <AuthError message={error} />
 
@@ -180,6 +192,8 @@ export default function SignupPage() {
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          onFocus={() => setActiveField("name")}
+          onBlur={() => setActiveField(null)}
           icon={<User className="h-4 w-4" />}
           required
           autoComplete="name"
@@ -193,6 +207,8 @@ export default function SignupPage() {
           type="text"
           value={university}
           onChange={(e) => setUniversity(e.target.value)}
+          onFocus={() => setActiveField("university")}
+          onBlur={() => setActiveField(null)}
           icon={<Building2 className="h-4 w-4" />}
           required
           disabled={loading}
@@ -205,6 +221,8 @@ export default function SignupPage() {
           type="text"
           value={studentId}
           onChange={(e) => setStudentId(e.target.value)}
+          onFocus={() => setActiveField("studentId")}
+          onBlur={() => setActiveField(null)}
           icon={<GraduationCap className="h-4 w-4" />}
           required
           disabled={loading}
@@ -217,6 +235,8 @@ export default function SignupPage() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          onFocus={() => setActiveField("email")}
+          onBlur={() => setActiveField(null)}
           icon={<Mail className="h-4 w-4" />}
           validationState={emailState}
           successMessage="الإيميل شكله صح"
@@ -232,6 +252,8 @@ export default function SignupPage() {
           placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onFocus={() => setActiveField("password")}
+          onBlur={() => setActiveField(null)}
           icon={<Lock className="h-4 w-4" />}
           validationState={passwordState}
           successMessage="كلمة المرور جاهزة"
@@ -252,6 +274,8 @@ export default function SignupPage() {
           placeholder="••••••••"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
+          onFocus={() => setActiveField("confirm")}
+          onBlur={() => setActiveField(null)}
           icon={<Lock className="h-4 w-4" />}
           validationState={confirmState}
           successMessage="كلمتا المرور متطابقتين"

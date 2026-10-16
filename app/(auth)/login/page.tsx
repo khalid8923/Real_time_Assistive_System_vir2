@@ -3,14 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Mail,
-  Lock,
-  Loader2,
-  LogIn,
-  ShieldAlert,
-  Sparkles,
-} from "lucide-react";
+import { Mail, Lock, Loader2, LogIn, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
@@ -21,6 +14,9 @@ import {
   AuthError,
   type ValidationState,
 } from "@/components/auth/AuthForm";
+import AuthCompanion, {
+  type AuthCompanionState,
+} from "@/components/auth/AuthCompanion";
 import { useLoginRateLimit } from "@/hooks/useLoginRateLimit";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -33,6 +29,10 @@ export default function LoginPage() {
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [succeeded, setSucceeded] = React.useState(false);
+  const [activeField, setActiveField] = React.useState<
+    "email" | "password" | null
+  >(null);
 
   const [emailState, setEmailState] = React.useState<ValidationState>("idle");
   const [passwordState, setPasswordState] =
@@ -66,6 +66,18 @@ export default function LoginPage() {
     return () => clearTimeout(t);
   }, [password]);
 
+  const companionState: AuthCompanionState = succeeded
+    ? "success"
+    : loading
+    ? "submitting"
+    : error
+    ? "error"
+    : activeField === "email"
+    ? "email-focus"
+    : activeField === "password"
+    ? "password-focus"
+    : "idle";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -98,13 +110,11 @@ export default function LoginPage() {
 
         const msg = signInError.message?.toLowerCase() || "";
         if (msg.includes("invalid") || msg.includes("credential")) {
-          if (remaining > 0) {
-            setError(
-              `الإيميل أو كلمة المرور غير صحيحة. فاضل ${remaining} محاولة.`
-            );
-          } else {
-            setError("تم قفل الحساب مؤقتاً لمدة دقيقة.");
-          }
+          setError(
+            remaining > 0
+              ? `الإيميل أو كلمة المرور غير صحيحة. فاضل ${remaining} محاولة.`
+              : "تم قفل الحساب مؤقتاً لمدة دقيقة."
+          );
         } else {
           setError(signInError.message || "حصل خطأ أثناء تسجيل الدخول.");
         }
@@ -113,8 +123,13 @@ export default function LoginPage() {
       }
 
       rateLimit.registerSuccess();
+      setSucceeded(true);
       document.cookie =
         "guest_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+      // Let the success animation play
+      await new Promise((r) => setTimeout(r, 900));
+
       toast.success("تم تسجيل الدخول بنجاح");
       router.push("/");
       router.refresh();
@@ -129,10 +144,7 @@ export default function LoginPage() {
 
   return (
     <div>
-      <header className="mb-6 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-accent-1 shadow-lg shadow-primary/30">
-          <Sparkles className="h-6 w-6 text-white" />
-        </div>
+      <header className="mb-4 text-center">
         <h2 className="text-xl font-bold text-foreground">
           أهلاً بيك تاني 👋
         </h2>
@@ -140,6 +152,8 @@ export default function LoginPage() {
           سجّل دخولك عشان تكمل المحاضرة
         </p>
       </header>
+
+      <AuthCompanion state={companionState} className="my-4" />
 
       {locked && (
         <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm">
@@ -160,12 +174,13 @@ export default function LoginPage() {
 
         <AuthInput
           ref={emailRef}
-          label="إيميل الجامعة"
+          label="الإيميل"
           name="email"
           type="email"
-          placeholder="student@university.edu.eg"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          onFocus={() => setActiveField("email")}
+          onBlur={() => setActiveField(null)}
           icon={<Mail className="h-4 w-4" />}
           validationState={emailState}
           successMessage="الإيميل شكله صح"
@@ -181,6 +196,8 @@ export default function LoginPage() {
           placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onFocus={() => setActiveField("password")}
+          onBlur={() => setActiveField(null)}
           icon={<Lock className="h-4 w-4" />}
           validationState={passwordState}
           successMessage="كلمة المرور جاهزة"
@@ -219,23 +236,14 @@ export default function LoginPage() {
         </Button>
       </AuthForm>
 
-      <div className="mb-4 mt-6 text-center">
-        <Link
-          href="/login/magic-link"
-          className="text-xs font-medium text-primary hover:underline"
-        >
-          ✨ أو سجّل دخول بدون باسورد (Magic Link)
-        </Link>
-      </div>
-
       <p className="mt-4 text-center text-sm text-muted-foreground">
-        معندكش حساب؟{" "}
+        ليس لديك حساب؟{" "}
         <Link href="/signup" className="font-bold text-primary hover:underline">
-          أنشئ حساب جديد
+          أنشئ حساباً جديداً
         </Link>
       </p>
 
-      <div className="mt-6 space-y-3 border-t border-border pt-5">
+      <div className="mt-6 border-t border-border pt-5">
         <button
           type="button"
           onClick={() => {
@@ -246,8 +254,6 @@ export default function LoginPage() {
         >
           🚀 الدخول التجريبي (بدون حساب)
         </button>
-
-        {/* ✅ Admin link */}
       </div>
     </div>
   );

@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { cn } from "@/lib/utils";
 
 export type AuthCompanionState =
   | "idle"
@@ -22,198 +21,151 @@ export default function AuthCompanion({
   state = "idle",
   className,
 }: AuthCompanionProps) {
-  const reduced = useReducedMotion();
+  const reduceMotion = useReducedMotion();
 
-  const accent =
-    state === "error"
-      ? "var(--destructive)"
-      : state === "success"
-        ? "#3ec972"
-        : state === "password-visible"
-          ? "var(--mark, #f7e28b)"
-          : state === "idle"
-            ? "var(--muted-foreground)"
-            : "var(--primary)";
+  const accentMap: Record<AuthCompanionState, string> = {
+    idle: "var(--primary)",
+    "email-focus": "var(--accent-2, #67bfff)",
+    "password-focus": "var(--primary)",
+    "password-visible": "var(--mark, #f0bb33)",
+    error: "var(--destructive, #ff5656)",
+    submitting: "var(--primary)",
+    success: "var(--green-500, #3ec972)",
+  };
 
-  const tilt =
-    state === "email-focus" ? -20 : state === "password-focus" ? 25 : 0;
+  const tiltMap: Record<AuthCompanionState, number> = {
+    idle: 0,
+    "email-focus": -20,
+    "password-focus": 25,
+    "password-visible": 25,
+    error: 0,
+    submitting: 0,
+    success: 0,
+  };
 
-  const leftX =
-    state === "email-focus" ? 62 : state === "password-focus" ? 78 : 70;
-  const rightX =
-    state === "email-focus" ? 122 : state === "password-focus" ? 138 : 130;
-  const dotsOpacity = state === "idle" ? 0.35 : 0.95;
+  const eyesMap: Record<AuthCompanionState, { x: number; y: number }> = {
+    idle: { x: 0, y: 0 },
+    "email-focus": { x: -4, y: -2 },
+    "password-focus": { x: 4, y: 2 },
+    "password-visible": { x: 4, y: 2 },
+    error: { x: 0, y: 0 },
+    submitting: { x: 0, y: 0 },
+    success: { x: 0, y: 0 },
+  };
+
+  const rotationMap: Record<AuthCompanionState, number> = {
+    idle: 80,
+    "email-focus": 60,
+    "password-focus": 60,
+    "password-visible": 60,
+    error: 60,
+    submitting: 4,
+    success: 20,
+  };
+
+  const accent = accentMap[state];
+  const tilt = tiltMap[state];
+  const eyes = eyesMap[state];
+  const rotationDuration = rotationMap[state];
+
+  const softTransition = {
+    duration: reduceMotion ? 0 : 0.5,
+    ease: [0.2, 0.7, 0.2, 1] as [number, number, number, number],
+  };
+
+  const shake =
+    state === "error" && !reduceMotion
+      ? { x: [0, -6, 6, -6, 6, -3, 3, 0] }
+      : { x: 0 };
 
   return (
     <motion.div
-      className={cn("relative aspect-square select-none", className)}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, ease: [0.2, 0.7, 0.2, 1] }}
       aria-hidden="true"
+      animate={shake}
+      transition={{ duration: state === "error" ? 0.4 : 0 }}
+      className={
+        "relative mx-auto flex w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 items-center justify-center " +
+        (className ?? "")
+      }
     >
-      <motion.svg
-        viewBox="0 0 200 200"
-        className="h-full w-full overflow-visible"
-        animate={
-          state === "error" && !reduced
-            ? { x: [0, -5, 5, -4, 4, 0] }
-            : { x: 0 }
-        }
-        transition={{ duration: 0.4, ease: "easeOut" }}
-      >
+      <svg viewBox="0 0 200 200" className="h-full w-full" style={{ color: accent }}>
+        {/* Outer dashed circle */}
         <motion.g
-          style={{ originX: 0.5, originY: 0.5 }}
-          animate={reduced ? {} : { rotate: 360 }}
-          transition={
-            reduced
-              ? {}
-              : state === "submitting"
-                ? { duration: 4, repeat: Infinity, ease: "linear" }
-                : { duration: 80, repeat: Infinity, ease: "linear" }
-          }
+          style={{ transformOrigin: "100px 100px" }}
+          animate={reduceMotion ? {} : { rotate: 360 }}
+          transition={{
+            duration: rotationDuration,
+            repeat: Infinity,
+            ease: "linear",
+          }}
         >
           <circle
             cx="100"
             cy="100"
-            r="92"
+            r="88"
             fill="none"
-            stroke={accent}
-            strokeWidth="1"
-            strokeDasharray="2 6"
-            opacity="0.5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeDasharray="4 8"
+            opacity="0.4"
           />
         </motion.g>
 
-        <circle
-          cx="100"
-          cy="100"
-          r="80"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          className="text-border"
-          opacity="0.35"
-        />
-
-        <motion.circle
-          cx="100"
-          cy="100"
-          r="62"
-          fill="none"
-          stroke={accent}
-          strokeWidth="1.5"
-          animate={
-            reduced
-              ? { opacity: 0.85 }
-              : state === "idle"
-                ? { opacity: [0.5, 0.85, 0.5] }
-                : { opacity: 0.95 }
-          }
-          transition={
-            reduced
-              ? {}
-              : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
-          }
-        />
-
-        <line
-          x1="42"
-          y1="100"
-          x2="158"
-          y2="100"
-          stroke={accent}
-          strokeWidth="0.5"
-          opacity="0.2"
-        />
-
-        <motion.g
-          style={{ originX: 0.5, originY: 0.5 }}
-          animate={{
-            rotate: reduced ? 0 : tilt,
-            scale: state === "success" ? 1.1 : 1,
-          }}
-          transition={{ duration: 0.5, ease: [0.2, 0.7, 0.2, 1] }}
-        >
-          <path
-            d="M 100 66 L 118 100 L 100 134 L 82 100 Z"
-            fill={accent}
-            opacity="0.12"
-          />
-          <path
-            d="M 100 66 L 118 100 L 100 134 L 82 100 Z"
+        {/* Idle pulse */}
+        {state === "idle" && !reduceMotion && (
+          <motion.circle
+            cx="100"
+            cy="100"
+            r="88"
             fill="none"
-            stroke={accent}
-            strokeWidth="1.5"
+            stroke="currentColor"
+            strokeWidth="1"
+            animate={{ r: [88, 100, 88], opacity: [0, 0.18, 0] }}
+            transition={{
+              duration: 3.5,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        )}
+
+        {/* Diamond */}
+        <motion.g
+          style={{ transformOrigin: "100px 100px" }}
+          animate={{ rotate: tilt }}
+          transition={softTransition}
+        >
+          <polygon
+            points="100,52 148,100 100,148 52,100"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
             strokeLinejoin="round"
           />
-          <line
-            x1="100"
-            y1="66"
-            x2="100"
-            y2="134"
-            stroke={accent}
-            strokeWidth="0.75"
-            opacity="0.5"
-          />
-          <line
-            x1="82"
-            y1="100"
-            x2="118"
-            y2="100"
-            stroke={accent}
-            strokeWidth="0.75"
-            opacity="0.5"
-          />
-          <circle cx="100" cy="100" r="2.5" fill={accent} />
+          <circle cx="100" cy="100" r="4" fill="currentColor" opacity="0.7" />
         </motion.g>
 
-        <motion.circle
-          cx={70}
-          cy={68}
-          r="3.5"
-          fill={accent}
-          initial={{ opacity: 0.35 }}
-          animate={{ cx: reduced ? 70 : leftX, opacity: dotsOpacity }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-        />
-        <motion.circle
-          cx={130}
-          cy={68}
-          r="3.5"
-          fill={accent}
-          initial={{ opacity: 0.35 }}
-          animate={{ cx: reduced ? 130 : rightX, opacity: dotsOpacity }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-        />
+        {/* Eyes */}
+        <motion.g animate={{ x: eyes.x, y: eyes.y }} transition={softTransition}>
+          <circle cx="86" cy="42" r="3.5" fill="currentColor" />
+          <circle cx="114" cy="42" r="3.5" fill="currentColor" />
+        </motion.g>
 
-        <motion.path
-          d="M 78 100 L 94 116 L 124 84"
-          fill="none"
-          stroke={accent}
-          strokeWidth="3.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          initial={false}
-          animate={{
-            opacity: state === "success" ? 1 : 0,
-            pathLength: state === "success" ? 1 : 0,
-          }}
-          transition={{ duration: 0.45, ease: "easeOut" }}
-        />
-      </motion.svg>
-
-      {state === "success" && !reduced && (
-        <motion.div
-          className="pointer-events-none absolute inset-0 rounded-full"
-          style={{
-            background: "radial-gradient(circle, #3ec97280 0%, transparent 70%)",
-          }}
-          initial={{ opacity: 0.6, scale: 0.9 }}
-          animate={{ opacity: 0, scale: 1.35 }}
-          transition={{ duration: 0.9, ease: "easeOut" }}
-        />
-      )}
+        {/* Success checkmark */}
+        {state === "success" && !reduceMotion && (
+          <motion.path
+            d="M 78 100 L 94 116 L 126 82"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+          />
+        )}
+      </svg>
     </motion.div>
   );
 }
