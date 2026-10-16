@@ -164,7 +164,7 @@ export default function FloatingChat({ transcript }: FloatingChatProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="fixed bottom-20 left-6 z-50 flex h-125 w-[min(380px,calc(100vw-3rem))] flex-col overflow-hidden rounded-2xl border border-border/60 bg-background/95 shadow-2xl backdrop-blur-xl lg:bottom-6"
+            className="fixed bottom-20 left-6 z-50 flex h-125 max-h-[80vh] w-[min(380px,calc(100vw-3rem))] flex-col overflow-hidden rounded-2xl border border-border/60 bg-background/95 shadow-2xl backdrop-blur-xl lg:bottom-6"
             dir="rtl"
           >
             {/* Header (drag handle) */}

@@ -359,7 +359,7 @@ export default function MindMap({ topics }: MindMapProps) {
           </div>
         ) : (
           <>
-            <div className="h-150 w-full overflow-hidden rounded-xl border border-border bg-muted/20">
+            <div className="h-[55vh] w-full overflow-hidden sm:h-[65vh] lg:h-150 rounded-xl border border-border bg-muted/20">
               <ReactFlow
                 nodes={nodes}
                 edges={edges}

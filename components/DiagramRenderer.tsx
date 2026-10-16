@@ -342,7 +342,7 @@ export default function DiagramRenderer({
   const emphasisSet = new Set(diagram.emphasis ?? []);
 
   return (
-    <div className="rounded-xl border border-border bg-muted/10">
+    <div className="overflow-x-auto rounded-xl border border-border bg-muted/10">
       {diagram.shape === "sequence" && (
         <SequenceRenderer diagram={diagram} emphasisSet={emphasisSet} />
       )}
