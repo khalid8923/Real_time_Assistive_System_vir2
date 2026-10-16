@@ -22,7 +22,6 @@ export default function QuickActions({
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.repeat) return;
-
       const t = e.target;
       if (
         t instanceof HTMLElement &&
@@ -32,13 +31,8 @@ export default function QuickActions({
         return;
       }
       if (disabled) return;
-      if (e.code === "KeyQ") {
-        e.preventDefault();
-        onAsk();
-      } else if (e.code === "KeyR") {
-        e.preventDefault();
-        onRepeat();
-      }
+      if (e.code === "KeyQ") { e.preventDefault(); onAsk(); }
+      else if (e.code === "KeyR") { e.preventDefault(); onRepeat(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -49,7 +43,7 @@ export default function QuickActions({
       role="toolbar"
       aria-label="إجراءات سريعة"
       className={cn(
-        "pointer-events-none fixed bottom-6 left-4 z-40 hidden flex-col gap-2 lg:flex",
+        "pointer-events-none fixed left-0 top-1/2 z-40 hidden -translate-y-1/2 flex-col gap-1.5 py-2 lg:flex",
         className
       )}
     >
@@ -61,13 +55,12 @@ export default function QuickActions({
         aria-keyshortcuts="Q"
         title="عايز أسأل (Q)"
         className={cn(
-          "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card shadow-lg transition-all",
-          "hover:scale-105 hover:border-primary hover:bg-primary hover:text-primary-foreground",
+          "pointer-events-auto group flex h-10 w-6 items-center justify-center rounded-r-full border border-l-0 border-border bg-border shadow-sm transition-all duration-200 hover:w-16 hover:bg-primary",
           "disabled:cursor-not-allowed disabled:opacity-50",
-          askRaised && "border-primary bg-primary text-primary-foreground"
+          askRaised && "w-16 bg-primary"
         )}
       >
-        <Hand className="size-4" strokeWidth={1.75} />
+        <Hand className="size-3.5 text-foreground/70 transition-colors group-hover:text-primary-foreground" strokeWidth={2} />
       </button>
 
       <button
@@ -77,12 +70,11 @@ export default function QuickActions({
         aria-keyshortcuts="R"
         title="أعد الشرح (R)"
         className={cn(
-          "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card shadow-lg transition-all",
-          "hover:scale-105 hover:border-primary hover:bg-primary hover:text-primary-foreground",
+          "pointer-events-auto group flex h-10 w-6 items-center justify-center rounded-r-full border border-l-0 border-border bg-border shadow-sm transition-all duration-200 hover:w-16 hover:bg-primary",
           "disabled:cursor-not-allowed disabled:opacity-50"
         )}
       >
-        <RotateCcw className="size-4" strokeWidth={1.75} />
+        <RotateCcw className="size-3.5 text-foreground/70 transition-colors group-hover:text-primary-foreground" strokeWidth={2} />
       </button>
     </div>
   );

@@ -139,9 +139,9 @@ export default function FloatingChat({ transcript }: FloatingChatProps) {
             transition={{ type: "spring", stiffness: 380, damping: 25 }}
             onClick={() => setIsOpen(true)}
             aria-label="فتح المساعد الذكي"
-            className="fixed bottom-20 left-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-linear-to-br from-primary to-accent-1 text-white shadow-lg shadow-primary/30 transition-transform hover:scale-105 active:scale-95 lg:bottom-6"
+            className="fixed bottom-6 left-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-linear-to-br from-primary to-accent-1 text-white shadow-xl shadow-primary/40 transition-all hover:scale-110 hover:shadow-2xl hover:shadow-primary/50 active:scale-95"
           >
-            <RobotIcon className="h-8 w-8" />
+            <RobotIcon className="h-8 w-8" animated />
             {messages.length > 0 && (
               <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm">
                 {messages.length}
