@@ -124,8 +124,17 @@ function CycleRenderer({
 }) {
   const { nodes } = diagram;
   const count = nodes.length;
-  const radius = 130;
-  const size = 340;
+  const [size, setSize] = React.useState(340);
+  React.useEffect(() => {
+    const update = () => {
+      if (typeof window === "undefined") return;
+      setSize(Math.min(340, window.innerWidth - 60));
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  const radius = size * 0.38;
   const center = size / 2;
 
   return (

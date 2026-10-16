@@ -368,7 +368,7 @@ export default function MindMap({ topics }: MindMapProps) {
                 nodesConnectable={false}
                 fitView
                 fitViewOptions={{ padding: 0.3 }}
-                minZoom={0.1}
+                minZoom={0.05}
                 maxZoom={1.5}
               >
                 <Background

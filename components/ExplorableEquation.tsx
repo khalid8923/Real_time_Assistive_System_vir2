@@ -181,7 +181,7 @@ export default function ExplorableEquation({ equation }: ExplorableEquationProps
                   setValues((prev) => ({ ...prev, [v.name]: val }));
                 }}
                 onFocus={() => setActiveVar(v.name)}
-                className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
+                className="h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary sm:h-1.5"
               />
               <div className="mt-0.5 flex justify-between text-[9px] text-muted-foreground/50 font-mono" dir="ltr">
                 <span>{v.min}</span>
