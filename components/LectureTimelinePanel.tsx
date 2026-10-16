@@ -76,7 +76,7 @@ export default function LectureTimelinePanel({
   return (
     <div className="rounded-2xl border border-border bg-card shadow-xs">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-3 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-linear-to-br from-emerald-500 to-sky-500">
             <Activity className="h-4 w-4 text-white" />
@@ -99,7 +99,7 @@ export default function LectureTimelinePanel({
         )}
       </div>
 
-      <div className="p-5">
+      <div className="p-3 sm:p-5">
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 py-14 text-center">
             <Sparkles className="h-8 w-8 text-muted-foreground/40" />

@@ -101,7 +101,7 @@ export default function FlashcardsPanel({ transcript }: FlashcardsPanelProps) {
 
   return (
     <div className="rounded-2xl border border-border bg-card shadow-xs">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-3 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
             <Layers className="h-4 w-4 text-primary" />
@@ -149,7 +149,7 @@ export default function FlashcardsPanel({ transcript }: FlashcardsPanelProps) {
         </div>
       </div>
 
-      <div className="p-5">
+      <div className="p-3 sm:p-5">
         <AnimatePresence>
           {error && (
             <motion.p

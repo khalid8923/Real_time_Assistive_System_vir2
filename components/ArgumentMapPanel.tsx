@@ -111,7 +111,7 @@ export default function ArgumentMapPanel({ transcript }: ArgumentMapPanelProps) 
 
   return (
     <div className="rounded-2xl border border-border bg-card shadow-xs">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-3 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-linear-to-br from-teal-500 to-cyan-500">
             <MessageSquare className="h-4 w-4 text-white" />
@@ -159,7 +159,7 @@ export default function ArgumentMapPanel({ transcript }: ArgumentMapPanelProps) 
         </div>
       </div>
 
-      <div className="p-5">
+      <div className="p-3 sm:p-5">
         <AnimatePresence mode="wait">
           {error && (
             <motion.div
