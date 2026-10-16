@@ -421,7 +421,7 @@ export default function SpeechInput({
       </AnimatePresence>
 
       {/* ==================== CONTROLS ==================== */}
-      <div className="sticky bottom-4 z-30 flex items-center gap-3 rounded-2xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur-xl sm:flex-row-reverse sm:justify-between">
+      <div className="sticky bottom-20 z-30 flex items-center gap-3 rounded-2xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur-xl sm:bottom-4 sm:flex-row-reverse sm:justify-between">
         <Button
           type="button"
           variant={isListening ? "destructive" : "default"}

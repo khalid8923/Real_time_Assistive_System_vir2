@@ -173,7 +173,7 @@ export default function AppShell({
       </header>
 
       {/* BODY */}
-      <div className="mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-3 py-4 sm:px-4 sm:py-5 lg:px-8">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-3 py-4 pb-20 sm:px-4 sm:py-5 sm:pb-6 lg:px-8 lg:pb-6">
         {view === "student" && (
           <AppSidebar
             activeFeature={activeFeature}
