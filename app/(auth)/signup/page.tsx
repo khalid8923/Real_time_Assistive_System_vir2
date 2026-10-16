@@ -21,10 +21,8 @@ import {
   AuthInput,
   AuthPasswordInput,
   AuthError,
-  AuthDivider,
   type ValidationState,
 } from "@/components/auth/AuthForm";
-import GoogleButton from "@/components/auth/GoogleButton";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

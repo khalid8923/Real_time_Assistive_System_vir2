@@ -19,10 +19,8 @@ import {
   AuthInput,
   AuthPasswordInput,
   AuthError,
-  AuthDivider,
   type ValidationState,
 } from "@/components/auth/AuthForm";
-import GoogleButton from "@/components/auth/GoogleButton";
 import { useLoginRateLimit } from "@/hooks/useLoginRateLimit";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -143,10 +141,6 @@ export default function LoginPage() {
         </p>
       </header>
 
-      <GoogleButton mode="login" />
-
-      <AuthDivider label="أو بالإيميل" />
-
       {locked && (
         <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -254,15 +248,6 @@ export default function LoginPage() {
         </button>
 
         {/* ✅ Admin link */}
-        <button
-          type="button"
-          onClick={() => {
-            window.location.href = "/admin/login";
-          }}
-          className="w-full text-center text-[10px] font-medium text-muted-foreground/60 transition-colors hover:text-violet-500"
-        >
-          🛡️ دخول الأدمن
-        </button>
       </div>
     </div>
   );
