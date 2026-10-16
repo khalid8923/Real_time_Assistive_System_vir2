@@ -9,27 +9,27 @@ export default function FloatingSoundWidget() {
   const [open, setOpen] = React.useState(false);
 
   return (
-    <div className="pointer-events-none fixed left-3 top-1/2 z-40 hidden -translate-y-1/2 lg:block">
+    <div className="pointer-events-none fixed left-0 top-1/2 z-40 hidden -translate-y-1/2 lg:block">
       <AnimatePresence initial={false} mode="wait">
         {open ? (
           <motion.div
             key="expanded"
-            initial={{ opacity: 0, x: -16 }}
+            initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -16 }}
+            exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="pointer-events-auto w-52 overflow-hidden rounded-md border bg-chrome shadow-md"
+            className="pointer-events-auto ml-0 w-60 overflow-hidden rounded-r-2xl border border-l-0 border-border bg-card shadow-xl"
             dir="rtl"
           >
-            <div className="flex h-8 items-center justify-between border-b px-2.5">
-              <span className="text-[11px] font-bold">مراقبة الصوت</span>
+            <div className="flex h-9 items-center justify-between border-b border-border px-3">
+              <span className="text-xs font-bold text-foreground">مراقبة الصوت</span>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="إغلاق"
-                className="flex size-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
+                className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
-                <X className="size-3" strokeWidth={1.5} />
+                <X className="size-3.5" strokeWidth={1.5} />
               </button>
             </div>
             <div className="p-2">
@@ -39,17 +39,20 @@ export default function FloatingSoundWidget() {
         ) : (
           <motion.button
             key="collapsed"
-            initial={{ opacity: 0, x: -16 }}
+            initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -16 }}
+            exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
             type="button"
             onClick={() => setOpen(true)}
             aria-label="فتح مراقبة الصوت"
             title="مراقبة الصوت"
-            className="pointer-events-auto flex size-10 items-center justify-center rounded-md border bg-chrome text-muted-foreground shadow-sm transition-colors hover:bg-hover hover:text-foreground"
+            className="pointer-events-auto group relative flex h-20 w-2 items-center justify-center rounded-r-full border border-l-0 border-border bg-card transition-all hover:w-8 hover:bg-primary hover:text-primary-foreground"
           >
-            <Volume2 className="size-4" strokeWidth={1.5} />
+            <Volume2
+              className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+              strokeWidth={1.75}
+            />
           </motion.button>
         )}
       </AnimatePresence>

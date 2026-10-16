@@ -2,9 +2,15 @@
 
 import * as React from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, Loader2, LogIn, ShieldAlert } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Loader2,
+  LogIn,
+  ShieldAlert,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
@@ -126,14 +132,9 @@ export default function LoginPage() {
   return (
     <div>
       <header className="mb-6 text-center">
-        <Image
-          src="/logo.png"
-          alt="CaptionBridge"
-          width={48}
-          height={48}
-          className="mx-auto mb-3 h-12 w-12 rounded-xl shadow-lg shadow-primary/20"
-          priority
-        />
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-accent-1 shadow-lg shadow-primary/30">
+          <Sparkles className="h-6 w-6 text-white" />
+        </div>
         <h2 className="text-xl font-bold text-foreground">
           أهلاً بيك تاني 👋
         </h2>
@@ -141,6 +142,11 @@ export default function LoginPage() {
           سجّل دخولك عشان تكمل المحاضرة
         </p>
       </header>
+
+      <GoogleButton mode="login" />
+
+      <AuthDivider label="أو بالإيميل" />
+
       {locked && (
         <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -160,9 +166,10 @@ export default function LoginPage() {
 
         <AuthInput
           ref={emailRef}
-          label="الإيميل"
+          label="إيميل الجامعة"
           name="email"
           type="email"
+          placeholder="student@university.edu.eg"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           icon={<Mail className="h-4 w-4" />}
@@ -218,10 +225,19 @@ export default function LoginPage() {
         </Button>
       </AuthForm>
 
+      <div className="mb-4 mt-6 text-center">
+        <Link
+          href="/login/magic-link"
+          className="text-xs font-medium text-primary hover:underline"
+        >
+          ✨ أو سجّل دخول بدون باسورد (Magic Link)
+        </Link>
+      </div>
+
       <p className="mt-4 text-center text-sm text-muted-foreground">
-        ليس لديك حساب؟{" "}
+        معندكش حساب؟{" "}
         <Link href="/signup" className="font-bold text-primary hover:underline">
-          أنشئ حساباً جديداً
+          أنشئ حساب جديد
         </Link>
       </p>
 
@@ -237,6 +253,7 @@ export default function LoginPage() {
           🚀 الدخول التجريبي (بدون حساب)
         </button>
 
+        {/* ✅ Admin link */}
         <button
           type="button"
           onClick={() => {

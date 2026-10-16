@@ -1,0 +1,945 @@
+﻿
+========== 1) FloatingSoundWidget ==========
+╪º┘ä╪¡╪¼┘à: 2292
+---
+"use client";
+
+import * as React from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Volume2, X } from "lucide-react";
+import SoundIndicator from "@/components/SoundIndicator";
+
+export default function FloatingSoundWidget() {
+  const [open, setOpen] = React.useState(false);
+
+  return (
+    <div className="pointer-events-none fixed left-3 top-1/2 z-40 hidden -translate-y-1/2 lg:block">
+      <AnimatePresence initial={false} mode="wait">
+        {open ? (
+          <motion.div
+            key="expanded"
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="pointer-events-auto w-52 overflow-hidden rounded-md border bg-chrome shadow-md"
+            dir="rtl"
+          >
+            <div className="flex h-8 items-center justify-between border-b px-2.5">
+              <span className="text-[11px] font-bold">┘à╪▒╪º┘é╪¿╪⌐ ╪º┘ä╪╡┘ê╪¬</span>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="╪Ñ╪║┘ä╪º┘é"
+                className="flex size-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
+              >
+                <X className="size-3" strokeWidth={1.5} />
+              </button>
+            </div>
+            <div className="p-2">
+              <SoundIndicator />
+            </div>
+          </motion.div>
+        ) : (
+          <motion.button
+            key="collapsed"
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="┘ü╪¬╪¡ ┘à╪▒╪º┘é╪¿╪⌐ ╪º┘ä╪╡┘ê╪¬"
+            title="┘à╪▒╪º┘é╪¿╪⌐ ╪º┘ä╪╡┘ê╪¬"
+            className="pointer-events-auto flex size-10 items-center justify-center rounded-md border bg-chrome text-muted-foreground shadow-sm transition-colors hover:bg-hover hover:text-foreground"
+          >
+            <Volume2 className="size-4" strokeWidth={1.5} />
+          </motion.button>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+========== 2) QuickActions ==========
+╪º┘ä╪¡╪¼┘à: 5821
+---
+"use client";
+
+import * as React from "react";
+import { Hand, RotateCcw, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface QuickActionsProps {
+  onAsk: () => void;
+  onRepeat: () => void;
+  askRaised?: boolean;
+  disabled?: boolean;
+  className?: string;
+}
+
+export default function QuickActions({
+  onAsk,
+  onRepeat,
+  askRaised = false,
+  disabled = false,
+  className,
+}: QuickActionsProps) {
+  const [paletteOpen, setPaletteOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.code === "KeyK") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+        return;
+      }
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.repeat) return;
+
+      const t = e.target;
+      if (
+        t instanceof HTMLElement &&
+        (t.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))
+      ) {
+        return;
+      }
+      if (disabled) return;
+      if (e.code === "KeyQ") {
+        e.preventDefault();
+        onAsk();
+      } else if (e.code === "KeyR") {
+        e.preventDefault();
+        onRepeat();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onAsk, onRepeat, disabled]);
+
+  return (
+    <>
+      <div
+        role="toolbar"
+        aria-label="╪Ñ╪¼╪▒╪º╪í╪º╪¬ ╪│╪▒┘è╪╣╪⌐"
+        className={cn(
+          "mx-auto flex h-11 w-full max-w-[1600px] items-center gap-2 px-4 sm:px-6 lg:px-8",
+          className
+        )}
+      >
+        <button
+          type="button"
+          onClick={onAsk}
+          disabled={disabled}
+          aria-pressed={askRaised || undefined}
+          aria-keyshortcuts="Q"
+          title="╪│╪¼┘æ┘ä ╪▒┘ü╪╣ ┘è╪»┘â (Q)"
+          className={cn(
+            "inline-flex h-8 items-center gap-2 rounded-md border border-input bg-card px-2.5 text-xs font-medium transition-colors",
+            "hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50",
+            "aria-pressed:border-primary aria-pressed:bg-wash aria-pressed:text-primary"
+          )}
+        >
+          <Hand className="size-3.5" strokeWidth={1.5} />
+          <span>╪╣╪º┘è╪▓ ╪ú╪│╪ú┘ä</span>
+          <kbd className="kbd hidden sm:inline-block">Q</kbd>
+        </button>
+
+        <button
+          type="button"
+          onClick={onRepeat}
+          disabled={disabled}
+          aria-keyshortcuts="R"
+          title="╪º╪╖┘ä╪¿ ╪Ñ╪╣╪º╪»╪⌐ ╪ó╪«╪▒ ┘å┘é╪╖╪⌐ (R)"
+          className={cn(
+            "inline-flex h-8 items-center gap-2 rounded-md border border-input bg-card px-2.5 text-xs font-medium transition-colors",
+            "hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
+          )}
+        >
+          <RotateCcw className="size-3.5" strokeWidth={1.5} />
+          <span>╪ú╪╣╪» ╪º┘ä╪┤╪▒╪¡</span>
+          <kbd className="kbd hidden sm:inline-block">R</kbd>
+        </button>
+
+        <span className="flex-1" />
+
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          aria-haspopup="dialog"
+          aria-keyshortcuts="Control+K Meta+K"
+          className="inline-flex h-8 items-center gap-2 rounded-md border border-input px-2.5 text-xs text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
+        >
+          <Search className="size-3.5" strokeWidth={1.5} />
+          <span className="hidden sm:inline">╪º┘ä╪ú┘ê╪º┘à╪▒</span>
+          <kbd className="kbd hidden sm:inline-block">Ctrl K</kbd>
+        </button>
+      </div>
+
+      {paletteOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setPaletteOpen(false)}
+          className="fixed inset-0 z-[100] flex items-start justify-center bg-black/50 px-4 pt-[18vh]"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md overflow-hidden rounded-lg border bg-card shadow-lg"
+          >
+            <div className="flex items-center gap-2 border-b px-3">
+              <Search className="size-4 text-muted-foreground" strokeWidth={1.5} />
+              <input
+                autoFocus
+                placeholder="╪º┘â╪¬╪¿ ╪º╪│┘à ╪º┘ä╪ú┘à╪▒..."
+                className="h-11 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setPaletteOpen(false);
+                }}
+              />
+              <kbd className="kbd">Esc</kbd>
+            </div>
+            <ul className="p-1">
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaletteOpen(false);
+                    onAsk();
+                  }}
+                  className="flex h-9 w-full items-center gap-3 rounded-md px-3 text-start text-sm hover:bg-wash"
+                >
+                  <Hand className="size-4 text-muted-foreground" strokeWidth={1.5} />
+                  <span>╪╣╪º┘è╪▓ ╪ú╪│╪ú┘ä</span>
+                  <span className="flex-1" />
+                  <kbd className="kbd">Q</kbd>
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaletteOpen(false);
+                    onRepeat();
+                  }}
+                  className="flex h-9 w-full items-center gap-3 rounded-md px-3 text-start text-sm hover:bg-wash"
+                >
+                  <RotateCcw className="size-4 text-muted-foreground" strokeWidth={1.5} />
+                  <span>╪ú╪╣╪» ╪º┘ä╪┤╪▒╪¡</span>
+                  <span className="flex-1" />
+                  <kbd className="kbd">R</kbd>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+========== 3) AppShell ==========
+╪º┘ä╪¡╪¼┘à: 7565
+---
+"use client";
+
+import * as React from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { motion } from "motion/react";
+import { User } from "lucide-react";
+import { cn } from "@/lib/utils";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
+import AppSidebar from "@/components/AppSidebar";
+import FloatingSoundWidget from "@/components/FloatingSoundWidget";
+import { STUDENT_FEATURES, type FeatureId } from "@/lib/features";
+import { useSession } from "@/lib/auth-client";
+
+export type ViewMode = "student" | "teacher";
+
+interface AppShellProps {
+  children: React.ReactNode;
+  activeFeature: FeatureId;
+  onFeatureChange: (id: FeatureId) => void;
+  view: ViewMode;
+  onViewChange: (view: ViewMode) => void;
+  isLive?: boolean;
+  /** @deprecated kept for compatibility; unused */
+  sidebarOpen?: boolean;
+  /** @deprecated kept for compatibility; unused */
+  onToggleSidebar?: () => void;
+  onOpenLectures?: () => void;
+  footer?: React.ReactNode;
+}
+
+export default function AppShell({
+  children,
+  activeFeature,
+  onFeatureChange,
+  view,
+  onViewChange,
+  isLive = true,
+  onOpenLectures,
+  footer,
+}: AppShellProps) {
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
+  const { data: session } = useSession();
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const user = session?.user as { name?: string } | undefined;
+  const mobileFeatures = STUDENT_FEATURES.slice(0, 6);
+
+  return (
+    <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 w-full border-b bg-chrome/95 backdrop-blur-md">
+        <div className="mx-auto flex h-11 w-full max-w-[1600px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2.5">
+            <Link href="/" className="flex items-center gap-2">
+              <Image
+                src="/logo.png"
+                alt="CaptionBridge"
+                width={28}
+                height={28}
+                className="size-7 rounded-md"
+                priority
+              />
+              <span className="font-serif text-base font-bold leading-none" dir="ltr">
+                CaptionBridge
+              </span>
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div
+              role="status"
+              className="hidden items-center gap-1.5 text-xs sm:flex"
+            >
+              <span
+                aria-hidden
+                className={cn(
+                  "size-2 rounded-[2px]",
+                  isLive ? "bg-destructive" : "bg-muted-foreground"
+                )}
+              />
+              <span>{isLive ? "┘à╪¿╪º╪┤╪▒" : "┘à╪¬┘ê┘é┘ü"}</span>
+            </div>
+
+            <ThemeSwitcher />
+
+            <div
+              role="group"
+              aria-label="╪¬╪¿╪»┘è┘ä ┘ê╪º╪¼┘ç╪⌐ ╪º┘ä╪¬╪╖╪¿┘è┘é"
+              className="flex items-center overflow-hidden rounded-md border border-input"
+            >
+              <button
+                type="button"
+                onClick={() => onViewChange("student")}
+                aria-pressed={view === "student"}
+                className={cn(
+                  "h-7 px-2.5 text-xs font-medium transition-colors",
+                  view === "student"
+                    ? "bg-wash text-primary"
+                    : "text-muted-foreground hover:bg-hover hover:text-foreground"
+                )}
+              >
+                ╪╖╪º┘ä╪¿
+              </button>
+              <button
+                type="button"
+                onClick={() => onViewChange("teacher")}
+                aria-pressed={view === "teacher"}
+                className={cn(
+                  "h-7 border-s border-input px-2.5 text-xs font-medium transition-colors",
+                  view === "teacher"
+                    ? "bg-wash text-primary"
+                    : "text-muted-foreground hover:bg-hover hover:text-foreground"
+                )}
+              >
+                ╪»┘â╪¬┘ê╪▒
+              </button>
+            </div>
+
+            {mounted && user && (
+              <Link
+                href="/account"
+                aria-label="╪¡╪│╪º╪¿┘è"
+                title="╪¡╪│╪º╪¿┘è"
+                className="flex items-center gap-2 rounded-md border border-input bg-card p-0.5 pl-2.5 transition-colors hover:bg-hover"
+              >
+                <span className="hidden text-xs font-medium sm:block">
+                  {user.name?.split(" ")[0] || "╪¡╪│╪º╪¿┘è"}
+                </span>
+                <span className="flex size-6 items-center justify-center rounded-[4px] bg-primary text-[10px] font-bold text-primary-foreground">
+                  {(user.name || "╪ƒ").charAt(0).toUpperCase()}
+                </span>
+              </Link>
+            )}
+
+            {mounted && !user && (
+              <Link
+                href="/login"
+                aria-label="╪¡╪│╪º╪¿┘è"
+                title="╪¬╪│╪¼┘è┘ä ╪º┘ä╪»╪«┘ê┘ä"
+                className="flex size-7 items-center justify-center rounded-md border border-input bg-card text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
+              >
+                <User className="size-3.5" strokeWidth={1.5} />
+              </Link>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* BODY */}
+      <div className="mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-4 py-5 sm:px-6 lg:px-8">
+        {view === "student" && (
+          <AppSidebar
+            activeFeature={activeFeature}
+            onFeatureChange={onFeatureChange}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+            onOpenLectures={onOpenLectures}
+          />
+        )}
+
+        <main className="min-w-0 flex-1">
+          <motion.div
+            key={`${view}-${activeFeature}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15 }}
+          >
+            {children}
+          </motion.div>
+        </main>
+      </div>
+
+      {/* QUICK ACTIONS DOCK */}
+      {footer && (
+        <div className="sticky bottom-0 z-40 border-t bg-chrome/95 backdrop-blur-md">
+          {footer}
+        </div>
+      )}
+
+      <FloatingSoundWidget />
+
+      {/* MOBILE NAV */}
+      {view === "student" && (
+        <nav
+          dir="rtl"
+          className="sticky bottom-0 z-30 w-full border-t bg-chrome/95 backdrop-blur-md lg:hidden"
+        >
+          <div className="no-scrollbar flex items-center gap-1 overflow-x-auto px-2 py-1.5">
+            {mobileFeatures.map((feature) => {
+              const Icon = feature.icon;
+              const active = feature.id === activeFeature;
+              return (
+                <button
+                  key={feature.id}
+                  type="button"
+                  onClick={() => onFeatureChange(feature.id)}
+                  className={cn(
+                    "flex shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1 transition-colors",
+                    active
+                      ? "bg-wash text-primary"
+                      : "text-muted-foreground hover:bg-hover"
+                  )}
+                >
+                  <Icon className="size-4" strokeWidth={1.5} />
+                  <span className="text-[10px] font-medium">
+                    {feature.shortLabel}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      )}
+    </div>
+  );
+}
+
+========== 4) app/page.tsx ==========
+╪º┘ä╪¡╪¼┘à: 17120
+---
+"use client";
+
+import React, { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { Construction } from "lucide-react";
+import { toast } from "sonner";
+import AppShell, { type ViewMode } from "@/components/AppShell";
+import SpeechInput, { type AnalysisData } from "@/components/SpeechInput";
+import MindMap, { type MindMapTopic } from "@/components/MindMap";
+import GlossaryPanel, { type GlossaryTerm } from "@/components/GlossaryPanel";
+import SummaryPanel from "@/components/SummaryPanel";
+import KeywordsPanel from "@/components/KeywordsPanel";
+import FlashcardsPanel from "@/components/FlashcardsPanel";
+import ActionItemsPanel from "@/components/ActionItemsPanel";
+import ClassroomQuestionsPanel from "@/components/ClassroomQuestionsPanel";
+import ComparisonTablePanel from "@/components/ComparisonTablePanel";
+import AnalogyMapPanel from "@/components/AnalogyMapPanel";
+import EquationsPanel from "@/components/EquationsPanel";
+import SystemExplorerPanel from "@/components/SystemExplorerPanel";
+import VisualizeThisPanel from "@/components/VisualizeThisPanel";
+import CausalLoopPanel from "@/components/CausalLoopPanel";
+import ArgumentMapPanel from "@/components/ArgumentMapPanel";
+import LectureTimelinePanel from "@/components/LectureTimelinePanel";
+import FlowDiagramPanel from "@/components/FlowDiagramPanel";
+import InfographicPanel from "@/components/InfographicPanel";
+import FloatingChat from "@/components/FloatingChat";
+import QuickActions from "@/components/QuickActions";
+import ScrollToTop from "@/components/ScrollToTop";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import LecturesDrawer from "@/components/LecturesDrawer";
+import { getFeature, type FeatureId } from "@/lib/features";
+import { useSpeechTranscription } from "@/hooks/useSpeechTranscription";
+import type { SavedLecture } from "@/lib/db";
+import type { ActionItem, ClassroomQuestion } from "@/lib/ai-types";
+
+interface Notification {
+  id: number;
+  action: string;
+  time: string;
+}
+
+export default function Page() {
+  const [view, setView] = useState<ViewMode>("student");
+  const [activeFeature, setActiveFeature] = useState<FeatureId>("captions");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [lecturesOpen, setLecturesOpen] = useState(false);
+  const [loadedLecture, setLoadedLecture] = useState<SavedLecture | null>(null);
+
+  const speech = useSpeechTranscription();
+
+  const [allTopics, setAllTopics] = useState<MindMapTopic[]>([]);
+  const [allTerms, setAllTerms] = useState<GlossaryTerm[]>([]);
+  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
+  const [classroomQuestions, setClassroomQuestions] = useState<
+    ClassroomQuestion[]
+  >([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [lastSentFeedback, setLastSentFeedback] = useState<string | null>(null);
+  const [doctorReply, setDoctorReply] = useState<{
+    type: string;
+    at: number;
+  } | null>(null);
+  const [studentKey, setStudentKey] = useState<string>("");
+  const [flash, setFlash] = useState<{ mode: "ask" | "repeat"; key: number } | null>(null);
+
+  useEffect(() => {
+    try {
+      let key = localStorage.getItem("cb_student_key");
+      if (!key) {
+        key =
+          "sk_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+        localStorage.setItem("cb_student_key", key);
+      }
+      setStudentKey(key);
+    } catch {
+      setStudentKey("sk_anon_" + Math.random().toString(36).slice(2, 10));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!studentKey) return;
+    let active = true;
+    const poll = async () => {
+      try {
+        const res = await fetch(
+          "/api/notify-doctor/check?key=" + encodeURIComponent(studentKey),
+          { cache: "no-store" }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!active) return;
+        if (data && data.reply && data.reply.type) {
+          setDoctorReply({ type: data.reply.type, at: data.reply.at });
+          const text =
+            data.reply.type === "replied"
+              ? "╪º┘ä╪»┘â╪¬┘ê╪▒ ╪▒╪» ╪╣┘ä┘è┘â"
+              : "╪º┘ä╪»┘â╪¬┘ê╪▒ ╪¿┘è┘é┘ê┘ä┘â ╪¬╪╣┘ä╪º┘ä┘è ┘ü┘è ╪º┘ä┘à┘â╪¬╪¿ ╪¿╪╣╪» ╪º┘ä┘à╪¡╪º╪╢╪▒╪⌐";
+          toast.success(text, { duration: 8000 });
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    const id = setInterval(poll, 3000);
+    poll();
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, [studentKey]);
+
+  useEffect(() => {
+    if (speech.isListening) {
+      setLoadedLecture(null);
+    }
+  }, [speech.isListening]);
+
+  const handleAnalyze = useCallback((data: AnalysisData) => {
+    if (data.topic && data.topic.trim() !== "") {
+      setAllTopics((prev) => {
+        if (prev.some((t) => t.topic === data.topic)) return prev;
+        return [
+          ...prev,
+          {
+            topic: data.topic,
+            children: data.children,
+            firstSeenAt: Date.now(),
+          },
+        ];
+      });
+    }
+
+    if (data.terms.length > 0) {
+      setAllTerms((prev) => {
+        const existing = new Set(prev.map((t) => t.term));
+        const newTerms = data.terms.filter((t) => !existing.has(t.term));
+        if (newTerms.length === 0) return prev;
+        return [...prev, ...newTerms];
+      });
+    }
+  }, []);
+
+  const handleActionItemNotify = useCallback((item: ActionItem) => {
+    const icon =
+      item.type === "exam" ? "≡ƒÜ¿" : item.type === "assignment" ? "≡ƒô¥" : "ΓÜí";
+    toast.warning(`${icon} ${item.title}`, {
+      description: item.details.slice(0, 100),
+      duration: 7000,
+    });
+  }, []);
+
+  const handleLoadLecture = useCallback((lecture: SavedLecture) => {
+    setLoadedLecture(lecture);
+
+    let topic = "";
+    let children: string[] = [];
+    let terms: { term: string; definition: string }[] = [];
+
+    if (lecture.mindMapJson) {
+      try {
+        const parsed = JSON.parse(lecture.mindMapJson);
+        topic = parsed.topic || "";
+        children = parsed.children || [];
+      } catch {
+        // ignore
+      }
+    }
+
+    if (lecture.glossaryJson) {
+      try {
+        terms = JSON.parse(lecture.glossaryJson);
+      } catch {
+        // ignore
+      }
+    }
+
+    setAllTopics(topic ? [{ topic, children, firstSeenAt: Date.now() }] : []);
+    setAllTerms(terms);
+    setActiveFeature("captions");
+  }, []);
+
+  const handleAction = useCallback(
+    async (action: "ask" | "re-explain") => {
+      const text = action === "ask" ? "╪╣╪º┘è╪▓ ╪ú╪│╪ú┘ä Γ£ï" : "╪ú╪╣╪» ╪º┘ä╪┤╪▒╪¡ ≡ƒöä";
+      const time = new Date().toLocaleTimeString("ar-EG", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const newNotif: Notification = {
+        id: Date.now(),
+        action: text,
+        time,
+      };
+      setNotifications((prev) => [newNotif, ...prev]);
+
+      // Trigger the highlighter sweep animation
+      setFlash({ mode: action === "ask" ? "ask" : "repeat", key: Date.now() });
+
+      if (action === "ask" && studentKey) {
+        try {
+          const res = await fetch("/api/notify-doctor", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ studentKey }),
+          });
+          if (res.ok) {
+            setLastSentFeedback(`╪¬┘à ╪Ñ╪▒╪│╪º┘ä "${text}" ┘ä┘ä╪»┘â╪¬┘ê╪▒ Γ£à`);
+          } else {
+            const data = await res.json().catch(() => ({}));
+            toast.error(data.error || "┘ü╪┤┘ä ╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪Ñ╪┤╪╣╪º╪▒");
+            setLastSentFeedback(null);
+          }
+        } catch {
+          toast.error("╪¬╪╣╪░┘æ╪▒ ╪º┘ä╪º╪¬╪╡╪º┘ä ╪¿╪º┘ä╪│┘è╪▒┘ü╪▒");
+          setLastSentFeedback(null);
+        }
+      } else {
+        setLastSentFeedback(`╪¬┘à ╪Ñ╪▒╪│╪º┘ä "${text}" ┘ä┘ä╪»┘â╪¬┘ê╪▒`);
+      }
+
+      window.setTimeout(() => setLastSentFeedback(null), 2500);
+    },
+    [studentKey]
+  );
+
+  const displayTranscript =
+    loadedLecture?.transcript || speech.currentTranscript;
+  const latestTopic =
+    allTopics.length > 0 ? allTopics[allTopics.length - 1].topic : "";
+  const latestChildren =
+    allTopics.length > 0 ? allTopics[allTopics.length - 1].children : [];
+
+  const renderFeature = () => {
+    switch (activeFeature) {
+      case "captions":
+        return (
+          <SpeechInput
+            currentTranscript={displayTranscript}
+            refinedChunks={speech.refinedChunks}
+            isListening={speech.isListening}
+            onToggleMic={() =>
+              speech.isListening
+                ? speech.stopListening()
+                : speech.startListening()
+            }
+            onAnalyze={handleAnalyze}
+            onClearTranscript={() => {
+              speech.clearTranscript();
+              setFlash(null);
+            }}
+            error={speech.error}
+            flashMode={flash?.mode ?? null}
+            flashKey={flash?.key ?? 0}
+          />
+        );
+      case "mindmap":
+        return <MindMap topics={allTopics} />;
+      case "glossary":
+        return <GlossaryPanel terms={allTerms} onAction={handleAction} />;
+      case "summary":
+        return <SummaryPanel transcript={displayTranscript} />;
+      case "keywords":
+        return <KeywordsPanel transcript={displayTranscript} />;
+      case "flashcards":
+        return <FlashcardsPanel transcript={displayTranscript} />;
+      case "actionItems":
+        return (
+          <ActionItemsPanel
+            transcript={displayTranscript}
+            items={actionItems}
+            onItemsChange={setActionItems}
+            onNotify={handleActionItemNotify}
+          />
+        );
+      case "classroomQuestions":
+        return (
+          <ClassroomQuestionsPanel
+            transcript={displayTranscript}
+            questions={classroomQuestions}
+            onQuestionsChange={setClassroomQuestions}
+          />
+        );
+      case "argument":
+        return <ArgumentMapPanel transcript={displayTranscript} />;
+      case "causal":
+        return <CausalLoopPanel transcript={displayTranscript} />;
+      case "visualize":
+        return <VisualizeThisPanel transcript={displayTranscript} />;
+      case "system":
+        return <SystemExplorerPanel transcript={displayTranscript} />;
+      case "equations":
+        return <EquationsPanel transcript={displayTranscript} />;
+      case "analogy":
+        return <AnalogyMapPanel transcript={displayTranscript} />;
+      case "timeline":
+        return (
+          <LectureTimelinePanel
+            refinedChunks={speech.refinedChunks}
+            currentTranscript={displayTranscript}
+          />
+        );
+      case "comparison":
+        return <ComparisonTablePanel transcript={displayTranscript} />;
+      case "flowDiagram":
+        return <FlowDiagramPanel transcript={displayTranscript} />;
+      case "infographic":
+        return <InfographicPanel transcript={displayTranscript} />;
+      default:
+        return <ComingSoon featureId={activeFeature} />;
+    }
+  };
+
+  return (
+    <>
+      <AppShell
+        activeFeature={activeFeature}
+        onFeatureChange={setActiveFeature}
+        view={view}
+        onViewChange={setView}
+        isLive={true}
+        sidebarOpen={sidebarOpen}
+        footer={
+          <QuickActions
+            onAsk={() => handleAction("ask")}
+            onRepeat={() => handleAction("re-explain")}
+          />
+        }
+        onToggleSidebar={() => setSidebarOpen((v) => !v)}
+        onOpenLectures={() => setLecturesOpen(true)}
+      >
+        {view === "student" ? (
+          <div dir="rtl" className="space-y-4" id="main-content">
+            <Breadcrumbs items={[{ label: getFeature(activeFeature).label }]} />
+
+            {doctorReply && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={
+                  "flex items-start gap-3 rounded-2xl border p-4 shadow-sm " +
+                  (doctorReply.type === "replied"
+                    ? "border-emerald-500/30 bg-emerald-500/10"
+                    : "border-amber-500/30 bg-amber-500/10")
+                }
+              >
+                <span className="text-2xl" aria-hidden="true">
+                  {doctorReply.type === "replied" ? "Γ£à" : "≡ƒÜ╢"}
+                </span>
+                <div className="flex-1">
+                  <p
+                    className={
+                      "text-sm font-bold " +
+                      (doctorReply.type === "replied"
+                        ? "text-emerald-700 dark:text-emerald-400"
+                        : "text-amber-700 dark:text-amber-400")
+                    }
+                  >
+                    {doctorReply.type === "replied"
+                      ? "╪º┘ä╪»┘â╪¬┘ê╪▒ ╪▒╪» ╪╣┘ä┘è┘â"
+                      : "╪º┘ä╪»┘â╪¬┘ê╪▒ ╪¿┘è┘é┘ê┘ä┘â ╪¬╪╣┘ä╪º┘ä┘è ┘ü┘è ╪º┘ä┘à┘â╪¬╪¿ ╪¿╪╣╪» ╪º┘ä┘à╪¡╪º╪╢╪▒╪⌐"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {doctorReply.type === "replied"
+                      ? "╪º╪│┘à╪╣ ╪▒╪» ╪º┘ä╪»┘â╪¬┘ê╪▒ ┘ü┘è ╪º┘ä┘é╪º╪╣╪⌐"
+                      : "┘à╪¬┘å╪│╪º╪┤ ╪¬╪▒┘ê╪¡┘ä┘ç ╪¿╪╣╪» ┘à╪º ╪º┘ä┘à╪¡╪º╪╢╪▒╪⌐ ╪¬╪«┘ä╪╡"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDoctorReply(null)}
+                  aria-label="╪Ñ╪║┘ä╪º┘é"
+                  className="text-lg leading-none text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  ├ù
+                </button>
+              </motion.div>
+            )}
+
+            {renderFeature()}
+          </div>
+        ) : (
+          <div
+            className="glass rounded-2xl border border-border p-6"
+            dir="rtl"
+            id="main-content"
+          >
+            <h2 className="mb-6 text-xl font-bold">┘ä┘ê╪¡╪⌐ ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ╪º┘ä╪»┘â╪¬┘ê╪▒</h2>
+            {notifications.length === 0 ? (
+              <p className="py-10 text-center text-muted-foreground">
+                ┘ä╪º ╪¬┘ê╪¼╪» ╪Ñ╪┤╪╣╪º╪▒╪º╪¬ ┘à┘å ╪º┘ä╪╖┘ä╪º╪¿ ╪¡╪º┘ä┘è╪º┘ï.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {notifications.map((notif) => (
+                  <motion.div
+                    key={notif.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/10 p-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/20 text-lg">
+                        ≡ƒöö
+                      </span>
+                      <span className="font-semibold">{notif.action}</span>
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {notif.time}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <FloatingChat transcript={displayTranscript} />
+
+        <AnimatePresence>
+          {lastSentFeedback && (
+            <motion.div
+              role="status"
+              aria-live="polite"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ duration: 0.25 }}
+              className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border border-border bg-foreground px-5 py-2.5 text-sm font-medium text-background shadow-2xl"
+            >
+              Γ£ô {lastSentFeedback}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <ScrollToTop />
+      </AppShell>
+
+      <LecturesDrawer
+        open={lecturesOpen}
+        onClose={() => setLecturesOpen(false)}
+        currentTranscript={speech.currentTranscript}
+        currentTopic={latestTopic}
+        currentChildren={latestChildren}
+        currentTerms={allTerms}
+        onLoad={handleLoadLecture}
+      />
+    </>
+  );
+}
+
+function ComingSoon({ featureId }: { featureId: FeatureId }) {
+  const feature = getFeature(featureId);
+  return (
+    <div className="glass flex min-h-[60vh] flex-col items-center justify-center gap-6 rounded-2xl border border-border p-12 text-center">
+      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+        <Construction className="h-10 w-10 text-primary" />
+      </div>
+      <div className="space-y-2">
+        <h2 className="text-2xl font-bold">{feature.label}</h2>
+        <p className="max-w-md text-sm text-muted-foreground">
+          {feature.description}
+        </p>
+      </div>
+      <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+        </span>
+        <span className="text-xs font-semibold text-primary">
+          ┘é╪▒┘è╪¿╪º┘ï ΓÇö ╪¼╪º╪▒┘ì ╪º┘ä╪¬╪╖┘ê┘è╪▒
+        </span>
+      </div>
+    </div>
+  );
+}

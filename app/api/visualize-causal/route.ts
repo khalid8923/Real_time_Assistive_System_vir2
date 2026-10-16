@@ -190,10 +190,10 @@ export async function POST(request: NextRequest) {
   const result = await generateText({
     systemPrompt: SYSTEM_PROMPT,
     messages: [{ role: "user", content: `Transcript:\n\n${text}` }],
-    temperature: 0.2,
-    maxTokens: 2500,
+    temperature: 0.1,
+    maxTokens: 1500,
     jsonMode: true,
-    prefer: "nvidia",
+    prefer: "groq",
   });
 
   if (!result.ok || !result.text) {

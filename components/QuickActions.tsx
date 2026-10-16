@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Hand, RotateCcw, Search } from "lucide-react";
+import { Hand, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface QuickActionsProps {
@@ -19,15 +19,8 @@ export default function QuickActions({
   disabled = false,
   className,
 }: QuickActionsProps) {
-  const [paletteOpen, setPaletteOpen] = React.useState(false);
-
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.code === "KeyK") {
-        e.preventDefault();
-        setPaletteOpen((o) => !o);
-        return;
-      }
       if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.repeat) return;
 
       const t = e.target;
@@ -52,122 +45,45 @@ export default function QuickActions({
   }, [onAsk, onRepeat, disabled]);
 
   return (
-    <>
-      <div
-        role="toolbar"
-        aria-label="إجراءات سريعة"
+    <div
+      role="toolbar"
+      aria-label="إجراءات سريعة"
+      className={cn(
+        "pointer-events-none fixed bottom-6 left-4 z-40 hidden flex-col gap-2 lg:flex",
+        className
+      )}
+    >
+      <button
+        type="button"
+        onClick={onAsk}
+        disabled={disabled}
+        aria-pressed={askRaised || undefined}
+        aria-keyshortcuts="Q"
+        title="عايز أسأل (Q)"
         className={cn(
-          "mx-auto flex h-11 w-full max-w-[1600px] items-center gap-2 px-4 sm:px-6 lg:px-8",
-          className
+          "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card shadow-lg transition-all",
+          "hover:scale-105 hover:border-primary hover:bg-primary hover:text-primary-foreground",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          askRaised && "border-primary bg-primary text-primary-foreground"
         )}
       >
-        <button
-          type="button"
-          onClick={onAsk}
-          disabled={disabled}
-          aria-pressed={askRaised || undefined}
-          aria-keyshortcuts="Q"
-          title="سجّل رفع يدك (Q)"
-          className={cn(
-            "inline-flex h-8 items-center gap-2 rounded-md border border-input bg-card px-2.5 text-xs font-medium transition-colors",
-            "hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50",
-            "aria-pressed:border-primary aria-pressed:bg-wash aria-pressed:text-primary"
-          )}
-        >
-          <Hand className="size-3.5" strokeWidth={1.5} />
-          <span>عايز أسأل</span>
-          <kbd className="kbd hidden sm:inline-block">Q</kbd>
-        </button>
+        <Hand className="size-4" strokeWidth={1.75} />
+      </button>
 
-        <button
-          type="button"
-          onClick={onRepeat}
-          disabled={disabled}
-          aria-keyshortcuts="R"
-          title="اطلب إعادة آخر نقطة (R)"
-          className={cn(
-            "inline-flex h-8 items-center gap-2 rounded-md border border-input bg-card px-2.5 text-xs font-medium transition-colors",
-            "hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
-          )}
-        >
-          <RotateCcw className="size-3.5" strokeWidth={1.5} />
-          <span>أعد الشرح</span>
-          <kbd className="kbd hidden sm:inline-block">R</kbd>
-        </button>
-
-        <span className="flex-1" />
-
-        <button
-          type="button"
-          onClick={() => setPaletteOpen(true)}
-          aria-haspopup="dialog"
-          aria-keyshortcuts="Control+K Meta+K"
-          className="inline-flex h-8 items-center gap-2 rounded-md border border-input px-2.5 text-xs text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
-        >
-          <Search className="size-3.5" strokeWidth={1.5} />
-          <span className="hidden sm:inline">الأوامر</span>
-          <kbd className="kbd hidden sm:inline-block">Ctrl K</kbd>
-        </button>
-      </div>
-
-      {paletteOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setPaletteOpen(false)}
-          className="fixed inset-0 z-[100] flex items-start justify-center bg-black/50 px-4 pt-[18vh]"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md overflow-hidden rounded-lg border bg-card shadow-lg"
-          >
-            <div className="flex items-center gap-2 border-b px-3">
-              <Search className="size-4 text-muted-foreground" strokeWidth={1.5} />
-              <input
-                autoFocus
-                placeholder="اكتب اسم الأمر..."
-                className="h-11 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") setPaletteOpen(false);
-                }}
-              />
-              <kbd className="kbd">Esc</kbd>
-            </div>
-            <ul className="p-1">
-              <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPaletteOpen(false);
-                    onAsk();
-                  }}
-                  className="flex h-9 w-full items-center gap-3 rounded-md px-3 text-start text-sm hover:bg-wash"
-                >
-                  <Hand className="size-4 text-muted-foreground" strokeWidth={1.5} />
-                  <span>عايز أسأل</span>
-                  <span className="flex-1" />
-                  <kbd className="kbd">Q</kbd>
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPaletteOpen(false);
-                    onRepeat();
-                  }}
-                  className="flex h-9 w-full items-center gap-3 rounded-md px-3 text-start text-sm hover:bg-wash"
-                >
-                  <RotateCcw className="size-4 text-muted-foreground" strokeWidth={1.5} />
-                  <span>أعد الشرح</span>
-                  <span className="flex-1" />
-                  <kbd className="kbd">R</kbd>
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
-      )}
-    </>
+      <button
+        type="button"
+        onClick={onRepeat}
+        disabled={disabled}
+        aria-keyshortcuts="R"
+        title="أعد الشرح (R)"
+        className={cn(
+          "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card shadow-lg transition-all",
+          "hover:scale-105 hover:border-primary hover:bg-primary hover:text-primary-foreground",
+          "disabled:cursor-not-allowed disabled:opacity-50"
+        )}
+      >
+        <RotateCcw className="size-4" strokeWidth={1.75} />
+      </button>
+    </div>
   );
 }
