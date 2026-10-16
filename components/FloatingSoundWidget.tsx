@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Volume2, X, MicOff, Mic } from "lucide-react";
+import { Volume2, X, MicOff } from "lucide-react";
 import { useSoundDetection, type SoundLevel } from "@/hooks/useSoundDetection";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +63,7 @@ export default function FloatingSoundWidget() {
     }
   }, []);
 
-  // Auto-start if permission already granted
+  // Auto-start if mic permission already granted
   React.useEffect(() => {
     if (!mounted || hidden || !isSupported || autoStartTried.current) return;
     if (isMonitoring) {
@@ -74,9 +74,7 @@ export default function FloatingSoundWidget() {
 
     (async () => {
       try {
-        const nav = navigator as Navigator & {
-          permissions?: Permissions;
-        };
+        const nav = navigator as Navigator & { permissions?: Permissions };
         if (nav.permissions) {
           const status = await nav.permissions.query({
             name: "microphone" as PermissionName,
@@ -86,7 +84,7 @@ export default function FloatingSoundWidget() {
           }
         }
       } catch {
-        /* ignore — user can tap to start */
+        /* ignore */
       }
     })();
   }, [mounted, hidden, isSupported, isMonitoring, startMonitoring]);
@@ -101,14 +99,39 @@ export default function FloatingSoundWidget() {
     }
   };
 
-  if (!mounted || hidden || !isSupported) return null;
+  const handleRestore = () => {
+    setHidden(false);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  if (!mounted || !isSupported) return null;
+
+  // ============ HIDDEN: small restore tab ============
+  if (hidden) {
+    return (
+      <button
+        type="button"
+        onClick={handleRestore}
+        aria-label="إظهار مراقبة الصوت"
+        title="إظهار مراقبة الصوت"
+        className="pointer-events-auto fixed left-0 top-24 z-40 flex h-10 w-6 items-center justify-center rounded-e-lg border border-s-0 border-border bg-background/95 text-muted-foreground shadow-md backdrop-blur transition-colors hover:bg-muted hover:text-foreground"
+      >
+        <Volume2 className="size-3" />
+      </button>
+    );
+  }
 
   const meta = LEVEL_META[currentLevel];
 
   return (
-    <div className="pointer-events-none fixed left-0 top-1/2 z-40 -translate-y-1/2">
+    <div className="pointer-events-none fixed left-0 top-24 z-40">
       <AnimatePresence mode="wait" initial={false}>
         {!expanded ? (
+          // ============ COLLAPSED: vertical strip ============
           <motion.button
             key="collapsed"
             initial={{ opacity: 0, x: -20 }}
@@ -118,10 +141,10 @@ export default function FloatingSoundWidget() {
             type="button"
             onClick={() => setExpanded(true)}
             aria-label="فتح مراقبة الصوت"
-            title="مراقبة الصوت"
-            className="pointer-events-auto flex flex-col items-center gap-1.5 rounded-e-xl border border-s-0 border-border bg-background/95 px-1.5 py-2.5 shadow-md backdrop-blur"
+            className="pointer-events-auto flex flex-col items-center gap-2 rounded-e-2xl border border-s-0 border-border bg-background/95 px-2 py-3 shadow-lg backdrop-blur-md"
           >
-            <span className="relative flex size-2">
+            {/* Status dot */}
+            <span className="relative flex size-2.5">
               {isMonitoring && (
                 <span
                   className={cn(
@@ -132,13 +155,22 @@ export default function FloatingSoundWidget() {
               )}
               <span
                 className={cn(
-                  "relative inline-flex size-2 rounded-full",
+                  "relative inline-flex size-2.5 rounded-full",
                   isMonitoring ? meta.dot : "bg-muted-foreground/40"
                 )}
               />
             </span>
 
-            <div className="relative h-20 w-1.5 overflow-hidden rounded-full bg-muted">
+            {/* Vertical label */}
+            <span
+              className="text-[9px] font-bold text-muted-foreground"
+              style={{ writingMode: "vertical-rl" }}
+            >
+              صوت
+            </span>
+
+            {/* Meter */}
+            <div className="relative h-24 w-2 overflow-hidden rounded-full bg-muted">
               <motion.div
                 className={cn(
                   "absolute inset-x-0 bottom-0 rounded-full bg-gradient-to-t",
@@ -151,9 +183,15 @@ export default function FloatingSoundWidget() {
               />
             </div>
 
-            <Volume2 className="size-3 text-muted-foreground" />
+            <Volume2
+              className={cn(
+                "size-3.5",
+                isMonitoring ? meta.text : "text-muted-foreground"
+              )}
+            />
           </motion.button>
         ) : (
+          // ============ EXPANDED: full panel ============
           <motion.div
             key="expanded"
             initial={{ opacity: 0, x: -20 }}
@@ -161,8 +199,9 @@ export default function FloatingSoundWidget() {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             dir="rtl"
-            className="pointer-events-auto w-56 overflow-hidden rounded-e-xl border border-s-0 border-border bg-background/95 shadow-xl backdrop-blur"
+            className="pointer-events-auto w-60 overflow-hidden rounded-e-2xl border border-s-0 border-border bg-background/95 shadow-2xl backdrop-blur"
           >
+            {/* Header */}
             <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
               <div className="flex items-center gap-2">
                 <Volume2 className={cn("size-3.5", meta.text)} />
@@ -178,6 +217,7 @@ export default function FloatingSoundWidget() {
               </button>
             </div>
 
+            {/* Content */}
             <div className="p-3">
               {error && (
                 <p className="mb-2 rounded-md bg-destructive/10 px-2 py-1.5 text-[10px] font-medium text-destructive">
@@ -226,7 +266,6 @@ export default function FloatingSoundWidget() {
                   onClick={startMonitoring}
                   className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
-                  <Mic className="size-3.5" />
                   تشغيل المراقبة
                 </button>
               )}
