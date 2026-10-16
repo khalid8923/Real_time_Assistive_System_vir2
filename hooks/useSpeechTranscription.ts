@@ -22,9 +22,12 @@ export interface UseSpeechTranscriptionReturn {
   isSupported: boolean;
 }
 
-/** 6 ثواني — للحصول على feedback أسرع (يستنزف rate limit أسرع) */
 const CHUNK_DURATION_MS = 6_000;
 const MIN_BLOB_SIZE = 4000;
+
+// Voice Activity Detection
+const SILENCE_RMS_THRESHOLD = 0.008;
+const VAD_SAMPLE_INTERVAL_MS = 150;
 
 export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
   const [isListening, setIsListening] = useState(false);
@@ -43,13 +46,16 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
   const isProcessingQueueRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const vadTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const processQueue = useCallback(async () => {
     if (isProcessingQueueRef.current || chunkQueueRef.current.length === 0) return;
     isProcessingQueueRef.current = true;
 
     while (chunkQueueRef.current.length > 0) {
       if (isStoppingRef.current) {
-        // المستخدم وقّف — امسح الطابور واطلع
         chunkQueueRef.current = [];
         break;
       }
@@ -128,14 +134,52 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
     const recorder = new MediaRecorder(stream, { mimeType });
     const localChunks: Blob[] = [];
 
+    let maxRms = 0;
+    const analyser = analyserRef.current;
+
+    if (vadTimerRef.current) clearInterval(vadTimerRef.current);
+
+    if (analyser) {
+      const dataArray = new Float32Array(analyser.fftSize);
+      vadTimerRef.current = setInterval(() => {
+        try {
+          analyser.getFloatTimeDomainData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i] * dataArray[i];
+          }
+          const rms = Math.sqrt(sum / dataArray.length);
+          if (rms > maxRms) maxRms = rms;
+        } catch {
+          /* ignore */
+        }
+      }, VAD_SAMPLE_INTERVAL_MS);
+    }
+
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) localChunks.push(e.data);
     };
 
     recorder.onstop = () => {
-      const blob = new Blob(localChunks, { type: mimeType });
-      processBlob(blob);
-      if (!isStoppingRef.current && streamRef.current) startRecording();
+      if (vadTimerRef.current) {
+        clearInterval(vadTimerRef.current);
+        vadTimerRef.current = null;
+      }
+
+      const wasSilent = analyser && maxRms < SILENCE_RMS_THRESHOLD;
+
+      if (wasSilent) {
+        console.log(
+          `[vad] skip silent chunk (maxRms=${maxRms.toFixed(4)}, threshold=${SILENCE_RMS_THRESHOLD})`
+        );
+      } else {
+        const blob = new Blob(localChunks, { type: mimeType });
+        processBlob(blob);
+      }
+
+      if (!isStoppingRef.current && streamRef.current) {
+        startRecording();
+      }
     };
 
     recorder.start();
@@ -172,6 +216,23 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
       });
 
       streamRef.current = stream;
+
+      try {
+        const AudioContextClass =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext })
+            .webkitAudioContext;
+        const audioCtx = new AudioContextClass();
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyser);
+        audioContextRef.current = audioCtx;
+        analyserRef.current = analyser;
+      } catch (vadErr) {
+        console.warn("[vad] init failed - continuing without VAD", vadErr);
+      }
+
       setIsListening(true);
       startRecording();
     } catch (err) {
@@ -189,30 +250,36 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
   }, [isListening, startRecording]);
 
   const stopListening = useCallback(() => {
-    // 1. علّم إننا بنوقف
     isStoppingRef.current = true;
 
-    // 2. ألغِ أي طلب جاري
     if (abortControllerRef.current) {
       try { abortControllerRef.current.abort(); } catch {}
       abortControllerRef.current = null;
     }
 
-    // 3. امسح الطابور
     chunkQueueRef.current = [];
     isProcessingQueueRef.current = false;
 
-    // 4. اقفل الـ recorder
+    if (vadTimerRef.current) {
+      clearInterval(vadTimerRef.current);
+      vadTimerRef.current = null;
+    }
+
     if (rotationTimerRef.current) clearTimeout(rotationTimerRef.current);
     if (recorderRef.current && recorderRef.current.state === "recording") {
       try { recorderRef.current.stop(); } catch {}
     }
     recorderRef.current = null;
 
-    // 5. اقفل الـ stream
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
+      analyserRef.current = null;
     }
 
     setIsListening(false);
@@ -227,6 +294,7 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
   useEffect(() => {
     return () => {
       isStoppingRef.current = true;
+      if (vadTimerRef.current) clearInterval(vadTimerRef.current);
       if (rotationTimerRef.current) clearTimeout(rotationTimerRef.current);
       if (abortControllerRef.current) {
         try { abortControllerRef.current.abort(); } catch {}
@@ -236,6 +304,9 @@ export function useSpeechTranscription(): UseSpeechTranscriptionReturn {
       }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
       }
     };
   }, []);
