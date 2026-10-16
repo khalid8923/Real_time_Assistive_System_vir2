@@ -27,9 +27,7 @@ export default function QuickActions({
         t instanceof HTMLElement &&
         (t.isContentEditable ||
           ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))
-      ) {
-        return;
-      }
+      ) return;
       if (disabled) return;
       if (e.code === "KeyQ") { e.preventDefault(); onAsk(); }
       else if (e.code === "KeyR") { e.preventDefault(); onRepeat(); }
@@ -43,7 +41,7 @@ export default function QuickActions({
       role="toolbar"
       aria-label="إجراءات سريعة"
       className={cn(
-        "pointer-events-none fixed left-0 top-1/2 z-40 hidden -translate-y-1/2 flex-col gap-1.5 py-2 lg:flex",
+        "pointer-events-none fixed left-6 bottom-24 z-40 hidden flex-row gap-2 lg:flex",
         className
       )}
     >
@@ -55,12 +53,12 @@ export default function QuickActions({
         aria-keyshortcuts="Q"
         title="عايز أسأل (Q)"
         className={cn(
-          "pointer-events-auto group flex h-10 w-6 items-center justify-center rounded-r-full border border-l-0 border-border bg-border shadow-sm transition-all duration-200 hover:w-16 hover:bg-primary",
+          "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-lg transition-all hover:scale-105 hover:border-primary hover:bg-primary hover:text-primary-foreground",
           "disabled:cursor-not-allowed disabled:opacity-50",
-          askRaised && "w-16 bg-primary"
+          askRaised && "border-primary bg-primary text-primary-foreground"
         )}
       >
-        <Hand className="size-3.5 text-foreground/70 transition-colors group-hover:text-primary-foreground" strokeWidth={2} />
+        <Hand className="size-4" strokeWidth={1.75} />
       </button>
 
       <button
@@ -70,11 +68,11 @@ export default function QuickActions({
         aria-keyshortcuts="R"
         title="أعد الشرح (R)"
         className={cn(
-          "pointer-events-auto group flex h-10 w-6 items-center justify-center rounded-r-full border border-l-0 border-border bg-border shadow-sm transition-all duration-200 hover:w-16 hover:bg-primary",
+          "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-lg transition-all hover:scale-105 hover:border-primary hover:bg-primary hover:text-primary-foreground",
           "disabled:cursor-not-allowed disabled:opacity-50"
         )}
       >
-        <RotateCcw className="size-3.5 text-foreground/70 transition-colors group-hover:text-primary-foreground" strokeWidth={2} />
+        <RotateCcw className="size-4" strokeWidth={1.75} />
       </button>
     </div>
   );
