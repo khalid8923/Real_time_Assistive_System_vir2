@@ -2,54 +2,257 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Volume2, X } from "lucide-react";
-import SoundIndicator from "@/components/SoundIndicator";
+import { Volume2, X, MicOff, Mic } from "lucide-react";
+import { useSoundDetection, type SoundLevel } from "@/hooks/useSoundDetection";
+import { cn } from "@/lib/utils";
+
+const STORAGE_KEY = "cb_sound_widget_v1";
+
+const LEVEL_META: Record<
+  SoundLevel,
+  { label: string; bar: string; dot: string; text: string }
+> = {
+  quiet: {
+    label: "هادئ",
+    bar: "from-emerald-500 to-emerald-400",
+    dot: "bg-emerald-500",
+    text: "text-emerald-500",
+  },
+  normal: {
+    label: "نشاط",
+    bar: "from-amber-500 to-amber-400",
+    dot: "bg-amber-500",
+    text: "text-amber-500",
+  },
+  loud: {
+    label: "مرتفع",
+    bar: "from-orange-500 to-orange-400",
+    dot: "bg-orange-500",
+    text: "text-orange-500",
+  },
+  spike: {
+    label: "مفاجئ",
+    bar: "from-rose-500 to-rose-400",
+    dot: "bg-rose-500",
+    text: "text-rose-500",
+  },
+};
 
 export default function FloatingSoundWidget() {
-  const [open, setOpen] = React.useState(false);
+  const [expanded, setExpanded] = React.useState(false);
+  const [hidden, setHidden] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
+  const autoStartTried = React.useRef(false);
+
+  const {
+    isMonitoring,
+    isSupported,
+    currentLevel,
+    currentIntensity,
+    error,
+    startMonitoring,
+    stopMonitoring,
+  } = useSoundDetection();
+
+  React.useEffect(() => {
+    setMounted(true);
+    try {
+      if (localStorage.getItem(STORAGE_KEY) === "hidden") setHidden(true);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Auto-start if permission already granted
+  React.useEffect(() => {
+    if (!mounted || hidden || !isSupported || autoStartTried.current) return;
+    if (isMonitoring) {
+      autoStartTried.current = true;
+      return;
+    }
+    autoStartTried.current = true;
+
+    (async () => {
+      try {
+        const nav = navigator as Navigator & {
+          permissions?: Permissions;
+        };
+        if (nav.permissions) {
+          const status = await nav.permissions.query({
+            name: "microphone" as PermissionName,
+          });
+          if (status.state === "granted") {
+            await startMonitoring();
+          }
+        }
+      } catch {
+        /* ignore — user can tap to start */
+      }
+    })();
+  }, [mounted, hidden, isSupported, isMonitoring, startMonitoring]);
+
+  const handleHide = () => {
+    stopMonitoring();
+    setHidden(true);
+    try {
+      localStorage.setItem(STORAGE_KEY, "hidden");
+    } catch {
+      /* ignore */
+    }
+  };
+
+  if (!mounted || hidden || !isSupported) return null;
+
+  const meta = LEVEL_META[currentLevel];
 
   return (
-    <div className="pointer-events-none fixed right-0 top-24 z-40 hidden lg:block">
-      <AnimatePresence initial={false} mode="wait">
-        {open ? (
-          <motion.div
-            key="panel"
-            initial={{ opacity: 0, x: 24 }}
+    <div className="pointer-events-none fixed left-0 top-1/2 z-40 -translate-y-1/2">
+      <AnimatePresence mode="wait" initial={false}>
+        {!expanded ? (
+          <motion.button
+            key="collapsed"
+            initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 24 }}
-            transition={{ duration: 0.2 }}
-            className="pointer-events-auto w-60 overflow-hidden rounded-l-xl border border-r-0 border-border bg-card shadow-xl"
-            dir="rtl"
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            type="button"
+            onClick={() => setExpanded(true)}
+            aria-label="فتح مراقبة الصوت"
+            title="مراقبة الصوت"
+            className="pointer-events-auto flex flex-col items-center gap-1.5 rounded-e-xl border border-s-0 border-border bg-background/95 px-1.5 py-2.5 shadow-md backdrop-blur"
           >
-            <div className="flex h-9 items-center justify-between border-b border-border px-3">
-              <span className="text-xs font-bold">مراقبة الصوت</span>
+            <span className="relative flex size-2">
+              {isMonitoring && (
+                <span
+                  className={cn(
+                    "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
+                    meta.dot
+                  )}
+                />
+              )}
+              <span
+                className={cn(
+                  "relative inline-flex size-2 rounded-full",
+                  isMonitoring ? meta.dot : "bg-muted-foreground/40"
+                )}
+              />
+            </span>
+
+            <div className="relative h-20 w-1.5 overflow-hidden rounded-full bg-muted">
+              <motion.div
+                className={cn(
+                  "absolute inset-x-0 bottom-0 rounded-full bg-gradient-to-t",
+                  meta.bar
+                )}
+                animate={{
+                  height: isMonitoring ? `${currentIntensity}%` : "0%",
+                }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
+              />
+            </div>
+
+            <Volume2 className="size-3 text-muted-foreground" />
+          </motion.button>
+        ) : (
+          <motion.div
+            key="expanded"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            dir="rtl"
+            className="pointer-events-auto w-56 overflow-hidden rounded-e-xl border border-s-0 border-border bg-background/95 shadow-xl backdrop-blur"
+          >
+            <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Volume2 className={cn("size-3.5", meta.text)} />
+                <span className="text-xs font-bold">مراقبة الصوت</span>
+              </div>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
-                aria-label="إغلاق"
-                className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+                onClick={() => setExpanded(false)}
+                aria-label="طيّ"
+                className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 <X className="size-3.5" />
               </button>
             </div>
-            <div className="p-2">
-              <SoundIndicator />
+
+            <div className="p-3">
+              {error && (
+                <p className="mb-2 rounded-md bg-destructive/10 px-2 py-1.5 text-[10px] font-medium text-destructive">
+                  {error}
+                </p>
+              )}
+
+              {isMonitoring ? (
+                <div className="flex items-center gap-3">
+                  <div className="relative h-28 w-6 overflow-hidden rounded-lg border border-border bg-muted">
+                    <motion.div
+                      className={cn(
+                        "absolute inset-x-0 bottom-0 rounded-t bg-gradient-to-t",
+                        meta.bar
+                      )}
+                      animate={{ height: `${currentIntensity}%` }}
+                      transition={{ duration: 0.12, ease: "easeOut" }}
+                    />
+                  </div>
+
+                  <div className="flex-1">
+                    <div className="mb-1 flex items-baseline gap-1">
+                      <span
+                        className={cn(
+                          "text-2xl font-black tabular-nums",
+                          meta.text
+                        )}
+                      >
+                        {currentIntensity}
+                      </span>
+                      <span className="text-[10px] font-bold text-muted-foreground">
+                        %
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className={cn("size-1.5 rounded-full", meta.dot)} />
+                      <span className={cn("text-xs font-bold", meta.text)}>
+                        {meta.label}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startMonitoring}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  <Mic className="size-3.5" />
+                  تشغيل المراقبة
+                </button>
+              )}
+
+              <div className="mt-3 flex items-center gap-2">
+                {isMonitoring && (
+                  <button
+                    type="button"
+                    onClick={stopMonitoring}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2 py-1.5 text-[11px] font-bold text-foreground transition-colors hover:bg-muted"
+                  >
+                    <MicOff className="size-3" />
+                    إيقاف
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleHide}
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-[11px] font-bold text-destructive transition-colors hover:bg-destructive/15"
+                >
+                  <X className="size-3" />
+                  إخفاء
+                </button>
+              </div>
             </div>
           </motion.div>
-        ) : (
-          <motion.button
-            key="strip"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            type="button"
-            onClick={() => setOpen(true)}
-            aria-label="مراقبة الصوت"
-            title="مراقبة الصوت"
-            className="pointer-events-auto group flex h-20 w-1.5 items-center justify-center rounded-l-full border border-r-0 border-border bg-border transition-all duration-200 hover:w-9 hover:bg-primary"
-          >
-            <Volume2 className="size-3.5 opacity-0 transition-opacity group-hover:opacity-100 group-hover:text-primary-foreground" />
-          </motion.button>
         )}
       </AnimatePresence>
     </div>

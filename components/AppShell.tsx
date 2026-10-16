@@ -4,10 +4,11 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { User } from "lucide-react";
+import { Menu, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import AppSidebar from "@/components/AppSidebar";
+import MobileDrawer from "@/components/MobileDrawer";
 import FloatingSoundWidget from "@/components/FloatingSoundWidget";
 import { STUDENT_FEATURES, type FeatureId } from "@/lib/features";
 import { useSession } from "@/lib/auth-client";
@@ -40,6 +41,7 @@ export default function AppShell({
   footer,
 }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
   const { data: session } = useSession();
 
@@ -48,14 +50,29 @@ export default function AppShell({
   }, []);
 
   const user = session?.user as { name?: string } | undefined;
-  const mobileFeatures = STUDENT_FEATURES.slice(0, 6);
+  const mobileFeatures = STUDENT_FEATURES.slice(0, 5);
+
+  const handleFeatureChange = (id: FeatureId) => {
+    onFeatureChange(id);
+    setDrawerOpen(false);
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
       {/* HEADER */}
       <header className="sticky top-0 z-50 w-full border-b bg-chrome/95 backdrop-blur-md">
-        <div className="mx-auto flex h-11 w-full max-w-[1600px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2.5">
+        <div className="mx-auto flex h-11 w-full max-w-[1600px] items-center justify-between gap-2 px-3 sm:px-4 lg:px-8">
+          {/* Right side (RTL start) - Hamburger + Logo */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="فتح القائمة"
+              className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
+            >
+              <Menu className="size-5" />
+            </button>
+
             <Link href="/" className="flex items-center gap-2">
               <Image
                 src="/logo.png"
@@ -65,13 +82,17 @@ export default function AppShell({
                 className="size-7 rounded-md"
                 priority
               />
-              <span className="font-serif text-base font-bold leading-none" dir="ltr">
+              <span
+                className="font-serif text-base font-bold leading-none hidden xs:inline"
+                dir="ltr"
+              >
                 CaptionBridge
               </span>
             </Link>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Left side (RTL end) - Theme + View + User */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <div
               role="status"
               className="hidden items-center gap-1.5 text-xs sm:flex"
@@ -91,7 +112,7 @@ export default function AppShell({
             <div
               role="group"
               aria-label="تبديل واجهة التطبيق"
-              className="flex items-center overflow-hidden rounded-md border border-input"
+              className="hidden items-center overflow-hidden rounded-md border border-input sm:flex"
             >
               <button
                 type="button"
@@ -140,7 +161,7 @@ export default function AppShell({
             {mounted && !user && (
               <Link
                 href="/login"
-                aria-label="حسابي"
+                aria-label="تسجيل الدخول"
                 title="تسجيل الدخول"
                 className="flex size-7 items-center justify-center rounded-md border border-input bg-card text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
               >
@@ -152,7 +173,7 @@ export default function AppShell({
       </header>
 
       {/* BODY */}
-      <div className="mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-4 py-5 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-3 py-4 sm:px-4 sm:py-5 lg:px-8">
         {view === "student" && (
           <AppSidebar
             activeFeature={activeFeature}
@@ -175,22 +196,33 @@ export default function AppShell({
         </main>
       </div>
 
-      {/* QUICK ACTIONS DOCK */}
+      {/* FOOTER (QuickActions dock) */}
       {footer && (
-        <div className="sticky bottom-0 z-40 border-t bg-chrome/95 backdrop-blur-md">
+        <div className="sticky bottom-[calc(56px+env(safe-area-inset-bottom))] z-40 border-t bg-chrome/95 backdrop-blur-md lg:bottom-0">
           {footer}
         </div>
       )}
 
+      {/* Floating Sound Widget (always on) */}
       <FloatingSoundWidget />
 
-      {/* MOBILE NAV */}
+      {/* Mobile drawer */}
+      <MobileDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        activeFeature={activeFeature}
+        onFeatureChange={handleFeatureChange}
+        onOpenLectures={onOpenLectures}
+      />
+
+      {/* MOBILE BOTTOM NAV (with "More" button to open drawer) */}
       {view === "student" && (
         <nav
           dir="rtl"
           className="sticky bottom-0 z-30 w-full border-t bg-chrome/95 backdrop-blur-md lg:hidden"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
-          <div className="no-scrollbar flex items-center gap-1 overflow-x-auto px-2 py-1.5">
+          <div className="no-scrollbar flex items-center justify-around gap-0.5 px-1 py-1.5">
             {mobileFeatures.map((feature) => {
               const Icon = feature.icon;
               const active = feature.id === activeFeature;
@@ -200,19 +232,27 @@ export default function AppShell({
                   type="button"
                   onClick={() => onFeatureChange(feature.id)}
                   className={cn(
-                    "flex shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1 transition-colors",
+                    "flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-md px-1 py-1 transition-colors",
                     active
                       ? "bg-wash text-primary"
                       : "text-muted-foreground hover:bg-hover"
                   )}
                 >
                   <Icon className="size-4" strokeWidth={1.5} />
-                  <span className="text-[10px] font-medium">
+                  <span className="text-[10px] font-medium truncate w-full text-center">
                     {feature.shortLabel}
                   </span>
                 </button>
               );
             })}
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              className="flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-md px-1 py-1 text-muted-foreground transition-colors hover:bg-hover"
+            >
+              <Menu className="size-4" strokeWidth={1.5} />
+              <span className="text-[10px] font-medium">المزيد</span>
+            </button>
           </div>
         </nav>
       )}
